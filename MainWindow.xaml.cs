@@ -56,7 +56,7 @@ namespace Ming_AutoClicker
             _viewModel.RegisterHotkey(hwnd);
         }
 
-        private void OnSourceInitialized(object sender, EventArgs e)
+        private void OnSourceInitialized(object? sender, EventArgs e)
         {
             // 窗口句柄在此事件已可用，但 ViewModel 尚未赋值，热键注册延迟到 OnLoaded
         }
@@ -70,7 +70,10 @@ namespace Ming_AutoClicker
             }
 
             MacroListView.RequestEdit -= OnRequestEdit;
-            _viewModel.EditRequested -= OnRequestEdit;
+            if (_viewModel != null)
+            {
+                _viewModel.EditRequested -= OnRequestEdit;
+            }
 
             _viewModel?.UnregisterHotkey();
             _viewModel?.Dispose();

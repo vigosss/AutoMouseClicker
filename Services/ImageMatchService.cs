@@ -199,7 +199,7 @@ namespace Ming_AutoClicker.Services
                 {
                     await System.Threading.Tasks.Task.Delay(intervalMs, cancellationToken);
                 }
-                catch (System.Threading.OperationCanceledException)
+                catch (OperationCanceledException)
                 {
                     return MatchResult.NotFound;
                 }

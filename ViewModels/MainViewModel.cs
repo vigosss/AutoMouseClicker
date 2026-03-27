@@ -256,7 +256,7 @@ namespace Ming_AutoClicker.ViewModels
             }
         }
 
-        private void SaveAll()
+        public void SaveAll()
         {
             try
             {
@@ -269,7 +269,7 @@ namespace Ming_AutoClicker.ViewModels
             }
         }
 
-        private void LoadMacros()
+        public void LoadMacros()
         {
             try
             {

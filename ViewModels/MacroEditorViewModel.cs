@@ -70,12 +70,12 @@ namespace Ming_AutoClicker.ViewModels
             {
                 if (SetProperty(ref _selectedAction, value))
                 {
-                    _selectedActionIndex = Actions.IndexOf(value);
+                    _selectedActionIndex = value != null ? Actions.IndexOf(value) : -1;
                     OnPropertyChanged(nameof(IsActionSelected));
                     OnPropertyChanged(nameof(SelectedActionType));
                     OnPropertyChanged(nameof(CanMoveUp));
                     OnPropertyChanged(nameof(CanMoveDown));
-                    OnPropertyChanged(nameof(CanDeleteAction));
+                    OnPropertyChanged(nameof(CanDelete));
                     // 通知属性面板刷新所有动作相关属性
                     OnPropertyChanged(nameof(ImagePath));
                     OnPropertyChanged(nameof(MatchThreshold));
