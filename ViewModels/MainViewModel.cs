@@ -91,6 +91,11 @@ namespace Ming_AutoClicker.ViewModels
         /// </summary>
         public MacroExecutor MacroExecutor => _macroExecutor;
 
+        /// <summary>
+        /// 请求编辑宏事件（由 MainWindow 订阅以切换到编辑器视图）
+        /// </summary>
+        public event EventHandler<MacroProfile>? EditRequested;
+
         #endregion
 
         #region 命令
@@ -169,7 +174,7 @@ namespace Ming_AutoClicker.ViewModels
         {
             if (SelectedMacro == null) return;
             StatusMessage = $"编辑: {SelectedMacro.Name}";
-            ShowMessage($"编辑器功能将在 UI 层实现\n当前编辑: {SelectedMacro.Name}");
+            EditRequested?.Invoke(this, SelectedMacro);
         }
 
         private bool CanDeleteMacro() => SelectedMacro != null && !IsExecuting;
@@ -195,41 +200,12 @@ namespace Ming_AutoClicker.ViewModels
         {
             if (SelectedMacro == null) return;
 
-            var duplicated = new MacroProfile
-            {
-                Name = $"{SelectedMacro.Name} (副本)",
-                LoopEnabled = SelectedMacro.LoopEnabled,
-                LoopCount = SelectedMacro.LoopCount,
-                LoopIntervalMs = SelectedMacro.LoopIntervalMs,
-                CreatedAt = DateTime.Now,
-                UpdatedAt = DateTime.Now
-            };
-
-            // 复制动作列表
-            foreach (var action in SelectedMacro.Actions)
-            {
-                if (action is FindImageAction findImageAction)
-                {
-                    duplicated.Actions.Add(new FindImageAction
-                    {
-                        Order = findImageAction.Order,
-                        ImagePath = findImageAction.ImagePath,
-                        MatchThreshold = findImageAction.MatchThreshold,
-                        WaitUntilFound = findImageAction.WaitUntilFound,
-                        Operation = findImageAction.Operation,
-                        OffsetX = findImageAction.OffsetX,
-                        OffsetY = findImageAction.OffsetY
-                    });
-                }
-                else if (action is WaitAction waitAction)
-                {
-                    duplicated.Actions.Add(new WaitAction
-                    {
-                        Order = waitAction.Order,
-                        WaitSeconds = waitAction.WaitSeconds
-                    });
-                }
-            }
+            // 使用 DeepClone 复制，然后修改名称和时间
+            var duplicated = SelectedMacro.DeepClone();
+            duplicated.Id = Guid.NewGuid().ToString();
+            duplicated.Name = $"{SelectedMacro.Name} (副本)";
+            duplicated.CreatedAt = DateTime.Now;
+            duplicated.UpdatedAt = DateTime.Now;
 
             Macros.Add(duplicated);
             SelectedMacro = duplicated;

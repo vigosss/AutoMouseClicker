@@ -171,6 +171,8 @@ namespace Ming_AutoClicker.Services
         /// </summary>
         public void Stop()
         {
+            Task? taskToWait = null;
+
             lock (_lockObject)
             {
                 if (State != MacroExecutionState.Running && State != MacroExecutionState.Paused)
@@ -180,6 +182,17 @@ namespace Ming_AutoClicker.Services
 
                 _cancellationTokenSource?.Cancel();
                 SetState(MacroExecutionState.Stopped);
+                taskToWait = _executionTask;
+            }
+
+            // 在锁外等待任务完成，避免死锁
+            try
+            {
+                taskToWait?.Wait(TimeSpan.FromSeconds(5));
+            }
+            catch (AggregateException)
+            {
+                // 任务被取消是预期行为
             }
         }
 
@@ -345,7 +358,11 @@ namespace Ming_AutoClicker.Services
             }
             finally
             {
-                SetState(MacroExecutionState.Idle);
+                // 仅在非取消/非完成状态下回到 Idle，避免覆盖 Stopped/Completed 状态
+                if (State != MacroExecutionState.Stopped && State != MacroExecutionState.Completed)
+                {
+                    SetState(MacroExecutionState.Idle);
+                }
             }
         }
 
@@ -393,11 +410,12 @@ namespace Ming_AutoClicker.Services
             // 如果需要等待直到找到
             if (action.WaitUntilFound)
             {
-                matchResult = _imageMatchService.WaitForImage(
+                matchResult = await _imageMatchService.WaitForImageAsync(
                     action.ImagePath,
                     action.MatchThreshold,
                     FindImageTimeoutMs,
-                    FindImageIntervalMs);
+                    FindImageIntervalMs,
+                    cancellationToken);
 
                 // 检查是否被取消
                 if (cancellationToken.IsCancellationRequested)
@@ -423,12 +441,18 @@ namespace Ming_AutoClicker.Services
             switch (action.Operation.ToLower())
             {
                 case "click":
-                    Win32Api.LeftClick(clickX, clickY);
+                    if (!Win32Api.LeftClick(clickX, clickY))
+                    {
+                        return (false, $"点击失败: 无法移动鼠标到 ({clickX}, {clickY})", matchResult);
+                    }
                     await Task.Delay(50, cancellationToken); // 短暂延迟确保点击生效
                     return (true, $"点击位置: ({clickX}, {clickY})", matchResult);
 
                 case "rightclick":
-                    Win32Api.RightClick(clickX, clickY);
+                    if (!Win32Api.RightClick(clickX, clickY))
+                    {
+                        return (false, $"右键点击失败: 无法移动鼠标到 ({clickX}, {clickY})", matchResult);
+                    }
                     await Task.Delay(50, cancellationToken);
                     return (true, $"右键点击位置: ({clickX}, {clickY})", matchResult);
 
@@ -482,12 +506,26 @@ namespace Ming_AutoClicker.Services
 
         public void Dispose()
         {
-            if (!_disposed)
+            if (_disposed)
+                return;
+
+            lock (_lockObject)
             {
-                Stop();
-                _cancellationTokenSource?.Dispose();
+                if (_disposed)
+                    return;
+
                 _disposed = true;
             }
+
+            Stop();
+
+            // 清理事件订阅
+            ActionExecuted = null;
+            ExecutionCompleted = null;
+            StateChanged = null;
+
+            _cancellationTokenSource?.Dispose();
+            _cancellationTokenSource = null;
         }
     }
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Linq;
 using System.Windows;
 using System.Windows.Input;
@@ -23,6 +24,17 @@ namespace Ming_AutoClicker.ViewModels
         private MacroAction? _selectedAction;
         private int _selectedActionIndex = -1;
         private string _statusMessage = "就绪";
+        private NotifyCollectionChangedEventHandler? _collectionChangedHandler;
+
+        /// <summary>
+        /// 保存完成事件
+        /// </summary>
+        public event EventHandler? SaveCompleted;
+
+        /// <summary>
+        /// 取消完成事件
+        /// </summary>
+        public event EventHandler? CancelCompleted;
 
         #region 属性
 
@@ -64,6 +76,14 @@ namespace Ming_AutoClicker.ViewModels
                     OnPropertyChanged(nameof(CanMoveUp));
                     OnPropertyChanged(nameof(CanMoveDown));
                     OnPropertyChanged(nameof(CanDeleteAction));
+                    // 通知属性面板刷新所有动作相关属性
+                    OnPropertyChanged(nameof(ImagePath));
+                    OnPropertyChanged(nameof(MatchThreshold));
+                    OnPropertyChanged(nameof(WaitUntilFound));
+                    OnPropertyChanged(nameof(Operation));
+                    OnPropertyChanged(nameof(OffsetX));
+                    OnPropertyChanged(nameof(OffsetY));
+                    OnPropertyChanged(nameof(WaitSeconds));
                     UpdateActionCommands();
                 }
             }
@@ -91,7 +111,7 @@ namespace Ming_AutoClicker.ViewModels
                 {
                     _macro.Name = value;
                     _macro.UpdatedAt = DateTime.Now;
-                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(MacroName));
                 }
             }
         }
@@ -155,6 +175,11 @@ namespace Ming_AutoClicker.ViewModels
             get => _statusMessage;
             set => SetProperty(ref _statusMessage, value);
         }
+
+        /// <summary>
+        /// 是否有动作
+        /// </summary>
+        public bool HasActions => Actions.Count > 0;
 
         /// <summary>
         /// 是否可以保存
@@ -339,9 +364,9 @@ namespace Ming_AutoClicker.ViewModels
             ClearImageCommand = new RelayCommand(_ => ClearImage(), _ => IsActionSelected);
 
             // 订阅动作集合变更事件
-            Actions.CollectionChanged += (s, e) =>
+            _collectionChangedHandler = (s, e) =>
             {
-                if (e.NewItems.Count > 0)
+                if (e.NewItems != null && e.NewItems.Count > 0)
                 {
                     // 新增动作，设置 Order
                     foreach (MacroAction action in e.NewItems)
@@ -349,7 +374,9 @@ namespace Ming_AutoClicker.ViewModels
                         action.Order = Actions.Count - 1;
                     }
                 }
+                OnPropertyChanged(nameof(HasActions));
             };
+            Actions.CollectionChanged += _collectionChangedHandler;
         }
 
         #region 命令实现
@@ -366,6 +393,7 @@ namespace Ming_AutoClicker.ViewModels
 
                 _storageService.SaveMacros(new[] { _macro });
                 StatusMessage = "保存成功";
+                SaveCompleted?.Invoke(this, EventArgs.Empty);
             }
             catch (Exception ex)
             {
@@ -379,15 +407,24 @@ namespace Ming_AutoClicker.ViewModels
             var original = _storageService.LoadMacros().FirstOrDefault(m => m.Id == _macro.Id);
             if (original != null)
             {
-                _macro.Name = original.Name;
+                // 使用属性 setter 以触发 UI 通知
+                MacroName = original.Name;
+                LoopEnabled = original.LoopEnabled;
+                LoopCount = original.LoopCount;
+                LoopIntervalMs = original.LoopIntervalMs;
+
                 _macro.Actions.Clear();
                 foreach (var action in original.Actions)
                 {
                     _macro.Actions.Add(action);
                 }
                 _macro.UpdatedAt = original.UpdatedAt;
+
+                // 重置选中动作
+                SelectedAction = null;
             }
             StatusMessage = "已取消更改";
+            CancelCompleted?.Invoke(this, EventArgs.Empty);
         }
 
         private void AddFindImageAction()
@@ -539,6 +576,20 @@ namespace Ming_AutoClicker.ViewModels
         private void UpdateActionCommands()
         {
             CommandManager.InvalidateRequerySuggested();
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                // 取消事件订阅
+                if (_collectionChangedHandler != null)
+                {
+                    Actions.CollectionChanged -= _collectionChangedHandler;
+                    _collectionChangedHandler = null;
+                }
+            }
+            base.Dispose(disposing);
         }
 
         #endregion

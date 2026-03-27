@@ -1,7 +1,6 @@
 <UserControl x:Class="Ming_AutoClicker.Views.MacroEditorView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             >
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -19,6 +18,7 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
                 <TextBlock Grid.Column="0" Text="宏名称:" VerticalAlignment="Center" Margin="0,0,6,0" FontSize="13"/>
@@ -32,7 +32,7 @@
                          FontSize="12" VerticalContentAlignment="Center" Padding="4,0" Margin="4,0,4,0"
                          IsEnabled="{Binding LoopEnabled}"/>
                 <TextBlock Grid.Column="5" Text="间隔(ms):" VerticalAlignment="Center" FontSize="12" Margin="0,0,4,0"/>
-                <TextBox Text="{Binding LoopIntervalMs}" Width="60" Height="28"
+                <TextBox Grid.Column="6" Text="{Binding LoopIntervalMs}" Width="60" Height="28"
                          FontSize="12" VerticalContentAlignment="Center" Padding="4,0"
                          IsEnabled="{Binding LoopEnabled}"/>
             </Grid>
@@ -67,30 +67,30 @@
                     </ListBox.ItemTemplate>
                 </ListBox>
 
-                <!-- 排序/删除按钮 -->
-                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,6,0,0" HorizontalAlignment="Center">
-                    <Button Content="▲" Width="36" Height="26" FontSize="11"
-                            Command="{Binding MoveUpCommand}"/>
-                    <Button Content="▼" Width="36" Height="26" FontSize="11" Margin="4,0,0,0"
-                            Command="{Binding MoveDownCommand}"/>
-                    <Button Content="✕" Width="36" Height="26" FontSize="11" Margin="4,0,0,0"
-                            Command="{Binding RemoveActionCommand}"/>
+                <!-- 添加动作按钮 -->
+                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,8,0,4">
+                    <Button Content="+ 找图" Width="70" Height="26" FontSize="12" Margin="0,0,4,0"
+                            Command="{Binding AddFindImageActionCommand}"/>
+                    <Button Content="+ 等待" Width="70" Height="26" FontSize="12"
+                            Command="{Binding AddWaitActionCommand}"/>
                 </StackPanel>
 
-                <!-- 添加动作按钮 -->
-                <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,6,0,0">
-                    <Button Content="+ 找图" Width="100" Height="30" FontSize="12"
-                            Command="{Binding AddFindImageActionCommand}"/>
-                    <Button Content="+ 等待" Width="100" Height="30" FontSize="12" Margin="6,0,0,0"
-                            Command="{Binding AddWaitActionCommand}"/>
+                <!-- 动作操作按钮 -->
+                <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,4,0,0">
+                    <Button Content="↑" Width="32" Height="26" FontSize="12" Margin="0,0,4,0"
+                            Command="{Binding MoveUpCommand}" ToolTip="上移"/>
+                    <Button Content="↓" Width="32" Height="26" FontSize="12" Margin="0,0,4,0"
+                            Command="{Binding MoveDownCommand}" ToolTip="下移"/>
+                    <Button Content="×" Width="32" Height="26" FontSize="12" Foreground="Red"
+                            Command="{Binding RemoveActionCommand}" ToolTip="删除"/>
                 </StackPanel>
             </Grid>
 
-            <!-- 右侧: 动作属性面板 -->
-            <Border Grid.Column="2" BorderThickness="1" BorderBrush="#D0D0D0" Background="#FAFAFA" Padding="8">
+            <!-- 右侧: 属性面板 -->
+            <Border Grid.Column="2" BorderThickness="1" BorderBrush="#D0D0D0" Padding="8">
                 <Grid>
-                    <!-- 无选中时的提示 -->
-                    <TextBlock Text="选择一个动作以编辑属性" FontSize="12" Foreground="#999"
+                    <!-- 未选中动作时的提示 -->
+                    <TextBlock Text="选择一个动作以编辑其属性" FontSize="12" Foreground="#999"
                                HorizontalAlignment="Center" VerticalAlignment="Center">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
@@ -169,21 +169,21 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0" Margin="0,0,8,0">
-                                <TextBlock Text="X 偏移:" FontSize="12" Foreground="#666" Margin="0,0,0,2"/>
+                            <StackPanel Grid.Column="0" Margin="0,0,4,0">
+                                <TextBlock Text="X 偏移" FontSize="12" Foreground="#666" Margin="0,0,0,2"/>
                                 <TextBox Text="{Binding OffsetX}" Height="26" FontSize="12"
-                                         Padding="4,0"/>
+                                         VerticalContentAlignment="Center" Padding="4,0"/>
                             </StackPanel>
-                            <StackPanel Grid.Column="1">
-                                <TextBlock Text="Y 偏移:" FontSize="12" Foreground="#666" Margin="0,0,0,2"/>
+                            <StackPanel Grid.Column="1" Margin="4,0,0,0">
+                                <TextBlock Text="Y 偏移" FontSize="12" Foreground="#666" Margin="0,0,0,2"/>
                                 <TextBox Text="{Binding OffsetY}" Height="26" FontSize="12"
-                                         Padding="4,0"/>
+                                         VerticalContentAlignment="Center" Padding="4,0"/>
                             </StackPanel>
                         </Grid>
 
                         <!-- 等待直到找到 -->
-                        <CheckBox Content="循环等待直到找到" IsChecked="{Binding WaitUntilFound}"
-                                  FontSize="12" Margin="0,4,0,0"/>
+                        <CheckBox Content="等待直到找到" IsChecked="{Binding WaitUntilFound}"
+                                  FontSize="12" VerticalAlignment="Center"/>
                     </StackPanel>
 
                     <!-- 等待动作属性 -->
@@ -201,7 +201,7 @@
 
                         <TextBlock Text="等待设置" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,8"/>
 
-                        <TextBlock Text="等待时间 (秒):" FontSize="12" Foreground="#666" Margin="0,0,0,2"/>
+                        <TextBlock Text="等待时间(秒):" FontSize="12" Foreground="#666" Margin="0,0,0,2"/>
                         <TextBox Text="{Binding WaitSeconds}" Height="28" FontSize="13"
                                  Padding="4,0" Margin="0,0,0,4"/>
                         <TextBlock Text="支持小数，如 0.5 表示半秒" FontSize="11" Foreground="#999"/>

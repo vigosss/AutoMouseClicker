@@ -1,5 +1,5 @@
 using System;
-using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Text.Json.Serialization;
 
 namespace Ming_AutoClicker.Models
@@ -32,7 +32,7 @@ namespace Ming_AutoClicker.Models
         /// <summary>
         /// 动作列表
         /// </summary>
-        public List<MacroAction> Actions { get; set; } = new();
+        public ObservableCollection<MacroAction> Actions { get; set; } = new();
 
         /// <summary>
         /// 是否启用循环执行
@@ -48,5 +48,37 @@ namespace Ming_AutoClicker.Models
         /// 循环间隔（毫秒）
         /// </summary>
         public int LoopIntervalMs { get; set; } = 1000;
+
+        /// <summary>
+        /// 深拷贝宏配置（包括所有动作）
+        /// </summary>
+        public MacroProfile DeepClone()
+        {
+            var clone = new MacroProfile
+            {
+                Id = Id,
+                Name = Name,
+                CreatedAt = CreatedAt,
+                UpdatedAt = UpdatedAt,
+                LoopEnabled = LoopEnabled,
+                LoopCount = LoopCount,
+                LoopIntervalMs = LoopIntervalMs
+            };
+
+            foreach (var action in Actions)
+            {
+                switch (action)
+                {
+                    case FindImageAction findImageAction:
+                        clone.Actions.Add(findImageAction.Clone());
+                        break;
+                    case WaitAction waitAction:
+                        clone.Actions.Add(waitAction.Clone());
+                        break;
+                }
+            }
+
+            return clone;
+        }
     }
 }

@@ -11,6 +11,9 @@ namespace Ming_AutoClicker
         public static ScreenCaptureService? ScreenCaptureService { get; private set; }
         public static ImageMatchService? ImageMatchService { get; private set; }
 
+        private HotkeyService? _hotkeyService;
+        private MacroExecutor? _macroExecutor;
+
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
@@ -19,20 +22,32 @@ namespace Ming_AutoClicker
             StorageService = new MacroStorageService();
             ScreenCaptureService = new ScreenCaptureService();
             ImageMatchService = new ImageMatchService(ScreenCaptureService);
-            var macroExecutor = new MacroExecutor(ImageMatchService, ScreenCaptureService);
-            var hotkeyService = new HotkeyService();
+            _macroExecutor = new MacroExecutor(ImageMatchService, ScreenCaptureService);
+            _hotkeyService = new HotkeyService();
 
             // 创建主 ViewModel
             MainViewModel = new MainViewModel(
                 StorageService,
                 ScreenCaptureService,
                 ImageMatchService,
-                macroExecutor,
-                hotkeyService);
+                _macroExecutor,
+                _hotkeyService);
 
             // 设置主窗口 DataContext
             var mainWindow = (MainWindow)Current.MainWindow;
             mainWindow.DataContext = MainViewModel;
+        }
+
+        protected override void OnExit(ExitEventArgs e)
+        {
+            // 按依赖逆序释放服务
+            MainViewModel?.Dispose();
+            _hotkeyService?.Dispose();
+            _macroExecutor?.Dispose();
+            ImageMatchService?.Dispose();
+            ScreenCaptureService?.Dispose();
+
+            base.OnExit(e);
         }
     }
 }

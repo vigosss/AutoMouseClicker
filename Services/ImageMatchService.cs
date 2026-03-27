@@ -170,27 +170,39 @@ namespace Ming_AutoClicker.Services
         }
 
         /// <summary>
-        /// 等待图像出现
+        /// 等待图像出现（异步）
         /// </summary>
         /// <param name="templatePath">模板图像路径</param>
         /// <param name="threshold">匹配阈值</param>
         /// <param name="timeoutMs">超时时间（毫秒）</param>
         /// <param name="intervalMs">检查间隔（毫秒）</param>
+        /// <param name="cancellationToken">取消令牌</param>
         /// <returns>匹配结果</returns>
-        public MatchResult WaitForImage(string templatePath, double threshold = DefaultThreshold, int timeoutMs = 30000, int intervalMs = 500)
+        public async System.Threading.Tasks.Task<MatchResult> WaitForImageAsync(string templatePath, double threshold = DefaultThreshold, int timeoutMs = 30000, int intervalMs = 500, System.Threading.CancellationToken cancellationToken = default)
         {
-            var startTime = Environment.TickCount;
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
-            while (Environment.TickCount - startTime < timeoutMs)
+            while (stopwatch.ElapsedMilliseconds < timeoutMs)
             {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return MatchResult.NotFound;
+                }
+
                 var result = FindImage(templatePath, threshold);
                 if (result.Found)
                 {
                     return result;
                 }
 
-                // 等待间隔
-                System.Threading.Thread.Sleep(intervalMs);
+                try
+                {
+                    await System.Threading.Tasks.Task.Delay(intervalMs, cancellationToken);
+                }
+                catch (System.Threading.OperationCanceledException)
+                {
+                    return MatchResult.NotFound;
+                }
             }
 
             return MatchResult.NotFound;
@@ -220,16 +232,16 @@ namespace Ming_AutoClicker.Services
                 using var result = new Mat();
                 CvInvoke.MatchTemplate(screenImage, template, result, TemplateMatchingType.CcoeffNormed);
 
-                // 获取结果数据
-                var resultData = new float[result.Rows * result.Cols];
-                result.CopyTo(resultData);
+                // 获取结果数据（使用 ToImage 转换，避免 CopyTo 类型不匹配）
+                using var resultImage = result.ToImage<Gray, float>();
+                var resultData = resultImage.Data;
 
                 // 查找所有超过阈值的位置
                 for (int y = 0; y < result.Rows; y++)
                 {
                     for (int x = 0; x < result.Cols; x++)
                     {
-                        var value = resultData[y * result.Cols + x];
+                        var value = resultData[y, x, 0];
                         if (value >= threshold)
                         {
                             results.Add(new MatchResult
@@ -243,7 +255,7 @@ namespace Ming_AutoClicker.Services
                             });
 
                             // 跳过重叠区域，避免重复检测
-                            x += template.Width / 2;
+                            x += template.Width - 1;
                         }
                     }
                 }

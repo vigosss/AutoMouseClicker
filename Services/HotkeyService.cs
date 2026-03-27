@@ -13,11 +13,8 @@ namespace Ming_AutoClicker.Services
         private IntPtr _windowHandle;
         private bool _isRegistered;
         private bool _disposed;
-
-        /// <summary>
-        /// 默认热键 ID
-        /// </summary>
-        private const int DefaultHotkeyId = 9000;
+        private static int _nextHotkeyId = 9000;
+        private static readonly object _idLock = new object();
 
         /// <summary>
         /// 热键触发事件
@@ -27,7 +24,7 @@ namespace Ming_AutoClicker.Services
         /// <summary>
         /// 当前注册的热键 ID
         /// </summary>
-        public int CurrentHotkeyId { get; private set; } = DefaultHotkeyId;
+        public int CurrentHotkeyId { get; private set; }
 
         /// <summary>
         /// 当前注册的修饰键
@@ -60,14 +57,25 @@ namespace Ming_AutoClicker.Services
         /// <param name="windowHandle">窗口句柄</param>
         /// <param name="modifiers">修饰键</param>
         /// <param name="key">虚拟键码</param>
-        /// <param name="hotkeyId">热键 ID（可选）</param>
+        /// <param name="hotkeyId">热键 ID（可选，0 表示自动分配）</param>
         /// <returns>是否注册成功</returns>
-        public bool Register(IntPtr windowHandle, Win32Api.HotkeyModifiers modifiers, Win32Api.VirtualKeyCodes key, int hotkeyId = DefaultHotkeyId)
+        public bool Register(IntPtr windowHandle, Win32Api.HotkeyModifiers modifiers, Win32Api.VirtualKeyCodes key, int hotkeyId = 0)
         {
             if (_isRegistered)
             {
                 // 先注销现有热键
                 Unregister();
+            }
+
+            // 自动分配 ID
+            if (hotkeyId == 0)
+            {
+                lock (_idLock)
+                {
+                    hotkeyId = _nextHotkeyId++;
+                    if (_nextHotkeyId > 0xBFFF) // Win32 热键 ID 上限
+                        _nextHotkeyId = 9000;
+                }
             }
 
             _windowHandle = windowHandle;
@@ -79,12 +87,7 @@ namespace Ming_AutoClicker.Services
             {
                 _isRegistered = Win32Api.RegisterHotKey(windowHandle, hotkeyId, (uint)modifiers, (uint)key);
 
-                if (_isRegistered)
-                {
-                    var errorCode = Marshal.GetLastWin32Error();
-                    System.Diagnostics.Debug.WriteLine($"热键注册成功: {GetHotkeyDescription(modifiers, key)}, ID: {hotkeyId}");
-                }
-                else
+                if (!_isRegistered)
                 {
                     var errorCode = Marshal.GetLastWin32Error();
                     System.Diagnostics.Debug.WriteLine($"热键注册失败，错误码: {errorCode}");

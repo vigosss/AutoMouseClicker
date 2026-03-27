@@ -53,17 +53,26 @@ namespace Ming_AutoClicker.Services
         /// <returns>截图的 Emgu.CV Image 对象</returns>
         public Image<Bgr, byte> CaptureRegion(int x, int y, int width, int height)
         {
-            // 创建 Bitmap
-            using var bitmap = new Bitmap(width, height, PixelFormat.Format24bppRgb);
-            
-            // 使用 Graphics 复制屏幕内容
-            using (var graphics = Graphics.FromImage(bitmap))
-            {
-                graphics.CopyFromScreen(x, y, 0, 0, new System.Drawing.Size(width, height));
-            }
+            // 创建 Bitmap（不使用 using，因为需要在转换后保留）
+            var bitmap = new Bitmap(width, height, PixelFormat.Format24bppRgb);
 
-            // 转换为 Emgu.CV Image
-            return bitmap.ToImage<Bgr, byte>();
+            try
+            {
+                // 使用 Graphics 复制屏幕内容
+                using (var graphics = Graphics.FromImage(bitmap))
+                {
+                    graphics.CopyFromScreen(x, y, 0, 0, new System.Drawing.Size(width, height));
+                }
+
+                // 转换为 Emgu.CV Image（会复制数据）
+                var image = bitmap.ToImage<Bgr, byte>();
+                return image;
+            }
+            finally
+            {
+                // 转换完成后释放 Bitmap
+                bitmap.Dispose();
+            }
         }
 
         /// <summary>
@@ -106,7 +115,7 @@ namespace Ming_AutoClicker.Services
             // 生成文件名
             if (string.IsNullOrEmpty(fileName))
             {
-                fileName = $"screenshot_{DateTime.Now:yyyyMMdd_HHmmss}.png";
+                fileName = $"screenshot_{DateTime.Now:yyyyMMdd_HHmmss_fff}.png";
             }
             else if (!fileName.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
             {
@@ -114,11 +123,20 @@ namespace Ming_AutoClicker.Services
             }
 
             var filePath = Path.Combine(_screenshotDirectory, fileName);
-            
-            // 保存为 PNG 格式
-            image.Save(filePath);
 
-            return filePath;
+            // 验证路径安全性
+            var fullPath = Path.GetFullPath(filePath);
+            var baseDir = Path.GetFullPath(_screenshotDirectory);
+
+            if (!fullPath.StartsWith(baseDir, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new UnauthorizedAccessException($"不允许保存到截图目录外: {fileName}");
+            }
+
+            // 保存为 PNG 格式
+            image.Save(fullPath);
+
+            return fullPath;
         }
 
         /// <summary>
@@ -134,10 +152,19 @@ namespace Ming_AutoClicker.Services
                 filePath = Path.Combine(_screenshotDirectory, filePath);
             }
 
-            if (!File.Exists(filePath))
-                throw new FileNotFoundException($"图像文件不存在: {filePath}");
+            // 验证路径安全性
+            var fullPath = Path.GetFullPath(filePath);
+            var baseDir = Path.GetFullPath(_screenshotDirectory);
 
-            return new Image<Bgr, byte>(filePath);
+            if (!fullPath.StartsWith(baseDir, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new UnauthorizedAccessException($"不允许访问截图目录外的文件: {filePath}");
+            }
+
+            if (!File.Exists(fullPath))
+                throw new FileNotFoundException($"图像文件不存在: {fullPath}");
+
+            return new Image<Bgr, byte>(fullPath);
         }
 
         /// <summary>
@@ -174,13 +201,22 @@ namespace Ming_AutoClicker.Services
         /// <returns>是否删除成功</returns>
         public bool DeleteScreenshot(string fileName)
         {
-            var filePath = Path.IsPathRooted(fileName) 
-                ? fileName 
+            var filePath = Path.IsPathRooted(fileName)
+                ? fileName
                 : Path.Combine(_screenshotDirectory, fileName);
 
-            if (File.Exists(filePath))
+            // 验证路径安全性
+            var fullPath = Path.GetFullPath(filePath);
+            var baseDir = Path.GetFullPath(_screenshotDirectory);
+
+            if (!fullPath.StartsWith(baseDir, StringComparison.OrdinalIgnoreCase))
             {
-                File.Delete(filePath);
+                throw new UnauthorizedAccessException($"不允许删除截图目录外的文件: {fileName}");
+            }
+
+            if (File.Exists(fullPath))
+            {
+                File.Delete(fullPath);
                 return true;
             }
 

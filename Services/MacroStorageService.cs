@@ -97,9 +97,9 @@ namespace Ming_AutoClicker.Services
                     if (profile.Id == id)
                         return profile;
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // 忽略解析错误的文件
+                    System.Diagnostics.Debug.WriteLine($"加载宏文件失败，已跳过: {file}, 错误: {ex.Message}");
                 }
             }
 
@@ -126,9 +126,9 @@ namespace Ming_AutoClicker.Services
                     var profile = Load(file);
                     profiles.Add(profile);
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // 忽略解析错误的文件
+                    System.Diagnostics.Debug.WriteLine($"加载宏文件失败，已跳过: {file}, 错误: {ex.Message}");
                 }
             }
 
@@ -158,13 +158,37 @@ namespace Ming_AutoClicker.Services
                         return true;
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // 忽略解析错误的文件
+                    System.Diagnostics.Debug.WriteLine($"删除宏文件失败，已跳过: {file}, 错误: {ex.Message}");
                 }
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// 批量保存宏配置（每个宏单独保存为一个文件）
+        /// </summary>
+        /// <param name="profiles">宏配置列表</param>
+        public void SaveMacros(IEnumerable<MacroProfile> profiles)
+        {
+            if (profiles == null)
+                throw new ArgumentNullException(nameof(profiles));
+
+            foreach (var profile in profiles)
+            {
+                Save(profile);
+            }
+        }
+
+        /// <summary>
+        /// 加载所有宏配置（LoadAll 的别名，语义更清晰）
+        /// </summary>
+        /// <returns>宏配置列表</returns>
+        public List<MacroProfile> LoadMacros()
+        {
+            return LoadAll();
         }
 
         /// <summary>
@@ -212,13 +236,13 @@ namespace Ming_AutoClicker.Services
 
             var typeString = typeProp.GetString();
             
-            // 根据类型反序列化
-            return typeString switch
-            {
-                "FindImage" => JsonSerializer.Deserialize<FindImageAction>(root.GetRawText(), options)!,
-                "Wait" => JsonSerializer.Deserialize<WaitAction>(root.GetRawText(), options)!,
-                _ => throw new JsonException($"未知的动作类型: {typeString}")
-            };
+            // 根据类型反序列化（忽略大小写，提高容错性）
+            if (string.Equals(typeString, "FindImage", StringComparison.OrdinalIgnoreCase))
+                return JsonSerializer.Deserialize<FindImageAction>(root.GetRawText(), options)!;
+            if (string.Equals(typeString, "Wait", StringComparison.OrdinalIgnoreCase))
+                return JsonSerializer.Deserialize<WaitAction>(root.GetRawText(), options)!;
+
+            throw new JsonException($"未知的动作类型: {typeString}");
         }
 
         public override void Write(Utf8JsonWriter writer, MacroAction value, JsonSerializerOptions options)

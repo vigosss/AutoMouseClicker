@@ -7,6 +7,8 @@ namespace Ming_AutoClicker.Models
     /// </summary>
     public class FindImageAction : MacroAction
     {
+        private double _matchThreshold = 0.8;
+
         /// <summary>
         /// 动作类型为找图
         /// </summary>
@@ -20,7 +22,15 @@ namespace Ming_AutoClicker.Models
         /// <summary>
         /// 匹配度阈值 (0.0 - 1.0)
         /// </summary>
-        public double MatchThreshold { get; set; } = 0.8;
+        public double MatchThreshold
+        {
+            get => _matchThreshold;
+            set
+            {
+                // 钳位到合法范围，避免反序列化时抛异常
+                _matchThreshold = Math.Max(0.0, Math.Min(1.0, value));
+            }
+        }
 
         /// <summary>
         /// 是否循环等待直到找到
@@ -53,5 +63,22 @@ namespace Ming_AutoClicker.Models
         }
 
         public override string ToString() => GetDescription();
+
+        /// <summary>
+        /// 深拷贝
+        /// </summary>
+        public FindImageAction Clone()
+        {
+            return new FindImageAction
+            {
+                Order = Order,
+                ImagePath = ImagePath,
+                MatchThreshold = MatchThreshold,
+                WaitUntilFound = WaitUntilFound,
+                Operation = Operation,
+                OffsetX = OffsetX,
+                OffsetY = OffsetY
+            };
+        }
     }
 }

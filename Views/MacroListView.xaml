@@ -33,19 +33,19 @@
                                        TextTrimming="CharacterEllipsis"/>
                             <TextBlock FontSize="11" Foreground="#888" Margin="0,2,0,0">
                                 <Run Text="{Binding Actions.Count, StringFormat='{}{0} 个动作'}"/>
-                                <Run Text=" | 循环: "/>
-                                <Run Text="{Binding LoopEnabled, StringFormat='{}{0}'}"/>
+                                <Run Text=" | "/>
+                                <Run Text="{Binding UpdatedAt, StringFormat='{}{0:MM-dd HH:mm}'}"/>
                             </TextBlock>
                         </StackPanel>
 
                         <!-- 操作按钮 -->
                         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,0,0">
                             <Button Content="编辑" Width="48" Height="28" FontSize="12" Margin="0,0,4,0"
-                                    Click="OnEditClick"/>
+                                    Click="OnEditClick" Tag="{Binding}"/>
                             <Button Content="复制" Width="48" Height="28" FontSize="12" Margin="0,0,4,0"
-                                    Command="{Binding DataContext.DuplicateMacroCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"/>
+                                    Command="{Binding DataContext.DuplicateMacroCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
                             <Button Content="删除" Width="48" Height="28" FontSize="12"
-                                    Command="{Binding DataContext.DeleteMacroCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"/>
+                                    Command="{Binding DataContext.DeleteMacroCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
                         </StackPanel>
                     </Grid>
                 </DataTemplate>

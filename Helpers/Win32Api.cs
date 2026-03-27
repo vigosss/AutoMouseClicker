@@ -113,21 +113,31 @@ namespace Ming_AutoClicker.Helpers
         /// <summary>
         /// 执行鼠标左键点击
         /// </summary>
-        public static void LeftClick(int x, int y)
+        public static bool LeftClick(int x, int y)
         {
-            SetCursorPos(x, y);
+            if (!SetCursorPos(x, y))
+            {
+                return false;
+            }
+
             mouse_event((uint)MouseEventFlags.LeftDown, 0, 0, 0, 0);
             mouse_event((uint)MouseEventFlags.LeftUp, 0, 0, 0, 0);
+            return true;
         }
 
         /// <summary>
         /// 执行鼠标右键点击
         /// </summary>
-        public static void RightClick(int x, int y)
+        public static bool RightClick(int x, int y)
         {
-            SetCursorPos(x, y);
+            if (!SetCursorPos(x, y))
+            {
+                return false;
+            }
+
             mouse_event((uint)MouseEventFlags.RightDown, 0, 0, 0, 0);
             mouse_event((uint)MouseEventFlags.RightUp, 0, 0, 0, 0);
+            return true;
         }
 
         #endregion
