@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -68,7 +69,7 @@ namespace Ming_AutoClicker.Views
             }
 
             // 捕获当前屏幕
-            _screenBitmap = new System.Drawing.Bitmap(_screenWidth, _screenHeight, PixelFormat.Format24bppRgb);
+            _screenBitmap = new System.Drawing.Bitmap(_screenWidth, _screenHeight, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
             using (var g = Graphics.FromImage(_screenBitmap))
             {
                 g.CopyFromScreen(virtualX, virtualY, 0, 0,
