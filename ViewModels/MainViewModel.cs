@@ -188,16 +188,7 @@ namespace Ming_AutoClicker.ViewModels
 
             if (ShowConfirm($"确定要删除宏 \"{name}\" 吗？", "确认删除"))
             {
-                // 先删除关联的截图文件
-                foreach (var action in macroToDelete.Actions.OfType<FindImageAction>())
-                {
-                    if (!string.IsNullOrEmpty(action.ImagePath))
-                    {
-                        try { _screenCaptureService.DeleteScreenshot(action.ImagePath); }
-                        catch { /* 截图删除失败不影响主流程 */ }
-                    }
-                }
-
+                // 注意：不删除关联的截图文件，因为复制的宏可能共享同一图片路径
                 Macros.Remove(macroToDelete);
                 _storageService.Delete(macroToDelete.Id);
                 StatusMessage = $"已删除: {name}";
