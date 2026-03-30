@@ -1,4 +1,7 @@
+using System;
+using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Threading;
 using Ming_AutoClicker.Services;
 using Ming_AutoClicker.ViewModels;
 
@@ -18,27 +21,44 @@ namespace Ming_AutoClicker
         {
             base.OnStartup(e);
 
-            // 按依赖顺序初始化服务
-            StorageService = new MacroStorageService();
-            ScreenCaptureService = new ScreenCaptureService();
-            ImageMatchService = new ImageMatchService(ScreenCaptureService);
-            _macroExecutor = new MacroExecutor(ImageMatchService, ScreenCaptureService);
-            _hotkeyService = new HotkeyService();
+            // 注册全局异常处理，防止应用静默崩溃
+            DispatcherUnhandledException += OnDispatcherUnhandledException;
+            AppDomain.CurrentDomain.UnhandledException += OnDomainUnhandledException;
+            TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
 
-            // 创建主 ViewModel
-            MainViewModel = new MainViewModel(
-                StorageService,
-                ScreenCaptureService,
-                ImageMatchService,
-                _macroExecutor,
-                _hotkeyService);
-
-            // 创建并显示主窗口
-            var mainWindow = new MainWindow
+            try
             {
-                DataContext = MainViewModel
-            };
-            mainWindow.Show();
+                // 按依赖顺序初始化服务
+                StorageService = new MacroStorageService();
+                ScreenCaptureService = new ScreenCaptureService();
+                ImageMatchService = new ImageMatchService(ScreenCaptureService);
+                _macroExecutor = new MacroExecutor(ImageMatchService, ScreenCaptureService);
+                _hotkeyService = new HotkeyService();
+
+                // 创建主 ViewModel
+                MainViewModel = new MainViewModel(
+                    StorageService,
+                    ScreenCaptureService,
+                    ImageMatchService,
+                    _macroExecutor,
+                    _hotkeyService);
+
+                // 创建并显示主窗口
+                var mainWindow = new MainWindow
+                {
+                    DataContext = MainViewModel
+                };
+                mainWindow.Show();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"应用启动失败:\n\n{ex.Message}\n\n{ex.StackTrace}",
+                    "启动错误",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                Shutdown(1);
+            }
         }
 
         protected override void OnExit(ExitEventArgs e)
@@ -52,5 +72,71 @@ namespace Ming_AutoClicker
 
             base.OnExit(e);
         }
+
+        #region 全局异常处理
+
+        /// <summary>
+        /// 处理 UI 线程未捕获的异常
+        /// </summary>
+        private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
+        {
+            e.Handled = true;
+
+            var message = e.Exception?.Message ?? "未知错误";
+            var detail = e.Exception?.ToString() ?? "";
+
+            System.Diagnostics.Debug.WriteLine($"[UI线程异常] {detail}");
+
+            MessageBox.Show(
+                $"发生了一个未预期的错误:\n\n{message}\n\n应用将继续运行，但可能出现异常行为。",
+                "错误",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+
+        /// <summary>
+        /// 处理非 UI 线程未捕获的异常
+        /// </summary>
+        private void OnDomainUnhandledException(object sender, UnhandledExceptionEventArgs e)
+        {
+            var ex = e.ExceptionObject as Exception;
+            var message = ex?.Message ?? "未知错误";
+            var detail = ex?.ToString() ?? "";
+
+            System.Diagnostics.Debug.WriteLine($"[非UI线程异常] IsTerminating={e.IsTerminating}\n{detail}");
+
+            if (!e.IsTerminating)
+            {
+                MessageBox.Show(
+                    $"发生了一个严重的错误:\n\n{message}",
+                    "严重错误",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// 处理 Task 中未观察到的异常
+        /// </summary>
+        private void OnUnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
+        {
+            e.SetObserved();
+
+            var message = e.Exception?.InnerException?.Message ?? e.Exception?.Message ?? "未知错误";
+            var detail = e.Exception?.ToString() ?? "";
+
+            System.Diagnostics.Debug.WriteLine($"[Task未观察异常] {detail}");
+
+            Dispatcher.BeginInvoke(() =>
+            {
+                MessageBox.Show(
+                    $"后台任务发生错误:\n\n{message}",
+                    "任务错误",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            });
+        }
+
+        #endregion
     }
 }

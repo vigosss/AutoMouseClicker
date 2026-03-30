@@ -4,6 +4,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
+using Ming_AutoClicker.Helpers;
 using Ming_AutoClicker.Models;
 using Ming_AutoClicker.ViewModels;
 using Ming_AutoClicker.Views;
@@ -15,6 +16,7 @@ namespace Ming_AutoClicker
         private MainViewModel? _viewModel;
         private MacroEditorView? _editorView;
         private PropertyChangedEventHandler? _propertyChangedHandler;
+        private HwndSource? _hwndSource;
 
         public MainWindow()
         {
@@ -58,11 +60,41 @@ namespace Ming_AutoClicker
 
         private void OnSourceInitialized(object? sender, EventArgs e)
         {
-            // 窗口句柄在此事件已可用，但 ViewModel 尚未赋值，热键注册延迟到 OnLoaded
+            // 挂钩 WndProc 以处理全局热键消息
+            _hwndSource = PresentationSource.FromVisual(this) as HwndSource;
+            _hwndSource?.AddHook(WndProc);
+        }
+
+        /// <summary>
+        /// 窗口消息处理 - 转发热键消息给 HotkeyService
+        /// </summary>
+        private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+        {
+            if (msg == Win32Api.WM_HOTKEY)
+            {
+                // 直接调用 HotkeyService 的消息处理（如果已注册）
+                // 通过 ViewModel 间接访问 HotkeyService
+                if (_viewModel != null)
+                {
+                    // HotkeyService.HandleMessage 在 HotkeyService 内部会触发热键事件
+                    // 但 MainWindow 没有直接持有 HotkeyService 引用
+                    // 所以我们直接触发 ViewModel 的 ToggleExecution
+                    _viewModel.ToggleExecution();
+                    handled = true;
+                }
+            }
+            return IntPtr.Zero;
         }
 
         private void OnClosed(object? sender, EventArgs e)
         {
+            // 移除 WndProc 钩子
+            if (_hwndSource != null)
+            {
+                _hwndSource.RemoveHook(WndProc);
+                _hwndSource = null;
+            }
+
             // 取消事件订阅
             if (_viewModel != null && _propertyChangedHandler != null)
             {

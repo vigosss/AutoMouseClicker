@@ -38,7 +38,7 @@ namespace Ming_AutoClicker.Services
         }
 
         /// <summary>
-        /// 保存宏配置到文件
+        /// 保存宏配置到文件（原子写入，防止崩溃导致数据损坏）
         /// </summary>
         /// <param name="profile">宏配置</param>
         /// <returns>保存的文件路径</returns>
@@ -54,11 +54,52 @@ namespace Ming_AutoClicker.Services
             var fileName = GetSafeFileName(profile.Name, profile.Id);
             var filePath = Path.Combine(_dataDirectory, fileName);
 
-            // 序列化并保存
+            // 清理该 ID 的旧文件（处理重命名场景：名称变了，旧文件名不同）
+            CleanupOldFiles(profile.Id, fileName);
+
+            // 序列化
             var json = JsonSerializer.Serialize(profile, _jsonOptions);
-            File.WriteAllText(filePath, json);
+
+            // 原子写入：先写入临时文件，再替换目标文件
+            var tempFile = filePath + ".tmp";
+            File.WriteAllText(tempFile, json);
+
+            try
+            {
+                File.Move(tempFile, filePath, overwrite: true);
+            }
+            catch
+            {
+                // 如果 Move 失败（例如跨分区），回退到直接写入
+                try { File.Delete(tempFile); } catch { /* 忽略清理失败 */ }
+                File.WriteAllText(filePath, json);
+            }
 
             return filePath;
+        }
+
+        /// <summary>
+        /// 清理该宏 ID 的旧文件（文件名不匹配当前名称的）
+        /// </summary>
+        private void CleanupOldFiles(string profileId, string currentFileName)
+        {
+            try
+            {
+                var files = Directory.GetFiles(_dataDirectory, $"*{profileId}.json");
+                foreach (var file in files)
+                {
+                    var name = Path.GetFileName(file);
+                    if (name != currentFileName)
+                    {
+                        // 文件名不一致，说明宏被重命名了，删除旧文件
+                        File.Delete(file);
+                    }
+                }
+            }
+            catch
+            {
+                // 清理失败不影响保存流程
+            }
         }
 
         /// <summary>
