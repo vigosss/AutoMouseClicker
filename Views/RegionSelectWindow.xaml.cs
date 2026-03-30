@@ -31,7 +31,7 @@ namespace Ming_AutoClicker.Views
 
         #endregion
 
-        private Point _startPoint;
+        private System.Windows.Point _startPoint;
         private bool _isSelecting;
         private readonly int _screenWidth;
         private readonly int _screenHeight;
@@ -154,7 +154,7 @@ namespace Ming_AutoClicker.Views
         /// <summary>
         /// 更新选区显示
         /// </summary>
-        private void UpdateSelection(Point start, Point end)
+        private void UpdateSelection(System.Windows.Point start, System.Windows.Point end)
         {
             var rect = GetNormalizedRect(start, end);
 
@@ -203,7 +203,7 @@ namespace Ming_AutoClicker.Views
         /// <summary>
         /// 获取标准化的矩形（确保 Width/Height 为正值）
         /// </summary>
-        private static Rect GetNormalizedRect(Point start, Point end)
+        private static Rect GetNormalizedRect(System.Windows.Point start, System.Windows.Point end)
         {
             var x = Math.Min(start.X, end.X);
             var y = Math.Min(start.Y, end.Y);
