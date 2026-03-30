@@ -51,7 +51,8 @@
                                 </Style>
                             </StackPanel.Style>
                             <Button Content="编辑" Width="48" Height="28" FontSize="12" Margin="0,0,4,0"
-                                    Click="OnEditClick" Tag="{Binding}"/>
+                                    Click="OnEditClick" Tag="{Binding}"
+                                    IsEnabled="{Binding DataContext.IsNotExecuting, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
                             <Button Content="复制" Width="48" Height="28" FontSize="12" Margin="0,0,4,0"
                                     Command="{Binding DataContext.DuplicateMacroCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
                             <Button Content="删除" Width="48" Height="28" FontSize="12"

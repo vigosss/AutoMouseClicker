@@ -128,7 +128,7 @@ namespace Ming_AutoClicker.ViewModels
             Macros = new ObservableCollection<MacroProfile>();
 
             // 初始化命令
-            CreateMacroCommand = new RelayCommand(_ => CreateMacro());
+            CreateMacroCommand = new RelayCommand(_ => CreateMacro(), _ => !IsExecuting);
             EditMacroCommand = new RelayCommand(_ => EditMacro(), _ => CanEditMacro());
             DeleteMacroCommand = new RelayCommand(_ => DeleteMacro(), _ => CanDeleteMacro());
             DuplicateMacroCommand = new RelayCommand(_ => DuplicateMacro(), _ => CanDuplicateMacro());
