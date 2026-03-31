@@ -24,6 +24,16 @@
                    StrokeThickness="2"
                    Visibility="Collapsed"/>
 
+        <!-- 8 个调整手柄 -->
+        <Ellipse x:Name="HandleTL" Width="10" Height="10" Fill="White" Stroke="#FF409CFF" StrokeThickness="1.5" Visibility="Collapsed"/>
+        <Ellipse x:Name="HandleT"  Width="10" Height="10" Fill="White" Stroke="#FF409CFF" StrokeThickness="1.5" Visibility="Collapsed"/>
+        <Ellipse x:Name="HandleTR" Width="10" Height="10" Fill="White" Stroke="#FF409CFF" StrokeThickness="1.5" Visibility="Collapsed"/>
+        <Ellipse x:Name="HandleL"  Width="10" Height="10" Fill="White" Stroke="#FF409CFF" StrokeThickness="1.5" Visibility="Collapsed"/>
+        <Ellipse x:Name="HandleR"  Width="10" Height="10" Fill="White" Stroke="#FF409CFF" StrokeThickness="1.5" Visibility="Collapsed"/>
+        <Ellipse x:Name="HandleBL" Width="10" Height="10" Fill="White" Stroke="#FF409CFF" StrokeThickness="1.5" Visibility="Collapsed"/>
+        <Ellipse x:Name="HandleB"  Width="10" Height="10" Fill="White" Stroke="#FF409CFF" StrokeThickness="1.5" Visibility="Collapsed"/>
+        <Ellipse x:Name="HandleBR" Width="10" Height="10" Fill="White" Stroke="#FF409CFF" StrokeThickness="1.5" Visibility="Collapsed"/>
+
         <!-- 尺寸信息 -->
         <Border x:Name="InfoPanel"
                 Background="#CC000000"
@@ -39,5 +49,85 @@
                    Foreground="White"
                    FontSize="16"
                    Opacity="0.8"/>
+
+        <!-- 底部工具栏（调整模式下显示） -->
+        <Border x:Name="Toolbar"
+                Background="#E0000000"
+                CornerRadius="8"
+                Padding="16,10"
+                Visibility="Collapsed">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                <Button x:Name="BtnRedo" Content="🔄 重新选择" 
+                        Background="Transparent" Foreground="White" 
+                        BorderThickness="1" BorderBrush="#55FFFFFF"
+                        Padding="14,6" FontSize="13" Cursor="Hand"
+                        Margin="0,0,10,0"
+                        Click="BtnRedo_Click">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Bd" Background="{TemplateBinding Background}" 
+                                    BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="6" Padding="{TemplateBinding Padding}">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="#30FFFFFF"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="#50FFFFFF"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+                <Button x:Name="BtnCancel" Content="✕ 取消" 
+                        Background="Transparent" Foreground="#FF6B6B" 
+                        BorderThickness="1" BorderBrush="#55FF6B6B"
+                        Padding="14,6" FontSize="13" Cursor="Hand"
+                        Margin="0,0,10,0"
+                        Click="BtnCancel_Click">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Bd" Background="{TemplateBinding Background}" 
+                                    BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="6" Padding="{TemplateBinding Padding}">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="#20FF6B6B"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="#40FF6B6B"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+                <Button x:Name="BtnConfirm" Content="✓ 确认选区" 
+                        Background="#FF409CFF" Foreground="White" 
+                        BorderThickness="0"
+                        Padding="14,6" FontSize="13" Cursor="Hand" FontWeight="Medium"
+                        Click="BtnConfirm_Click">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Bd" Background="{TemplateBinding Background}" 
+                                    BorderThickness="0" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="#6BA5E7"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="#3A7BC8"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+            </StackPanel>
+        </Border>
     </Canvas>
 </Window>

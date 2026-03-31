@@ -198,7 +198,6 @@
                                         </Image>
                                         <!-- 无截图时显示占位文字 -->
                                         <TextBlock Text="点击上方「截图」按钮捕获图像"
-                                                   Style="{StaticResource CaptionText}"
                                                    HorizontalAlignment="Center"
                                                    VerticalAlignment="Center"
                                                    Margin="16,12">
