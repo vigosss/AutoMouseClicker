@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Windows.Input;
 using Ming_AutoClicker.Helpers;
 using Ming_AutoClicker.Services;
@@ -17,6 +18,9 @@ namespace Ming_AutoClicker.ViewModels
         private bool _isRunning;
         private string _statusText = "就绪";
         private int _clickCount;
+        private int _pendingClickCount;
+        private readonly Stopwatch _clickCountStopwatch = new Stopwatch();
+        private const int ClickCountUpdateIntervalMs = 100;
 
         #region 属性
 
@@ -192,12 +196,33 @@ namespace Ming_AutoClicker.ViewModels
 
         private void OnRunningStateChanged(object? sender, bool isRunning)
         {
-            OnUIThread(() => IsRunning = isRunning);
+            OnUIThread(() =>
+            {
+                IsRunning = isRunning;
+                if (isRunning)
+                {
+                    _clickCountStopwatch.Restart();
+                }
+                else
+                {
+                    // 停止时立即刷新最终点击次数
+                    ClickCount = _autoClickService.ClickCount;
+                    _clickCountStopwatch.Reset();
+                }
+            });
         }
 
         private void OnClickCountChanged(object? sender, int count)
         {
-            OnUIThread(() => ClickCount = count);
+            _pendingClickCount = count;
+
+            // 节流：每隔 ClickCountUpdateIntervalMs 毫秒更新一次 UI
+            if (!_clickCountStopwatch.IsRunning || _clickCountStopwatch.ElapsedMilliseconds >= ClickCountUpdateIntervalMs)
+            {
+                _clickCountStopwatch.Restart();
+                var snapshot = _pendingClickCount;
+                BeginOnUIThread(() => ClickCount = snapshot);
+            }
         }
 
         #endregion

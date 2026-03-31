@@ -417,10 +417,9 @@ namespace Ming_AutoClicker.ViewModels
             }
             else if (e.PropertyName == nameof(AutoClickViewModel.ClickCount))
             {
-                OnUIThread(() =>
-                {
-                    AutoClickCount = AutoClickViewModel.ClickCount;
-                });
+                // 使用异步派发，避免高频点击时阻塞 UI 线程
+                var snapshot = AutoClickViewModel.ClickCount;
+                BeginOnUIThread(() => AutoClickCount = snapshot);
             }
         }
 

@@ -47,7 +47,7 @@ namespace Ming_AutoClicker.ViewModels
         }
 
         /// <summary>
-        /// 在 UI 线程执行操作
+        /// 在 UI 线程执行操作（同步阻塞）
         /// </summary>
         protected void OnUIThread(Action action)
         {
@@ -62,6 +62,25 @@ namespace Ming_AutoClicker.ViewModels
             else
             {
                 Application.Current.Dispatcher.Invoke(action);
+            }
+        }
+
+        /// <summary>
+        /// 在 UI 线程异步执行操作（非阻塞，适合高频更新场景）
+        /// </summary>
+        protected void BeginOnUIThread(Action action)
+        {
+            if (Application.Current == null)
+            {
+                action();
+            }
+            else if (Application.Current.Dispatcher.CheckAccess())
+            {
+                action();
+            }
+            else
+            {
+                Application.Current.Dispatcher.BeginInvoke(action);
             }
         }
 
