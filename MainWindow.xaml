@@ -3,12 +3,13 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:views="clr-namespace:Ming_AutoClicker.Views"
         Title="鼠标宏"
-        Width="680"
-        Height="520"
-        MinWidth="580"
-        MinHeight="420"
+        Width="700"
+        Height="560"
+        MinWidth="600"
+        MinHeight="460"
         WindowStartupLocation="CenterScreen"
-        ResizeMode="CanResize">
+        ResizeMode="CanResize"
+        Background="{StaticResource BackgroundBrush}">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
@@ -16,14 +17,19 @@
         </Grid.RowDefinitions>
 
         <!-- 内容区域 -->
-        <ContentControl x:Name="ContentArea" Grid.Row="0" Margin="8">
+        <ContentControl x:Name="ContentArea" Grid.Row="0" Margin="16,12,16,8">
             <ContentControl.Content>
                 <views:MacroListView x:Name="MacroListView"/>
             </ContentControl.Content>
         </ContentControl>
 
         <!-- 底部状态栏 -->
-        <Border Grid.Row="1" BorderThickness="0,1,0,0" BorderBrush="#E0E0E0" Background="#F5F5F5" Padding="8,4">
+        <Border Grid.Row="1"
+                Background="{StaticResource StatusBarBrush}"
+                BorderThickness="0,1,0,0"
+                BorderBrush="{StaticResource BorderBrush}"
+                Padding="16,8"
+                CornerRadius="0">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -33,21 +39,35 @@
                 </Grid.ColumnDefinitions>
 
                 <!-- 执行状态指示 -->
-                <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="0,0,16,0">
-                    <Ellipse x:Name="StatusIndicator" Width="8" Height="8" Fill="Gray" Margin="0,0,6,0"/>
-                    <TextBlock Text="{Binding ExecutionStatus}" FontSize="12" Foreground="#666"/>
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="0,0,16,0" VerticalAlignment="Center">
+                    <Ellipse x:Name="StatusIndicator"
+                             Width="8" Height="8"
+                             Fill="{StaticResource TextDisabledBrush}"
+                             Margin="0,0,8,0"
+                             VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding ExecutionStatus}" Style="{StaticResource StatusText}"/>
                 </StackPanel>
 
                 <!-- 分隔线 -->
-                <Border Grid.Column="1" Width="1" Background="#D0D0D0" Margin="0,2,16,2"/>
+                <Border Grid.Column="1" Width="1" Background="{StaticResource BorderBrush}" Margin="0,2,16,2"/>
 
                 <!-- 状态消息 -->
-                <TextBlock Grid.Column="2" Text="{Binding StatusMessage}" FontSize="12" Foreground="#666"
-                           TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="2"
+                           Text="{Binding StatusMessage}"
+                           Style="{StaticResource StatusText}"
+                           TextTrimming="CharacterEllipsis"
+                           VerticalAlignment="Center"/>
 
                 <!-- F8 提示 -->
-                <TextBlock Grid.Column="3" Text="F8 开始/停止" FontSize="11" Foreground="#999"
-                           VerticalAlignment="Center" Margin="8,0,0,0"/>
+                <Border Grid.Column="3"
+                        Background="{StaticResource BorderLightBrush}"
+                        CornerRadius="4"
+                        Padding="8,3">
+                    <TextBlock Text="F8 开始/停止"
+                               FontSize="11"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               VerticalAlignment="Center"/>
+                </Border>
             </Grid>
         </Border>
     </Grid>

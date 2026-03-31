@@ -11,17 +11,20 @@
         </Grid.RowDefinitions>
 
         <!-- 标题 -->
-        <TextBlock Grid.Row="0" Text="宏列表" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"/>
+        <TextBlock Grid.Row="0" Text="📋 宏列表" Style="{StaticResource PageTitleText}" Margin="0,0,0,16"/>
 
         <!-- 宏列表 -->
-        <ListBox Grid.Row="1" x:Name="MacroListBox"
+        <ListBox Grid.Row="1"
+                 x:Name="MacroListBox"
                  ItemsSource="{Binding Macros}"
                  SelectedItem="{Binding SelectedMacro}"
-                 BorderThickness="1" BorderBrush="#D0D0D0"
-                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                 Style="{StaticResource ModernListBox}">
+            <ListBox.ItemContainerStyle>
+                <Style TargetType="ListBoxItem" BasedOn="{StaticResource CardListBoxItem}"/>
+            </ListBox.ItemContainerStyle>
             <ListBox.ItemTemplate>
                 <DataTemplate DataType="{x:Type models:MacroProfile}">
-                    <Grid Margin="0,2" Height="48">
+                    <Grid Height="52">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
@@ -29,11 +32,12 @@
 
                         <!-- 宏信息 -->
                         <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                            <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="Medium"
+                            <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="Medium"
+                                       Foreground="{StaticResource TextPrimaryBrush}"
                                        TextTrimming="CharacterEllipsis"/>
-                            <TextBlock FontSize="11" Foreground="#888" Margin="0,2,0,0">
+                            <TextBlock Style="{StaticResource CaptionText}" Margin="0,4,0,0">
                                 <Run Text="{Binding Actions.Count, Mode=OneWay, StringFormat='{}{0} 个动作'}"/>
-                                <Run Text=" | "/>
+                                <Run Text=" · "/>
                                 <Run Text="{Binding UpdatedAt, StringFormat='{}{0:MM-dd HH:mm}'}"/>
                             </TextBlock>
                         </StackPanel>
@@ -50,12 +54,12 @@
                                     </Style.Triggers>
                                 </Style>
                             </StackPanel.Style>
-                            <Button Content="编辑" Width="48" Height="28" FontSize="12" Margin="0,0,4,0"
+                            <Button Content="✏️ 编辑" Style="{StaticResource GhostButton}" Margin="0,0,4,0"
                                     Click="OnEditClick" Tag="{Binding}"
                                     IsEnabled="{Binding DataContext.IsNotExecuting, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
-                            <Button Content="复制" Width="48" Height="28" FontSize="12" Margin="0,0,4,0"
+                            <Button Content="📋 复制" Style="{StaticResource GhostButton}" Margin="0,0,4,0"
                                     Command="{Binding DataContext.DuplicateMacroCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
-                            <Button Content="删除" Width="48" Height="28" FontSize="12"
+                            <Button Content="🗑 删除" Style="{StaticResource DangerButton}"
                                     Command="{Binding DataContext.DeleteMacroCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
                         </StackPanel>
                     </Grid>
@@ -64,23 +68,36 @@
         </ListBox>
 
         <!-- 创建新宏按钮 -->
-        <Button Grid.Row="2" Content="+ 创建新宏" Height="34" Margin="0,8,0,0" FontSize="13"
+        <Button Grid.Row="2"
+                Content="＋ 创建新宏"
+                Style="{StaticResource PrimaryButton}"
+                Height="38"
+                Margin="0,12,0,0"
                 Command="{Binding CreateMacroCommand}"/>
 
         <!-- 执行控制 -->
-        <Grid Grid.Row="3" Margin="0,12,0,0">
+        <Grid Grid.Row="3" Margin="0,16,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
-            <TextBlock Grid.Column="0" Text="选中宏后点击开始或按 F8 运行"
-                       FontSize="11" Foreground="#999" VerticalAlignment="Center"/>
+            <TextBlock Grid.Column="0"
+                       Text="选中宏后点击开始或按 F8 运行"
+                       Style="{StaticResource CaptionText}"
+                       VerticalAlignment="Center"/>
 
-            <Button Grid.Column="1" Content="▶ 开始" Width="72" Height="32" FontSize="13" Margin="8,0,4,0"
+            <Button Grid.Column="1"
+                    Content="▶ 开始"
+                    Style="{StaticResource SuccessButton}"
+                    Width="80" Height="36" FontSize="13"
+                    Margin="0,0,8,0"
                     Command="{Binding StartMacroCommand}"/>
-            <Button Grid.Column="2" Content="■ 停止" Width="72" Height="32" FontSize="13"
+            <Button Grid.Column="2"
+                    Content="■ 停止"
+                    Style="{StaticResource DangerButton}"
+                    Width="80" Height="36" FontSize="13"
                     Command="{Binding StopMacroCommand}"/>
         </Grid>
     </Grid>

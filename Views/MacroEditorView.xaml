@@ -9,7 +9,14 @@
         </Grid.RowDefinitions>
 
         <!-- 顶部: 宏名称 + 循环设置 -->
-        <Border Grid.Row="0" BorderThickness="0,0,0,1" BorderBrush="#E0E0E0" Padding="0,0,0,8" Margin="0,0,0,8">
+        <Border Grid.Row="0"
+                Background="{StaticResource SurfaceBrush}"
+                CornerRadius="8"
+                Padding="16"
+                Margin="0,0,0,12">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="6" ShadowDepth="1" Opacity="0.06" Color="#000000"/>
+            </Border.Effect>
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -21,22 +28,30 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <TextBlock Grid.Column="0" Text="宏名称:" VerticalAlignment="Center" Margin="0,0,6,0" FontSize="13"/>
-                <TextBox Grid.Column="1" Text="{Binding MacroName, UpdateSourceTrigger=PropertyChanged}"
-                         Height="28" FontSize="13" VerticalContentAlignment="Center" Padding="4,0"/>
+                <TextBlock Grid.Column="0" Text="宏名称" Style="{StaticResource LabelText}"
+                           VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <TextBox Grid.Column="1"
+                         Text="{Binding MacroName, UpdateSourceTrigger=PropertyChanged}"
+                         Style="{StaticResource ModernTextBox}"
+                         Height="32"/>
 
-                <CheckBox Grid.Column="2" Content="循环" IsChecked="{Binding LoopEnabled}"
-                          VerticalAlignment="Center" Margin="12,0,8,0" FontSize="12"/>
-                <TextBlock Grid.Column="3" Text="次数:" VerticalAlignment="Center" FontSize="12"/>
+                <CheckBox Grid.Column="2" Content="循环"
+                          Style="{StaticResource ModernCheckBox}"
+                          IsChecked="{Binding LoopEnabled}"
+                          VerticalAlignment="Center" Margin="16,0,12,0"/>
+                <TextBlock Grid.Column="3" Text="次数" Style="{StaticResource LabelText}"
+                           VerticalAlignment="Center" Margin="0,0,6,0"/>
                 <StackPanel Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBox Text="{Binding LoopCount}" Width="50" Height="28"
-                             FontSize="12" VerticalContentAlignment="Center" Padding="4,0"
+                    <TextBox Text="{Binding LoopCount}" Width="52" Height="32"
+                             Style="{StaticResource ModernTextBox}"
                              IsEnabled="{Binding LoopEnabled}" ToolTip="0 = 无限循环"/>
-                    <TextBlock Text="(0=无限)" VerticalAlignment="Center" FontSize="10" Foreground="#999" Margin="4,0,0,0"/>
+                    <TextBlock Text="(0=无限)" Style="{StaticResource CaptionText}"
+                               VerticalAlignment="Center" Margin="6,0,0,0"/>
                 </StackPanel>
-                <TextBlock Grid.Column="5" Text="间隔(ms):" VerticalAlignment="Center" FontSize="12" Margin="0,0,4,0"/>
-                <TextBox Grid.Column="6" Text="{Binding LoopIntervalMs}" Width="60" Height="28"
-                         FontSize="12" VerticalContentAlignment="Center" Padding="4,0"
+                <TextBlock Grid.Column="5" Text="间隔(ms)" Style="{StaticResource LabelText}"
+                           VerticalAlignment="Center" Margin="12,0,6,0"/>
+                <TextBox Grid.Column="6" Text="{Binding LoopIntervalMs}" Width="60" Height="32"
+                         Style="{StaticResource ModernTextBox}"
                          IsEnabled="{Binding LoopEnabled}"/>
             </Grid>
         </Border>
@@ -44,56 +59,75 @@
         <!-- 中间: 动作列表 + 属性面板 -->
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="220"/>
-                <ColumnDefinition Width="8"/>
+                <ColumnDefinition Width="230"/>
+                <ColumnDefinition Width="12"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
             <!-- 左侧: 动作列表 -->
-            <Grid Grid.Column="0">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
+            <Border Grid.Column="0"
+                    Background="{StaticResource SurfaceBrush}"
+                    CornerRadius="8"
+                    Padding="8">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="6" ShadowDepth="1" Opacity="0.06" Color="#000000"/>
+                </Border.Effect>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
 
-                <!-- 动作 ListBox -->
-                <ListBox Grid.Row="0" x:Name="ActionListBox"
-                         ItemsSource="{Binding Actions}"
-                         SelectedItem="{Binding SelectedAction}"
-                         BorderThickness="1" BorderBrush="#D0D0D0"
-                         FontSize="12">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding}" TextTrimming="CharacterEllipsis"/>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
+                    <!-- 动作 ListBox -->
+                    <ListBox Grid.Row="0"
+                             x:Name="ActionListBox"
+                             ItemsSource="{Binding Actions}"
+                             SelectedItem="{Binding SelectedAction}"
+                             Style="{StaticResource ModernListBox}">
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem" BasedOn="{StaticResource CompactListBoxItem}"/>
+                        </ListBox.ItemContainerStyle>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}" TextTrimming="CharacterEllipsis"
+                                           Style="{StaticResource BodyText}"/>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
 
-                <!-- 添加动作按钮 -->
-                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,8,0,4">
-                    <Button Content="+ 找图" Width="70" Height="26" FontSize="12" Margin="0,0,4,0"
-                            Command="{Binding AddFindImageActionCommand}"/>
-                    <Button Content="+ 等待" Width="70" Height="26" FontSize="12"
-                            Command="{Binding AddWaitActionCommand}"/>
-                </StackPanel>
+                    <!-- 添加动作按钮 -->
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,8,0,6">
+                        <Button Content="🔍 找图" Style="{StaticResource SmallButton}" Width="72" Margin="0,0,6,0"
+                                Command="{Binding AddFindImageActionCommand}"/>
+                        <Button Content="⏱ 等待" Style="{StaticResource SmallButton}" Width="72"
+                                Command="{Binding AddWaitActionCommand}"/>
+                    </StackPanel>
 
-                <!-- 动作操作按钮 -->
-                <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,4,0,0">
-                    <Button Content="↑" Width="32" Height="26" FontSize="12" Margin="0,0,4,0"
-                            Command="{Binding MoveUpCommand}" ToolTip="上移"/>
-                    <Button Content="↓" Width="32" Height="26" FontSize="12" Margin="0,0,4,0"
-                            Command="{Binding MoveDownCommand}" ToolTip="下移"/>
-                    <Button Content="×" Width="32" Height="26" FontSize="12" Foreground="Red"
-                            Command="{Binding RemoveActionCommand}" ToolTip="删除"/>
-                </StackPanel>
-            </Grid>
+                    <!-- 动作操作按钮 -->
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,4">
+                        <Button Content="↑" Style="{StaticResource SmallButton}" Width="34" Margin="0,0,4,0"
+                                Command="{Binding MoveUpCommand}" ToolTip="上移"/>
+                        <Button Content="↓" Style="{StaticResource SmallButton}" Width="34" Margin="0,0,4,0"
+                                Command="{Binding MoveDownCommand}" ToolTip="下移"/>
+                        <Button Content="×" Style="{StaticResource DangerButton}" Width="34"
+                                Command="{Binding RemoveActionCommand}" ToolTip="删除"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
 
             <!-- 右侧: 属性面板 -->
-            <Border Grid.Column="2" BorderThickness="1" BorderBrush="#D0D0D0" Padding="8">
+            <Border Grid.Column="2"
+                    Background="{StaticResource SurfaceBrush}"
+                    CornerRadius="8"
+                    Padding="16">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="6" ShadowDepth="1" Opacity="0.06" Color="#000000"/>
+                </Border.Effect>
                 <Grid>
                     <!-- 未选中动作时的提示 -->
-                    <TextBlock Text="选择一个动作以编辑其属性" FontSize="12" Foreground="#999"
+                    <TextBlock Text="← 选择一个动作以编辑其属性"
+                               Style="{StaticResource CaptionText}"
                                HorizontalAlignment="Center" VerticalAlignment="Center">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
@@ -108,125 +142,144 @@
                     </TextBlock>
 
                     <!-- 找图动作属性 -->
-                    <StackPanel>
-                        <StackPanel.Style>
-                            <Style TargetType="StackPanel">
-                                <Setter Property="Visibility" Value="Collapsed"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding SelectedActionType}" Value="FindImage">
-                                        <Setter Property="Visibility" Value="Visible"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </StackPanel.Style>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding SelectedActionType}" Value="FindImage">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
 
-                        <TextBlock Text="找图设置" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                            <TextBlock Text="🔍 找图设置" Style="{StaticResource SectionTitleText}" Margin="0,0,0,12"/>
 
-                        <!-- 截图操作按钮 -->
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                            <Button Content="截图" Width="60" Height="28" FontSize="12"
-                                    Command="{Binding CaptureScreenshotCommand}"/>
-                            <Button Content="清除" Width="60" Height="28" FontSize="12" Margin="4,0,0,0"
-                                    Command="{Binding ClearImageCommand}"/>
-                            <Button Content="测试" Width="60" Height="28" FontSize="12" Margin="4,0,0,0"
-                                    Command="{Binding TestMatchCommand}"/>
+                            <!-- 截图操作按钮 -->
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                <Button Content="📷 截图" Style="{StaticResource PrimaryButton}" Width="68" Height="32"
+                                        Command="{Binding CaptureScreenshotCommand}"/>
+                                <Button Content="清除" Style="{StaticResource BaseButton}" Width="56" Height="32" Margin="6,0,0,0"
+                                        Command="{Binding ClearImageCommand}"/>
+                                <Button Content="测试" Style="{StaticResource GhostButton}" Width="56" Height="32" Margin="6,0,0,0"
+                                        Command="{Binding TestMatchCommand}"/>
+                            </StackPanel>
+
+                            <!-- 图像路径 -->
+                            <TextBlock Text="图像路径" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                            <TextBox Text="{Binding ImagePath}" Height="30"
+                                     Style="{StaticResource ModernTextBox}"
+                                     IsReadOnly="True"
+                                     ToolTip="{Binding ImagePath}" Margin="0,0,0,12"/>
+
+                            <!-- 匹配度 -->
+                            <Grid Margin="0,0,0,12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="匹配度" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                                    <Slider Style="{StaticResource ModernSlider}"
+                                            Minimum="0.1" Maximum="1.0" Value="{Binding MatchThreshold}"
+                                            TickFrequency="0.05" IsSnapToTickEnabled="True"/>
+                                </StackPanel>
+                                <TextBlock Grid.Column="1" VerticalAlignment="Bottom" Margin="12,0,0,6"
+                                           FontSize="13" FontWeight="Medium"
+                                           Foreground="{StaticResource PrimaryBrush}">
+                                    <TextBlock.Text>
+                                        <Binding Path="MatchThreshold" StringFormat="{}{0:P0}"/>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                            </Grid>
+
+                            <!-- 操作类型 -->
+                            <TextBlock Text="操作" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                            <ComboBox SelectedValue="{Binding Operation}" SelectedValuePath="Content"
+                                      Height="32" Style="{StaticResource ModernComboBox}"
+                                      Margin="0,0,0,12">
+                                <ComboBoxItem Content="Click" Style="{StaticResource ModernComboBoxItem}"/>
+                                <ComboBoxItem Content="RightClick" Style="{StaticResource ModernComboBoxItem}"/>
+                            </ComboBox>
+
+                            <!-- 偏移 -->
+                            <Grid Margin="0,0,0,12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                    <TextBlock Text="X 偏移" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                                    <TextBox Text="{Binding OffsetX}" Height="30"
+                                             Style="{StaticResource ModernTextBox}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                                    <TextBlock Text="Y 偏移" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                                    <TextBox Text="{Binding OffsetY}" Height="30"
+                                             Style="{StaticResource ModernTextBox}"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- 等待直到找到 -->
+                            <CheckBox Content="等待直到找到"
+                                      Style="{StaticResource ModernCheckBox}"
+                                      IsChecked="{Binding WaitUntilFound}"/>
                         </StackPanel>
-
-                        <!-- 图像路径 -->
-                        <TextBlock Text="图像路径:" FontSize="12" Foreground="#666" Margin="0,0,0,2"/>
-                        <TextBox Text="{Binding ImagePath}" Height="26" FontSize="11"
-                                 IsReadOnly="True" Padding="4,0" Margin="0,0,0,8"
-                                 ToolTip="{Binding ImagePath}"/>
-
-                        <!-- 匹配度 -->
-                        <Grid Margin="0,0,0,8">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0">
-                                <TextBlock Text="匹配度" FontSize="12" Foreground="#666" Margin="0,0,0,2"/>
-                                <Slider Minimum="0.1" Maximum="1.0" Value="{Binding MatchThreshold}"
-                                        TickFrequency="0.05" IsSnapToTickEnabled="True"
-                                        Height="24"/>
-                            </StackPanel>
-                            <TextBlock Grid.Column="1" VerticalAlignment="Bottom" Margin="8,0,0,2"
-                                       FontSize="12" Foreground="#333">
-                                <TextBlock.Text>
-                                    <Binding Path="MatchThreshold" StringFormat="{}{0:P0}"/>
-                                </TextBlock.Text>
-                            </TextBlock>
-                        </Grid>
-
-                        <!-- 操作类型 -->
-                        <TextBlock Text="操作:" FontSize="12" Foreground="#666" Margin="0,0,0,2"/>
-                        <ComboBox SelectedValue="{Binding Operation}" SelectedValuePath="Content"
-                                  Height="28" FontSize="12" Margin="0,0,0,8">
-                            <ComboBoxItem Content="Click"/>
-                            <ComboBoxItem Content="RightClick"/>
-                        </ComboBox>
-
-                        <!-- 偏移 -->
-                        <Grid Margin="0,0,0,8">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0" Margin="0,0,4,0">
-                                <TextBlock Text="X 偏移" FontSize="12" Foreground="#666" Margin="0,0,0,2"/>
-                                <TextBox Text="{Binding OffsetX}" Height="26" FontSize="12"
-                                         VerticalContentAlignment="Center" Padding="4,0"/>
-                            </StackPanel>
-                            <StackPanel Grid.Column="1" Margin="4,0,0,0">
-                                <TextBlock Text="Y 偏移" FontSize="12" Foreground="#666" Margin="0,0,0,2"/>
-                                <TextBox Text="{Binding OffsetY}" Height="26" FontSize="12"
-                                         VerticalContentAlignment="Center" Padding="4,0"/>
-                            </StackPanel>
-                        </Grid>
-
-                        <!-- 等待直到找到 -->
-                        <CheckBox Content="等待直到找到" IsChecked="{Binding WaitUntilFound}"
-                                  FontSize="12" VerticalAlignment="Center"/>
-                    </StackPanel>
+                    </ScrollViewer>
 
                     <!-- 等待动作属性 -->
-                    <StackPanel>
-                        <StackPanel.Style>
-                            <Style TargetType="StackPanel">
-                                <Setter Property="Visibility" Value="Collapsed"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding SelectedActionType}" Value="Wait">
-                                        <Setter Property="Visibility" Value="Visible"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </StackPanel.Style>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding SelectedActionType}" Value="Wait">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
 
-                        <TextBlock Text="等待设置" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                            <TextBlock Text="⏱ 等待设置" Style="{StaticResource SectionTitleText}" Margin="0,0,0,12"/>
 
-                        <TextBlock Text="等待时间(秒):" FontSize="12" Foreground="#666" Margin="0,0,0,2"/>
-                        <TextBox Text="{Binding WaitSeconds}" Height="28" FontSize="13"
-                                 Padding="4,0" Margin="0,0,0,4"/>
-                        <TextBlock Text="支持小数，如 0.5 表示半秒" FontSize="11" Foreground="#999"/>
-                    </StackPanel>
+                            <TextBlock Text="等待时间(秒)" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                            <TextBox Text="{Binding WaitSeconds}" Height="32"
+                                     Style="{StaticResource ModernTextBox}"
+                                     Margin="0,0,0,8"/>
+                            <TextBlock Text="支持小数，如 0.5 表示半秒" Style="{StaticResource CaptionText}"/>
+                        </StackPanel>
+                    </ScrollViewer>
                 </Grid>
             </Border>
         </Grid>
 
         <!-- 底部: 状态 + 按钮 -->
-        <Grid Grid.Row="2" Margin="0,10,0,0">
+        <Grid Grid.Row="2" Margin="0,12,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
-            <TextBlock Grid.Column="0" Text="{Binding StatusMessage}" FontSize="11" Foreground="#888"
-                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+            <TextBlock Grid.Column="0"
+                       Text="{Binding StatusMessage}"
+                       Style="{StaticResource StatusText}"
+                       VerticalAlignment="Center"
+                       TextTrimming="CharacterEllipsis"/>
 
-            <Button Grid.Column="1" Content="取消" Width="72" Height="32" FontSize="13" Margin="0,0,8,0"
+            <Button Grid.Column="1"
+                    Content="取消"
+                    Style="{StaticResource BaseButton}"
+                    Width="76" Height="36" FontSize="13"
+                    Margin="0,0,8,0"
                     Command="{Binding CancelCommand}"/>
-            <Button Grid.Column="2" Content="保存" Width="72" Height="32" FontSize="13"
+            <Button Grid.Column="2"
+                    Content="💾 保存"
+                    Style="{StaticResource PrimaryButton}"
+                    Width="76" Height="36" FontSize="13"
                     Command="{Binding SaveCommand}"/>
         </Grid>
     </Grid>
