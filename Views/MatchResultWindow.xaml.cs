@@ -1,6 +1,8 @@
 using System;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Ming_AutoClicker.Helpers;
 using Ming_AutoClicker.Services;
@@ -134,7 +136,7 @@ namespace Ming_AutoClicker.Views
             var panelHeight = InfoPanel.DesiredSize.Height;
 
             // 定位到匹配区域左上角附近
-            var panelX = rect.X;
+            double panelX = rect.X;
             var panelY = rect.Y - panelHeight - 8;
 
             // 如果超出屏幕上方，放到匹配区域下方
