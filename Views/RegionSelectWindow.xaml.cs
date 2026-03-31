@@ -564,7 +564,7 @@ namespace Ming_AutoClicker.Views
             Toolbar.Visibility = Visibility.Visible;
 
             // 确保 Toolbar 已测量
-            Toolbar.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            Toolbar.Measure(new System.Windows.Size(double.PositiveInfinity, double.PositiveInfinity));
             var toolbarWidth = Toolbar.DesiredSize.Width;
             var toolbarHeight = Toolbar.DesiredSize.Height;
 
