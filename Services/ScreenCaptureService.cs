@@ -107,6 +107,44 @@ namespace Ming_AutoClicker.Services
         }
 
         /// <summary>
+        /// 保存 Bitmap 到文件（用于保存已裁剪的截图，避免重新截屏）
+        /// </summary>
+        /// <param name="bitmap">System.Drawing.Bitmap 对象（调用方负责释放）</param>
+        /// <param name="fileName">文件名（可选）</param>
+        /// <returns>保存的文件路径</returns>
+        public string SaveBitmap(System.Drawing.Bitmap bitmap, string? fileName = null)
+        {
+            if (bitmap == null)
+                throw new ArgumentNullException(nameof(bitmap));
+
+            // 生成文件名
+            if (string.IsNullOrEmpty(fileName))
+            {
+                fileName = $"screenshot_{DateTime.Now:yyyyMMdd_HHmmss_fff}.png";
+            }
+            else if (!fileName.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
+            {
+                fileName += ".png";
+            }
+
+            var filePath = Path.Combine(_screenshotDirectory, fileName);
+
+            // 验证路径安全性
+            var fullPath = Path.GetFullPath(filePath);
+            var baseDir = Path.GetFullPath(_screenshotDirectory);
+
+            if (!fullPath.StartsWith(baseDir, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new UnauthorizedAccessException($"不允许保存到截图目录外: {fileName}");
+            }
+
+            // 保存为 PNG 格式
+            bitmap.Save(fullPath, ImageFormat.Png);
+
+            return fullPath;
+        }
+
+        /// <summary>
         /// 保存图像到文件
         /// </summary>
         /// <param name="image">图像对象</param>

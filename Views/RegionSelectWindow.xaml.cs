@@ -91,6 +91,12 @@ namespace Ming_AutoClicker.Views
         public System.Drawing.Rectangle? SelectedRegion => _selectedRegion;
 
         /// <summary>
+        /// 裁剪后的截图（从原始屏幕截图中裁剪，不包含选区边框等覆盖层）
+        /// 在 SelectionCompleted 事件中可用，窗口关闭后会被释放
+        /// </summary>
+        public System.Drawing.Bitmap? CroppedScreenshot { get; private set; }
+
+        /// <summary>
         /// 截图完成事件，参数为选中的区域（null 表示取消）
         /// </summary>
         public event Action<System.Drawing.Rectangle?>? SelectionCompleted;
@@ -330,7 +336,7 @@ namespace Ming_AutoClicker.Views
         }
 
         /// <summary>
-        /// 确认当前选区
+        /// 确认当前选区，从原始屏幕截图中裁剪选区图片
         /// </summary>
         private void ConfirmSelection()
         {
@@ -338,8 +344,37 @@ namespace Ming_AutoClicker.Views
             _selectedRegion = new System.Drawing.Rectangle(
                 (int)rect.X, (int)rect.Y, (int)rect.Width, (int)rect.Height);
 
+            // 从原始屏幕截图裁剪选区（确保不包含选区边框、遮罩等覆盖层）
+            CroppedScreenshot = CropBitmap(_screenBitmap, _selectedRegion.Value);
+
             SelectionCompleted?.Invoke(_selectedRegion);
             Close();
+        }
+
+        /// <summary>
+        /// 从源 Bitmap 中裁剪指定区域
+        /// </summary>
+        /// <param name="source">源位图</param>
+        /// <param name="region">裁剪区域</param>
+        /// <returns>裁剪后的新 Bitmap</returns>
+        private static System.Drawing.Bitmap CropBitmap(System.Drawing.Bitmap source, System.Drawing.Rectangle region)
+        {
+            // 确保裁剪区域在源图范围内
+            var clampedRegion = new System.Drawing.Rectangle(
+                Math.Max(0, region.X),
+                Math.Max(0, region.Y),
+                Math.Min(region.Width, source.Width - Math.Max(0, region.X)),
+                Math.Min(region.Height, source.Height - Math.Max(0, region.Y)));
+
+            var cropped = new System.Drawing.Bitmap(clampedRegion.Width, clampedRegion.Height, source.PixelFormat);
+            using (var g = Graphics.FromImage(cropped))
+            {
+                g.DrawImage(source,
+                    new System.Drawing.Rectangle(0, 0, clampedRegion.Width, clampedRegion.Height),
+                    clampedRegion,
+                    GraphicsUnit.Pixel);
+            }
+            return cropped;
         }
 
         /// <summary>
@@ -503,13 +538,23 @@ namespace Ming_AutoClicker.Views
 
             // 更新尺寸信息
             SizeText.Text = $"{(int)rect.Width} × {(int)rect.Height}";
-            Canvas.SetLeft(InfoPanel, rect.X);
-            Canvas.SetTop(InfoPanel, rect.Y + rect.Height + 4);
 
-            // 如果信息面板超出屏幕底部，放到选区上方
-            if (rect.Y + rect.Height + InfoPanel.ActualHeight + 4 > _screenHeight)
+            if (_state == SelectionState.Adjusting)
             {
-                Canvas.SetTop(InfoPanel, rect.Y - InfoPanel.ActualHeight - 4);
+                // 调整模式下固定在屏幕左上角，避免被工具栏遮挡
+                Canvas.SetLeft(InfoPanel, 16);
+                Canvas.SetTop(InfoPanel, 16);
+            }
+            else
+            {
+                Canvas.SetLeft(InfoPanel, rect.X);
+                Canvas.SetTop(InfoPanel, rect.Y + rect.Height + 4);
+
+                // 如果信息面板超出屏幕底部，放到选区上方
+                if (rect.Y + rect.Height + InfoPanel.ActualHeight + 4 > _screenHeight)
+                {
+                    Canvas.SetTop(InfoPanel, rect.Y - InfoPanel.ActualHeight - 4);
+                }
             }
 
             // 更新手柄位置
@@ -692,6 +737,7 @@ namespace Ming_AutoClicker.Views
         protected override void OnClosed(EventArgs e)
         {
             base.OnClosed(e);
+            CroppedScreenshot?.Dispose();
             _screenBitmap?.Dispose();
         }
 

@@ -586,8 +586,19 @@ namespace Ming_AutoClicker.ViewModels
                         try
                         {
                             var r = region.Value;
-                            var filePath = _screenCaptureService.CaptureRegionAndSave(
-                                r.X, r.Y, r.Width, r.Height);
+
+                            // 优先使用窗口已裁剪的截图（从原始屏幕截图裁剪，不含覆盖层）
+                            // 回退到重新截屏（兼容旧调用方式）
+                            string filePath;
+                            if (selectWindow.CroppedScreenshot != null)
+                            {
+                                filePath = _screenCaptureService.SaveBitmap(selectWindow.CroppedScreenshot);
+                            }
+                            else
+                            {
+                                filePath = _screenCaptureService.CaptureRegionAndSave(
+                                    r.X, r.Y, r.Width, r.Height);
+                            }
 
                             if (FindImageAction != null)
                             {
