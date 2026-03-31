@@ -1,8 +1,9 @@
-name: Build Windows EXE
+name: Build and Release
 
 on:
   push:
     branches: [ main ]
+    tags: [ 'v*' ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:  # 允许手动触发
@@ -10,16 +11,16 @@ on:
 jobs:
   build:
     runs-on: windows-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    
+
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '8.0.x'
-    
+
     - name: Restore dependencies
       run: dotnet restore
 
@@ -28,13 +29,46 @@ jobs:
 
     - name: Build
       run: dotnet build -c Release --no-restore
-    
+
     - name: Publish EXE
       run: dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
-    
-    - name: Upload Artifact
+
+    - name: Upload Artifact (for PR testing)
+      if: github.event_name == 'pull_request'
       uses: actions/upload-artifact@v4
       with:
         name: Ming-AutoClicker-Windows
         path: bin/Release/net8.0-windows/win-x64/publish/
         retention-days: 1
+
+    # ========== 以下仅在 tag 推送时执行（发布 Release） ==========
+
+    - name: Extract version from tag
+      if: startsWith(github.ref, 'refs/tags/v')
+      id: version
+      shell: bash
+      run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+    - name: Create release zip
+      if: startsWith(github.ref, 'refs/tags/v')
+      shell: pwsh
+      run: |
+        $publishDir = "bin/Release/net8.0-windows/win-x64/publish"
+        $version = "${{ steps.version.outputs.VERSION }}"
+        $zipName = "Ming-AutoClicker-${version}.zip"
+        Compress-Archive -Path "${publishDir}/*" -DestinationPath $zipName
+        Write-Host "Created: $zipName"
+
+    - name: Create GitHub Release
+      if: startsWith(github.ref, 'refs/tags/v')
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ steps.version.outputs.VERSION }}
+        name: 智点精灵 ${{ steps.version.outputs.VERSION }}
+        draft: false
+        prerelease: false
+        generate_release_notes: true
+        files: |
+          Ming-AutoClicker-${{ steps.version.outputs.VERSION }}.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,9 +1,12 @@
 using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
+using Ming_AutoClicker.Models;
 using Ming_AutoClicker.Services;
 using Ming_AutoClicker.ViewModels;
+using Ming_AutoClicker.Views;
 
 namespace Ming_AutoClicker
 {
@@ -51,6 +54,9 @@ namespace Ming_AutoClicker
                     DataContext = MainViewModel
                 };
                 mainWindow.Show();
+
+                // 异步检查版本更新（不阻塞启动）
+                _ = CheckForUpdatesAsync();
             }
             catch (Exception ex)
             {
@@ -74,6 +80,41 @@ namespace Ming_AutoClicker
 
             base.OnExit(e);
         }
+
+        #region 版本更新
+
+        /// <summary>
+        /// 异步检查版本更新
+        /// 主窗口已显示后执行，不阻塞启动流程
+        /// </summary>
+        private async Task CheckForUpdatesAsync()
+        {
+            try
+            {
+                using var updateService = new UpdateService();
+                var result = await updateService.CheckForUpdateAsync();
+
+                if (result.HasUpdate)
+                {
+                    // 在 UI 线程上显示更新窗口
+                    Dispatcher.Invoke(() =>
+                    {
+                        var updateWindow = new UpdateWindow(result, updateService)
+                        {
+                            Owner = MainWindow
+                        };
+                        updateWindow.ShowDialog();
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                // 更新检查失败不影响正常使用，仅输出调试信息
+                Debug.WriteLine($"[更新检查] 检查更新失败: {ex.Message}");
+            }
+        }
+
+        #endregion
 
         #region 全局异常处理
 

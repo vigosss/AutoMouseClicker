@@ -7,6 +7,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>MingAutoClicker</RootNamespace>
+    <Version>0.1.0</Version>
     <!-- 发布时通过 -r win-x64 指定 RuntimeIdentifier，避免开发时锁定平台 -->
   </PropertyGroup>
 
