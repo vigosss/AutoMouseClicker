@@ -1,6 +1,5 @@
 using System;
 using System.Runtime.InteropServices;
-using System.Windows.Interop;
 using Ming_AutoClicker.Helpers;
 
 namespace Ming_AutoClicker.Services
@@ -176,27 +175,6 @@ namespace Ming_AutoClicker.Services
         }
 
         /// <summary>
-        /// 获取热键描述文本
-        /// </summary>
-        private string GetHotkeyDescription(Win32Api.HotkeyModifiers modifiers, Win32Api.VirtualKeyCodes key)
-        {
-            var desc = string.Empty;
-
-            if (modifiers.HasFlag(Win32Api.HotkeyModifiers.Control))
-                desc += "Ctrl + ";
-            if (modifiers.HasFlag(Win32Api.HotkeyModifiers.Alt))
-                desc += "Alt + ";
-            if (modifiers.HasFlag(Win32Api.HotkeyModifiers.Shift))
-                desc += "Shift + ";
-            if (modifiers.HasFlag(Win32Api.HotkeyModifiers.Win))
-                desc += "Win + ";
-
-            desc += key.ToString();
-
-            return desc;
-        }
-
-        /// <summary>
         /// 获取当前热键的描述文本
         /// </summary>
         public string GetCurrentHotkeyDescription()
@@ -204,7 +182,11 @@ namespace Ming_AutoClicker.Services
             if (!_isRegistered)
                 return "未注册";
 
-            return GetHotkeyDescription(CurrentModifiers, CurrentKey);
+            return new HotkeyEventArgs
+            {
+                Modifiers = CurrentModifiers,
+                Key = CurrentKey
+            }.Description;
         }
 
         public void Dispose()
