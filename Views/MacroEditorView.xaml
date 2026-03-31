@@ -127,10 +127,9 @@
                 <Grid>
                     <!-- 未选中动作时的提示 -->
                     <TextBlock Text="← 选择一个动作以编辑其属性"
-                               Style="{StaticResource CaptionText}"
                                HorizontalAlignment="Center" VerticalAlignment="Center">
                         <TextBlock.Style>
-                            <Style TargetType="TextBlock">
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource CaptionText}">
                                 <Setter Property="Visibility" Value="Visible"/>
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding IsActionSelected}" Value="True">
