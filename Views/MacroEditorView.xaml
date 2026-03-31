@@ -140,116 +140,118 @@
                         </TextBlock.Style>
                     </TextBlock>
 
-                    <!-- 找图动作属性 -->
+                    <!-- 属性面板内容：单个 ScrollViewer，内部用 StackPanel 分别控制可见性 -->
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <StackPanel>
-                            <StackPanel.Style>
-                                <Style TargetType="StackPanel">
-                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding SelectedActionType}" Value="FindImage">
-                                            <Setter Property="Visibility" Value="Visible"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </StackPanel.Style>
+                        <Grid>
+                            <!-- 找图动作属性 -->
+                            <StackPanel>
+                                <StackPanel.Style>
+                                    <Style TargetType="StackPanel">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SelectedActionType}" Value="FindImage">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </StackPanel.Style>
 
-                            <TextBlock Text="🔍 找图设置" Style="{StaticResource SectionTitleText}" Margin="0,0,0,12"/>
+                                <TextBlock Text="🔍 找图设置" Style="{StaticResource SectionTitleText}" Margin="0,0,0,12"/>
 
-                            <!-- 截图操作按钮 -->
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                                <Button Content="📷 截图" Style="{StaticResource PrimaryButton}" Width="68" Height="32"
-                                        Command="{Binding CaptureScreenshotCommand}"/>
-                                <Button Content="清除" Style="{StaticResource BaseButton}" Width="56" Height="32" Margin="6,0,0,0"
-                                        Command="{Binding ClearImageCommand}"/>
-                                <Button Content="测试" Style="{StaticResource GhostButton}" Width="56" Height="32" Margin="6,0,0,0"
-                                        Command="{Binding TestMatchCommand}"/>
+                                <!-- 截图操作按钮 -->
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                    <Button Content="📷 截图" Style="{StaticResource PrimaryButton}" Width="68" Height="32"
+                                            Command="{Binding CaptureScreenshotCommand}"/>
+                                    <Button Content="清除" Style="{StaticResource BaseButton}" Width="56" Height="32" Margin="6,0,0,0"
+                                            Command="{Binding ClearImageCommand}"/>
+                                    <Button Content="测试" Style="{StaticResource GhostButton}" Width="56" Height="32" Margin="6,0,0,0"
+                                            Command="{Binding TestMatchCommand}"/>
+                                </StackPanel>
+
+                                <!-- 图像路径 -->
+                                <TextBlock Text="图像路径" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                                <TextBox Text="{Binding ImagePath}" Height="32"
+                                         Style="{StaticResource ModernTextBox}"
+                                         IsReadOnly="True"
+                                         ToolTip="{Binding ImagePath}" Margin="0,0,0,12"/>
+
+                                <!-- 匹配度 -->
+                                <Grid Margin="0,0,0,12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="匹配度" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                                        <Slider Style="{StaticResource ModernSlider}"
+                                                Minimum="0.1" Maximum="1.0" Value="{Binding MatchThreshold}"
+                                                TickFrequency="0.05" IsSnapToTickEnabled="True"
+                                                IsMoveToPointEnabled="True"/>
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="1" VerticalAlignment="Bottom" Margin="12,0,0,6"
+                                               FontSize="13" FontWeight="Medium"
+                                               Foreground="{StaticResource PrimaryBrush}">
+                                        <TextBlock.Text>
+                                            <Binding Path="MatchThreshold" StringFormat="{}{0:P0}"/>
+                                        </TextBlock.Text>
+                                    </TextBlock>
+                                </Grid>
+
+                                <!-- 操作类型 -->
+                                <TextBlock Text="操作" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                                <ComboBox SelectedValue="{Binding Operation}" SelectedValuePath="Content"
+                                          Height="32" Style="{StaticResource ModernComboBox}"
+                                          Margin="0,0,0,12">
+                                    <ComboBoxItem Content="Click" Style="{StaticResource ModernComboBoxItem}"/>
+                                    <ComboBoxItem Content="RightClick" Style="{StaticResource ModernComboBoxItem}"/>
+                                </ComboBox>
+
+                                <!-- 偏移 -->
+                                <Grid Margin="0,0,0,12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                        <TextBlock Text="X 偏移" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                                        <TextBox Text="{Binding OffsetX}" Height="32"
+                                                 Style="{StaticResource ModernTextBox}"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                                        <TextBlock Text="Y 偏移" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                                        <TextBox Text="{Binding OffsetY}" Height="32"
+                                                 Style="{StaticResource ModernTextBox}"/>
+                                    </StackPanel>
+                                </Grid>
+
+                                <!-- 等待直到找到 -->
+                                <CheckBox Content="等待直到找到"
+                                          Style="{StaticResource ModernCheckBox}"
+                                          IsChecked="{Binding WaitUntilFound}"/>
                             </StackPanel>
 
-                            <!-- 图像路径 -->
-                            <TextBlock Text="图像路径" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
-                            <TextBox Text="{Binding ImagePath}" Height="30"
-                                     Style="{StaticResource ModernTextBox}"
-                                     IsReadOnly="True"
-                                     ToolTip="{Binding ImagePath}" Margin="0,0,0,12"/>
+                            <!-- 等待动作属性 -->
+                            <StackPanel>
+                                <StackPanel.Style>
+                                    <Style TargetType="StackPanel">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SelectedActionType}" Value="Wait">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </StackPanel.Style>
 
-                            <!-- 匹配度 -->
-                            <Grid Margin="0,0,0,12">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                <StackPanel Grid.Column="0">
-                                    <TextBlock Text="匹配度" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
-                                    <Slider Style="{StaticResource ModernSlider}"
-                                            Minimum="0.1" Maximum="1.0" Value="{Binding MatchThreshold}"
-                                            TickFrequency="0.05" IsSnapToTickEnabled="True"/>
-                                </StackPanel>
-                                <TextBlock Grid.Column="1" VerticalAlignment="Bottom" Margin="12,0,0,6"
-                                           FontSize="13" FontWeight="Medium"
-                                           Foreground="{StaticResource PrimaryBrush}">
-                                    <TextBlock.Text>
-                                        <Binding Path="MatchThreshold" StringFormat="{}{0:P0}"/>
-                                    </TextBlock.Text>
-                                </TextBlock>
-                            </Grid>
+                                <TextBlock Text="⏱ 等待设置" Style="{StaticResource SectionTitleText}" Margin="0,0,0,12"/>
 
-                            <!-- 操作类型 -->
-                            <TextBlock Text="操作" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
-                            <ComboBox SelectedValue="{Binding Operation}" SelectedValuePath="Content"
-                                      Height="32" Style="{StaticResource ModernComboBox}"
-                                      Margin="0,0,0,12">
-                                <ComboBoxItem Content="Click" Style="{StaticResource ModernComboBoxItem}"/>
-                                <ComboBoxItem Content="RightClick" Style="{StaticResource ModernComboBoxItem}"/>
-                            </ComboBox>
-
-                            <!-- 偏移 -->
-                            <Grid Margin="0,0,0,12">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <StackPanel Grid.Column="0" Margin="0,0,8,0">
-                                    <TextBlock Text="X 偏移" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
-                                    <TextBox Text="{Binding OffsetX}" Height="30"
-                                             Style="{StaticResource ModernTextBox}"/>
-                                </StackPanel>
-                                <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                                    <TextBlock Text="Y 偏移" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
-                                    <TextBox Text="{Binding OffsetY}" Height="30"
-                                             Style="{StaticResource ModernTextBox}"/>
-                                </StackPanel>
-                            </Grid>
-
-                            <!-- 等待直到找到 -->
-                            <CheckBox Content="等待直到找到"
-                                      Style="{StaticResource ModernCheckBox}"
-                                      IsChecked="{Binding WaitUntilFound}"/>
-                        </StackPanel>
-                    </ScrollViewer>
-
-                    <!-- 等待动作属性 -->
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <StackPanel>
-                            <StackPanel.Style>
-                                <Style TargetType="StackPanel">
-                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding SelectedActionType}" Value="Wait">
-                                            <Setter Property="Visibility" Value="Visible"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </StackPanel.Style>
-
-                            <TextBlock Text="⏱ 等待设置" Style="{StaticResource SectionTitleText}" Margin="0,0,0,12"/>
-
-                            <TextBlock Text="等待时间(秒)" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
-                            <TextBox Text="{Binding WaitSeconds}" Height="32"
-                                     Style="{StaticResource ModernTextBox}"
-                                     Margin="0,0,0,8"/>
-                            <TextBlock Text="支持小数，如 0.5 表示半秒" Style="{StaticResource CaptionText}"/>
-                        </StackPanel>
+                                <TextBlock Text="等待时间(秒)" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                                <TextBox Text="{Binding WaitSeconds}" Height="32"
+                                         Style="{StaticResource ModernTextBox}"
+                                         Margin="0,0,0,8"/>
+                                <TextBlock Text="支持小数，如 0.5 表示半秒" Style="{StaticResource CaptionText}"/>
+                            </StackPanel>
+                        </Grid>
                     </ScrollViewer>
                 </Grid>
             </Border>
