@@ -79,11 +79,3 @@
         </Grid>
     </Border>
 </Window>
-</write_to_file>
-<task_progress>
-- [x] 创建 Views/DialogWindow.xaml — 通用自定义对话框窗口（匹配项目风格）
-- [ ] 创建 Views/DialogWindow.xaml.cs — 对话框逻辑 + 静态快捷方法
-- [ ] 修改 ViewModelBase.cs — 替换 ShowMessage/ShowConfirm 底层实现
-- [ ] 验证构建通过
-</task_progress>
-</write_to_file>
