@@ -84,9 +84,3 @@ namespace Ming_AutoClicker.Services
         }
     }
 }
-</write_to_file>
-<task_progress>
-- [x] 创建 Services/ShortcutService.cs（快捷方式创建服务）
-- [ ] 修改 App.xaml.cs，在启动时调用快捷方式创建逻辑
-</task_progress>
-</thinking>
