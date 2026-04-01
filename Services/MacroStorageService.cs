@@ -282,6 +282,8 @@ namespace Ming_AutoClicker.Services
                 return JsonSerializer.Deserialize<FindImageAction>(root.GetRawText(), options)!;
             if (string.Equals(typeString, "Wait", StringComparison.OrdinalIgnoreCase))
                 return JsonSerializer.Deserialize<WaitAction>(root.GetRawText(), options)!;
+            if (string.Equals(typeString, "MouseClick", StringComparison.OrdinalIgnoreCase))
+                return JsonSerializer.Deserialize<MouseClickAction>(root.GetRawText(), options)!;
 
             throw new JsonException($"未知的动作类型: {typeString}");
         }

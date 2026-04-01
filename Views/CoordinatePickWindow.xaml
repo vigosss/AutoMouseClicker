@@ -1,0 +1,56 @@
+<Window x:Class="Ming_AutoClicker.Views.CoordinatePickWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="拾取坐标"
+        WindowStyle="None"
+        Topmost="True"
+        ResizeMode="NoResize"
+        WindowState="Maximized"
+        Background="#33000000"
+        ShowInTaskbar="False"
+        Focusable="True"
+        Cursor="Cross">
+
+    <Canvas x:Name="MainCanvas">
+        <!-- 十字准星竖线 -->
+        <Line x:Name="CrossV" Stroke="#FFFF4444" StrokeThickness="1" Opacity="0.8"
+              X1="0" Y1="0" X2="0" Y2="0"/>
+        <!-- 十字准星横线 -->
+        <Line x:Name="CrossH" Stroke="#FFFF4444" StrokeThickness="1" Opacity="0.8"
+              X1="0" Y1="0" X2="0" Y2="0"/>
+
+        <!-- 坐标信息面板 -->
+        <Border x:Name="InfoPanel"
+                Background="#E0000000"
+                CornerRadius="6"
+                Padding="12,6"
+                Visibility="Collapsed">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock x:Name="CoordText" Foreground="White" FontSize="14" FontFamily="Consolas"
+                           VerticalAlignment="Center"/>
+                <TextBlock Text="  松开鼠标确认" Foreground="#AAAAAA" FontSize="12"
+                           VerticalAlignment="Center" Margin="8,0,0,0"/>
+            </StackPanel>
+        </Border>
+
+        <!-- 提示文字 -->
+        <TextBlock x:Name="TipText"
+                   Text="按住鼠标拖动到目标位置，松开鼠标确认坐标，按 ESC 取消"
+                   Foreground="White"
+                   FontSize="16"
+                   Opacity="0.8"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"/>
+    </Canvas>
+</Window>
+</task_progress>
+- [x] 新建 MouseClickAction 模型
+- [x] 更新 ActionType 枚举
+- [x] 更新 MacroEditorViewModel（属性、命令、准星拖拽）
+- [x] 创建 CoordinatePickWindow（准星拖拽窗口）— XAML 完成
+- [ ] 创建 CoordinatePickWindow.xaml.cs（code-behind）
+- [ ] 更新 MacroEditorView.xaml（UniformGrid 按钮布局 + 属性面板）
+- [ ] 更新 MacroExecutor（执行逻辑）
+- [ ] 测试编译通过
+</task_progress>
+</write_to_file>

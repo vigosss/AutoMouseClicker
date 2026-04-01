@@ -381,6 +381,9 @@ namespace Ming_AutoClicker.Services
                     case WaitAction waitAction:
                         return await ExecuteWaitActionAsync(waitAction, cancellationToken);
 
+                    case MouseClickAction mouseClickAction:
+                        return await ExecuteMouseClickActionAsync(mouseClickAction, cancellationToken);
+
                     default:
                         return (false, $"未知的动作类型: {action.Type}", null);
                 }
@@ -473,6 +476,37 @@ namespace Ming_AutoClicker.Services
 
             await Task.Delay((int)(action.WaitSeconds * 1000), cancellationToken);
             return (true, $"等待 {action.WaitSeconds} 秒", null);
+        }
+
+        /// <summary>
+        /// 执行鼠标点击位置动作
+        /// </summary>
+        private async Task<(bool Success, string Message, MatchResult? MatchResult)> ExecuteMouseClickActionAsync(MouseClickAction action, CancellationToken cancellationToken)
+        {
+            int x = action.X;
+            int y = action.Y;
+
+            switch (action.Operation.ToLower())
+            {
+                case "click":
+                    if (!Win32Api.LeftClick(x, y))
+                    {
+                        return (false, $"点击失败: 无法移动鼠标到 ({x}, {y})", null);
+                    }
+                    await Task.Delay(50, cancellationToken);
+                    return (true, $"点击位置: ({x}, {y})", null);
+
+                case "rightclick":
+                    if (!Win32Api.RightClick(x, y))
+                    {
+                        return (false, $"右键点击失败: 无法移动鼠标到 ({x}, {y})", null);
+                    }
+                    await Task.Delay(50, cancellationToken);
+                    return (true, $"右键点击位置: ({x}, {y})", null);
+
+                default:
+                    return (false, $"未知的操作类型: {action.Operation}", null);
+            }
         }
 
         /// <summary>

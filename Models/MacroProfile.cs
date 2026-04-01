@@ -75,6 +75,9 @@ namespace Ming_AutoClicker.Models
                     case WaitAction waitAction:
                         clone.Actions.Add(waitAction.Clone());
                         break;
+                    case MouseClickAction mouseClickAction:
+                        clone.Actions.Add(mouseClickAction.Clone());
+                        break;
                 }
             }
 

@@ -98,12 +98,14 @@
                     </ListBox>
 
                     <!-- 添加动作按钮 -->
-                    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,8,0,6">
-                        <Button Content="🔍 找图" Style="{StaticResource SmallButton}" Width="72" Margin="0,0,6,0"
+                    <UniformGrid Grid.Row="1" Columns="3" Margin="0,8,0,6">
+                        <Button Content="🔍 找图" Style="{StaticResource SmallButton}" Margin="0,0,4,0"
                                 Command="{Binding AddFindImageActionCommand}"/>
-                        <Button Content="⏱ 等待" Style="{StaticResource SmallButton}" Width="72"
+                        <Button Content="⏱ 等待" Style="{StaticResource SmallButton}" Margin="2,0,2,0"
                                 Command="{Binding AddWaitActionCommand}"/>
-                    </StackPanel>
+                        <Button Content="🎯 点击" Style="{StaticResource SmallButton}" Margin="4,0,0,0"
+                                Command="{Binding AddMouseClickActionCommand}"/>
+                    </UniformGrid>
 
                     <!-- 动作操作按钮 -->
                     <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,4">
@@ -291,6 +293,58 @@
                                          Style="{StaticResource ModernTextBox}"
                                          Margin="0,0,0,8"/>
                                 <TextBlock Text="支持小数，如 0.5 表示半秒" Style="{StaticResource CaptionText}"/>
+                            </StackPanel>
+
+                            <!-- 鼠标点击位置动作属性 -->
+                            <StackPanel>
+                                <StackPanel.Style>
+                                    <Style TargetType="StackPanel">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SelectedActionType}" Value="MouseClick">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </StackPanel.Style>
+
+                                <TextBlock Text="🎯 鼠标点击位置" Style="{StaticResource SectionTitleText}" Margin="0,0,0,12"/>
+
+                                <!-- 坐标输入 -->
+                                <Grid Margin="0,0,0,12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                        <TextBlock Text="X 坐标" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                                        <TextBox Text="{Binding ClickX}" Height="32"
+                                                 Style="{StaticResource ModernTextBox}"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                                        <TextBlock Text="Y 坐标" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                                        <TextBox Text="{Binding ClickY}" Height="32"
+                                                 Style="{StaticResource ModernTextBox}"/>
+                                    </StackPanel>
+                                </Grid>
+
+                                <!-- 准星拾取按钮 -->
+                                <TextBlock Text="准星拾取" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                                <Button Content="🎯 按住拖到目标位置获取坐标"
+                                        Style="{StaticResource PrimaryButton}"
+                                        Height="36"
+                                        HorizontalAlignment="Stretch"
+                                        Command="{Binding PickCoordinateCommand}"
+                                        Margin="0,0,0,12"/>
+
+                                <!-- 操作类型 -->
+                                <TextBlock Text="操作" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                                <ComboBox SelectedValue="{Binding ClickOperation}" SelectedValuePath="Content"
+                                          Height="32" Style="{StaticResource ModernComboBox}"
+                                          Margin="0,0,0,12">
+                                    <ComboBoxItem Content="Click" Style="{StaticResource ModernComboBoxItem}"/>
+                                    <ComboBoxItem Content="RightClick" Style="{StaticResource ModernComboBoxItem}"/>
+                                </ComboBox>
                             </StackPanel>
                         </Grid>
                     </ScrollViewer>

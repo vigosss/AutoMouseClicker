@@ -9,7 +9,8 @@ namespace Ming_AutoClicker.Models
     public enum ActionType
     {
         FindImage,
-        Wait
+        Wait,
+        MouseClick
     }
 
     /// <summary>

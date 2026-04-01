@@ -87,6 +87,10 @@ namespace Ming_AutoClicker.ViewModels
                     OnPropertyChanged(nameof(OffsetX));
                     OnPropertyChanged(nameof(OffsetY));
                     OnPropertyChanged(nameof(WaitSeconds));
+                    OnPropertyChanged(nameof(MouseClickAction));
+                    OnPropertyChanged(nameof(ClickX));
+                    OnPropertyChanged(nameof(ClickY));
+                    OnPropertyChanged(nameof(ClickOperation));
                     UpdateActionCommands();
                 }
             }
@@ -371,18 +375,80 @@ namespace Ming_AutoClicker.ViewModels
 
         #endregion
 
+        #region 鼠标点击位置动作属性
+
+        /// <summary>
+        /// 鼠标点击位置动作(如果选中的是鼠标点击位置动作)
+        /// </summary>
+        public MouseClickAction? MouseClickAction => SelectedAction as MouseClickAction;
+
+        /// <summary>
+        /// 点击 X 坐标
+        /// </summary>
+        public int ClickX
+        {
+            get => MouseClickAction?.X ?? 0;
+            set
+            {
+                if (MouseClickAction != null)
+                {
+                    MouseClickAction.X = value;
+                    _macro.UpdatedAt = DateTime.Now;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        /// <summary>
+        /// 点击 Y 坐标
+        /// </summary>
+        public int ClickY
+        {
+            get => MouseClickAction?.Y ?? 0;
+            set
+            {
+                if (MouseClickAction != null)
+                {
+                    MouseClickAction.Y = value;
+                    _macro.UpdatedAt = DateTime.Now;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        /// <summary>
+        /// 点击操作类型
+        /// </summary>
+        public string ClickOperation
+        {
+            get => MouseClickAction?.Operation ?? "Click";
+            set
+            {
+                if (MouseClickAction != null)
+                {
+                    MouseClickAction.Operation = value;
+                    _macro.UpdatedAt = DateTime.Now;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        #endregion
+
         #region 命令
 
         public ICommand SaveCommand { get; }
         public ICommand CancelCommand { get; }
         public ICommand AddFindImageActionCommand { get; }
         public ICommand AddWaitActionCommand { get; }
+        public ICommand AddMouseClickActionCommand { get; }
         public ICommand RemoveActionCommand { get; }
         public ICommand MoveUpCommand { get; }
         public ICommand MoveDownCommand { get; }
         public ICommand CaptureScreenshotCommand { get; }
         public ICommand TestMatchCommand { get; }
         public ICommand ClearImageCommand { get; }
+        public ICommand PickCoordinateCommand { get; }
 
         #endregion
 
@@ -402,12 +468,14 @@ namespace Ming_AutoClicker.ViewModels
             CancelCommand = new RelayCommand(_ => Cancel());
             AddFindImageActionCommand = new RelayCommand(_ => AddFindImageAction());
             AddWaitActionCommand = new RelayCommand(_ => AddWaitAction());
+            AddMouseClickActionCommand = new RelayCommand(_ => AddMouseClickAction());
             RemoveActionCommand = new RelayCommand(_ => RemoveAction(), _ => CanRemoveAction());
             MoveUpCommand = new RelayCommand(_ => MoveUp(), _ => CanMoveUp());
             MoveDownCommand = new RelayCommand(_ => MoveDown(), _ => CanMoveDown());
             CaptureScreenshotCommand = new RelayCommand(_ => CaptureScreenshot());
             TestMatchCommand = new RelayCommand(_ => TestMatch(), _ => IsActionSelected);
             ClearImageCommand = new RelayCommand(_ => ClearImage(), _ => IsActionSelected);
+            PickCoordinateCommand = new RelayCommand(_ => PickCoordinate());
 
             // 订阅动作集合变更事件
             _collectionChangedHandler = (s, e) =>
@@ -498,6 +566,59 @@ namespace Ming_AutoClicker.ViewModels
             Actions.Add(action);
             SelectedAction = action;
             StatusMessage = "已添加等待动作";
+        }
+
+        private void AddMouseClickAction()
+        {
+            var action = new MouseClickAction
+            {
+                Order = Actions.Count,
+                X = 0,
+                Y = 0,
+                Operation = "Click"
+            };
+            Actions.Add(action);
+            SelectedAction = action;
+            StatusMessage = "已添加鼠标点击位置动作";
+        }
+
+        /// <summary>
+        /// 准星拾取坐标 - 最小化窗口后打开全屏覆盖层，按住鼠标拖动拾取坐标
+        /// </summary>
+        private void PickCoordinate()
+        {
+            if (MouseClickAction == null) return;
+
+            try
+            {
+                // 最小化主窗口
+                var mainWindow = Application.Current.MainWindow;
+                mainWindow?.Dispatcher.Invoke(() => mainWindow.WindowState = WindowState.Minimized);
+
+                // 等待窗口最小化完成
+                System.Threading.Thread.Sleep(200);
+
+                // 打开坐标拾取窗口
+                var pickWindow = new CoordinatePickWindow();
+                pickWindow.CoordinatePicked += (x, y) =>
+                {
+                    ClickX = x;
+                    ClickY = y;
+                    StatusMessage = $"已拾取坐标: ({x}, {y})";
+                };
+                pickWindow.Closed += (_, _) =>
+                {
+                    // 恢复主窗口
+                    mainWindow?.Dispatcher.Invoke(() => mainWindow.WindowState = WindowState.Normal);
+                };
+                pickWindow.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"坐标拾取失败: {ex.Message}";
+                var mainWindow = Application.Current.MainWindow;
+                mainWindow?.Dispatcher.Invoke(() => mainWindow.WindowState = WindowState.Normal);
+            }
         }
 
         private bool CanRemoveAction() => IsActionSelected && Actions.Count > 0;
