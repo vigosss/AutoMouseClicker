@@ -2,6 +2,7 @@ using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
+using Ming_AutoClicker.Views;
 
 namespace Ming_AutoClicker.ViewModels
 {
@@ -85,22 +86,30 @@ namespace Ming_AutoClicker.ViewModels
         }
 
         /// <summary>
-        /// 显示消息框
+        /// 显示消息框（使用自定义对话框）
         /// </summary>
         protected void ShowMessage(string message, string title = "提示", MessageBoxImage icon = MessageBoxImage.Information)
         {
-            OnUIThread(() => MessageBox.Show(message, title, MessageBoxButton.OK, icon));
+            switch (icon)
+            {
+                case MessageBoxImage.Warning:
+                    Dialog.ShowWarning(message, title);
+                    break;
+                case MessageBoxImage.Error:
+                    Dialog.ShowError(message, title);
+                    break;
+                default:
+                    Dialog.ShowInfo(message, title);
+                    break;
+            }
         }
 
         /// <summary>
-        /// 显示确认对话框
+        /// 显示确认对话框（使用自定义对话框）
         /// </summary>
         protected bool ShowConfirm(string message, string title = "确认")
         {
-            var result = MessageBoxResult.None;
-            Application.Current.Dispatcher.Invoke(() =>
-                result = MessageBox.Show(message, title, MessageBoxButton.YesNo, MessageBoxImage.Question));
-            return result == MessageBoxResult.Yes;
+            return Dialog.ShowConfirm(message, title);
         }
 
         public void Dispose()

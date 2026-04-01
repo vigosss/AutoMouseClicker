@@ -55,6 +55,9 @@ namespace Ming_AutoClicker
                 };
                 mainWindow.Show();
 
+                // 自动创建桌面快捷方式（首次启动时）
+                ShortcutService.EnsureDesktopShortcut();
+
                 // 异步检查版本更新（不阻塞启动）
                 _ = CheckForUpdatesAsync();
             }
