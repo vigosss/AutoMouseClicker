@@ -50,13 +50,3 @@ namespace Ming_AutoClicker.Models
         }
     }
 }
-</:content>
-<task_progress>
-- [x] 新建 MouseClickAction 模型
-- [ ] 更新 ActionType 枚举
-- [ ] 更新 MacroEditorViewModel（属性、命令、准星拖拽）
-- [ ] 更新 MacroEditorView.xaml（UniformGrid 按钮布局 + 属性面板 + 准星 UI）
-- [ ] 更新 MacroExecutor（执行逻辑）
-- [ ] 测试编译通过
-</task_progress>
-</write_to_file>
