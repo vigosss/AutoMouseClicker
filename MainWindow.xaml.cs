@@ -202,6 +202,9 @@ namespace Ming_AutoClicker
                             case WaitAction wa:
                                 original.Actions.Add(wa.Clone());
                                 break;
+                            case MouseClickAction mca:
+                                original.Actions.Add(mca.Clone());
+                                break;
                         }
                     }
                 }
