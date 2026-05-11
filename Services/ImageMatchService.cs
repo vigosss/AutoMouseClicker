@@ -456,7 +456,8 @@ namespace Ming_AutoClicker.Services
                         CvInvoke.MatchTemplate(screenImage, scaled, res, TemplateMatchingType.CcoeffNormed);
 
                         double minV = 0, maxV = 0;
-                        CvInvoke.MinMaxLoc(res, ref minV, ref maxV);
+                        Point minL = Point.Empty, maxL = Point.Empty;
+                        CvInvoke.MinMaxLoc(res, ref minV, ref maxV, ref minL, ref maxL);
 
                         if (maxV > bestScore)
                         {
