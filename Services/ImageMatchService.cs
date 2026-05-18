@@ -745,8 +745,6 @@ namespace Ming_AutoClicker.Services
                     return true;
                 }
 
-                int templateMinDim = Math.Min(template.Width, template.Height);
-
                 // 提取匹配区域
                 int roiX = matchResult.X - matchResult.Width / 2;
                 int roiY = matchResult.Y - matchResult.Height / 2;
@@ -763,20 +761,8 @@ namespace Ming_AutoClicker.Services
                 using var roi = new Mat(source.Mat, new Rectangle(roiX, roiY, roiW, roiH));
                 using var roiGray = roi.ToImage<Gray, byte>();
 
-                // 创建ORB检测器（根据模板大小调整参数）
-                int maxFeatures = Math.Max(200, template.Width * template.Height / 100);
-                maxFeatures = Math.Min(maxFeatures, 1000);
-
-                using var orb = new ORB(
-                    maxFeatures,
-                    1.2f,
-                    8,
-                    Math.Min(31, templateMinDim / 2),
-                    0,
-                    2,
-                    ORB.ScoreType.HarrisScore,
-                    Math.Min(31, templateMinDim / 2),
-                    20);
+                // 创建ORB检测器（使用默认构造函数，避免版本兼容问题）
+                using var orb = new ORB();
 
                 // 检测模板特征
                 using var templateKp = new VectorOfKeyPoint();
