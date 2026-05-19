@@ -5,9 +5,7 @@ using System.IO;
 using System.Linq;
 using Emgu.CV;
 using Emgu.CV.CvEnum;
-using Emgu.CV.Features2D;
 using Emgu.CV.Structure;
-using Emgu.CV.Util;
 
 namespace Ming_AutoClicker.Services
 {
@@ -68,9 +66,8 @@ namespace Ming_AutoClicker.Services
     /// 2. 灰度单轮搜索：统一使用灰度图 + CcoeffNormed（对亮度变化鲁棒）
     /// 3. 精简缩放级别：从14级减少到9级
     /// 4. 快速路径：1:1匹配命中立即返回
-    /// 5. ORB特征验证：对中等置信度匹配做二次验证，消除误匹配
-    /// 6. 容错降级：仅在1:1尺度尝试降低阈值，避免全量重复搜索
-    /// 7. 上次位置优先搜索：循环宏中优先搜索上次匹配位置附近，提速10倍+
+    /// 5. 容错降级：仅在1:1尺度尝试降低阈值，避免全量重复搜索
+    /// 6. 上次位置优先搜索：循环宏中优先搜索上次匹配位置附近，提速10倍+
     /// </summary>
     public class ImageMatchService : IDisposable
     {
@@ -130,26 +127,6 @@ namespace Ming_AutoClicker.Services
             1.5,           // 150% DPI
             2.0,           // 200% DPI
         };
-
-        /// <summary>
-        /// ORB验证：高于 阈值+此值 的匹配自动接受，不做ORB验证
-        /// </summary>
-        private const double HighConfidenceMargin = 0.12;
-
-        /// <summary>
-        /// ORB验证：最少需要的特征点数量
-        /// </summary>
-        private const int OrbMinFeatures = 8;
-
-        /// <summary>
-        /// ORB验证：最少需要的良好匹配数量
-        /// </summary>
-        private const int OrbMinGoodMatches = 3;
-
-        /// <summary>
-        /// ORB验证：Lowe's ratio阈值
-        /// </summary>
-        private const double OrbMatchRatio = 0.65;
 
         /// <summary>
         /// 模板缓存条目
@@ -570,10 +547,9 @@ namespace Ming_AutoClicker.Services
         /// 在源图像中查找模板（优化后的搜索策略）
         /// 
         /// 搜索流程：
-        /// 1. 快速路径：1:1灰度匹配 → 高置信度直接返回 / 中置信度ORB验证
-        /// 2. 多尺度搜索：遍历剩余缩放级别 → 收集候选结果
-        /// 3. 对最佳候选结果做ORB验证
-        /// 4. 容错降级：仅在1:1尺度降低阈值重试
+        /// 1. 快速路径：1:1灰度匹配 → 超过阈值直接返回
+        /// 2. 多尺度搜索：遍历剩余缩放级别
+        /// 3. 容错降级：仅在1:1尺度降低阈值重试
         /// </summary>
         private MatchResult FindTemplate(Image<Bgr, byte> source, string templatePath, double threshold)
         {
@@ -591,30 +567,13 @@ namespace Ming_AutoClicker.Services
 
                     if (fastResult.Found)
                     {
-                        // 高置信度：直接返回（最常见的情况）
-                        if (fastResult.Similarity >= threshold + HighConfidenceMargin)
-                        {
-                            System.Diagnostics.Debug.WriteLine(
-                                $"快速匹配成功: 位置({fastResult.X}, {fastResult.Y}), 相似度 {fastResult.Similarity:P}");
-                            return fastResult;
-                        }
-
-                        // 中等置信度：用ORB特征验证是否为真匹配
-                        if (VerifyWithOrb(sourceGray, template.Gray!, fastResult))
-                        {
-                            System.Diagnostics.Debug.WriteLine(
-                                $"ORB验证通过: 位置({fastResult.X}, {fastResult.Y}), 相似度 {fastResult.Similarity:P}");
-                            return fastResult;
-                        }
-
                         System.Diagnostics.Debug.WriteLine(
-                            $"1:1匹配置信度不足(ORB拒绝): 相似度 {fastResult.Similarity:P}");
+                            $"快速匹配成功: 位置({fastResult.X}, {fastResult.Y}), 相似度 {fastResult.Similarity:P}");
+                        return fastResult;
                     }
                 }
 
                 // ===== 阶段2：多尺度搜索 =====
-                MatchResult? bestCandidate = null;
-
                 foreach (var scale in _scaleLevels)
                 {
                     if (scale == 1.0) continue; // 已在阶段1尝试
@@ -630,35 +589,9 @@ namespace Ming_AutoClicker.Services
 
                     if (match.Found)
                     {
-                        // 高置信度直接返回
-                        if (match.Similarity >= threshold + HighConfidenceMargin)
-                        {
-                            System.Diagnostics.Debug.WriteLine(
-                                $"多尺度匹配成功: 缩放 {scale:P0}, 位置({match.X}, {match.Y}), 相似度 {match.Similarity:P}");
-                            return match;
-                        }
-
-                        // 记录最佳候选
-                        if (bestCandidate == null || match.Similarity > bestCandidate.Similarity)
-                        {
-                            bestCandidate = match;
-                        }
-                    }
-                }
-
-                // 对最佳候选做ORB验证
-                if (bestCandidate != null)
-                {
-                    var bestScale = (double)bestCandidate.Width / template.Width;
-                    int bsw = bestCandidate.Width;
-                    int bsh = bestCandidate.Height;
-                    using var bestScaledGray = template.Gray!.Resize(bsw, bsh, Inter.Linear);
-
-                    if (VerifyWithOrb(sourceGray, bestScaledGray, bestCandidate))
-                    {
                         System.Diagnostics.Debug.WriteLine(
-                            $"多尺度+ORB验证: 缩放 {bestScale:P0}, 位置({bestCandidate.X}, {bestCandidate.Y}), 相似度 {bestCandidate.Similarity:P}");
-                        return bestCandidate;
+                            $"多尺度匹配成功: 缩放 {scale:P0}, 位置({match.X}, {match.Y}), 相似度 {match.Similarity:P}");
+                        return match;
                     }
                 }
 
@@ -720,103 +653,6 @@ namespace Ming_AutoClicker.Services
             }
 
             return MatchResult.NotFound;
-        }
-
-        /// <summary>
-        /// ORB特征点验证 - 对模板匹配结果做二次确认，消除误匹配
-        /// 
-        /// 原理：在匹配区域内提取ORB特征点，与模板特征点进行匹配，
-        /// 如果有足够多的良好匹配，则确认这是一个正确的匹配。
-        /// 
-        /// 对于特征点过少的模板（如纯色/渐变区域），自动跳过验证，信任模板匹配结果。
-        /// </summary>
-        /// <param name="source">源图像（灰度）</param>
-        /// <param name="template">模板图像（灰度）</param>
-        /// <param name="matchResult">模板匹配的结果</param>
-        /// <returns>true 表示验证通过（是正确匹配），false 表示验证失败（可能是误匹配）</returns>
-        private bool VerifyWithOrb(Image<Gray, byte> source, Image<Gray, byte> template, MatchResult matchResult)
-        {
-            try
-            {
-                // 小模板特征点太少，ORB验证不可靠，直接信任模板匹配
-                if (template.Width < 32 || template.Height < 32)
-                {
-                    System.Diagnostics.Debug.WriteLine("模板过小，跳过ORB验证");
-                    return true;
-                }
-
-                // 提取匹配区域
-                int roiX = matchResult.X - matchResult.Width / 2;
-                int roiY = matchResult.Y - matchResult.Height / 2;
-
-                // 边界检查
-                roiX = Math.Max(0, Math.Min(roiX, source.Width - matchResult.Width));
-                roiY = Math.Max(0, Math.Min(roiY, source.Height - matchResult.Height));
-                int roiW = Math.Min(matchResult.Width, source.Width - roiX);
-                int roiH = Math.Min(matchResult.Height, source.Height - roiY);
-
-                if (roiW <= 0 || roiH <= 0)
-                    return true;
-
-                using var roi = new Mat(source.Mat, new Rectangle(roiX, roiY, roiW, roiH));
-                using var roiGray = roi.ToImage<Gray, byte>();
-
-                // 创建ORB检测器（使用默认构造函数，避免版本兼容问题）
-                using var orb = new ORB();
-
-                // 检测模板特征
-                using var templateKp = new VectorOfKeyPoint();
-                using var templateDesc = new Mat();
-                orb.DetectAndCompute(template, null, templateKp, templateDesc, false);
-
-                // 特征点太少，无法可靠验证
-                if (templateKp.Size < OrbMinFeatures || templateDesc.Rows < OrbMinFeatures)
-                {
-                    System.Diagnostics.Debug.WriteLine($"模板特征点不足({templateKp.Size})，跳过ORB验证");
-                    return true;
-                }
-
-                // 检测ROI特征
-                using var roiKp = new VectorOfKeyPoint();
-                using var roiDesc = new Mat();
-                orb.DetectAndCompute(roiGray, null, roiKp, roiDesc, false);
-
-                if (roiKp.Size < OrbMinFeatures || roiDesc.Rows < 2)
-                {
-                    System.Diagnostics.Debug.WriteLine($"ROI特征点不足({roiKp.Size})，跳过ORB验证");
-                    return true;
-                }
-
-                // BFMatcher + Hamming距离（ORB的二进制描述子专用）
-                using var matcher = new BFMatcher(DistanceType.Hamming);
-                using var matches = new VectorOfVectorOfDMatch();
-                matcher.KnnMatch(roiDesc, templateDesc, matches, 2);
-
-                // Lowe's ratio test - 筛选良好匹配
-                int goodMatches = 0;
-                for (int i = 0; i < matches.Size; i++)
-                {
-                    if (matches[i].Size >= 2)
-                    {
-                        var m = matches[i][0];
-                        var n = matches[i][1];
-                        if (m.Distance < OrbMatchRatio * n.Distance)
-                        {
-                            goodMatches++;
-                        }
-                    }
-                }
-
-                System.Diagnostics.Debug.WriteLine(
-                    $"ORB验证: 模板特征={templateKp.Size}, ROI特征={roiKp.Size}, 良好匹配={goodMatches}, 结果={goodMatches >= OrbMinGoodMatches}");
-
-                return goodMatches >= OrbMinGoodMatches;
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"ORB验证异常(信任模板匹配): {ex.Message}");
-                return true; // 出错时信任模板匹配结果
-            }
         }
 
         #endregion

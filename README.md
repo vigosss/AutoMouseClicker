@@ -35,7 +35,6 @@ A Windows desktop automation tool built with WPF + OpenCV, featuring auto-clicki
 - 基于 **Emgu.CV (OpenCV)** 高性能模板匹配引擎
 - 模板图像自动缓存，避免重复磁盘读取
 - 多尺度搜索（0.75x ~ 2.0x），适应不同分辨率和 DPI 缩放
-- **ORB 特征点二次验证**，大幅减少误匹配
 - **上次位置优先搜索**，循环宏第2轮起提速 10 倍+
 - 可调节匹配度阈值（默认 80%）
 - 支持全屏 / 区域截图
@@ -111,11 +110,11 @@ A Windows desktop automation tool built with WPF + OpenCV, featuring auto-clicki
 
 ### v0.3.1
 - 🚀 **图像匹配引擎重构**，速度提升 3-5 倍
-- 🎯 新增 **ORB 特征点二次验证**，大幅减少误匹配
 - ⚡ 循环宏新增 **"上次位置优先搜索"**，第2轮起提速 10 倍+
 - 💾 模板图像 **自动缓存**，避免重复磁盘读取
 - 🔧 缩放搜索级别精简优化（14级→9级），减少无效计算
 - 📊 测试匹配新增最佳分数诊断，帮助调参
+- 🐛 修复第二次搜索反而更慢的问题（移除不稳定的 ORB 验证）
 
 ---
 
