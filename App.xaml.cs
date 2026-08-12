@@ -71,8 +71,10 @@ namespace Ming_AutoClicker
                 };
                 mainWindow.Show();
 
-                // 自动创建桌面快捷方式（首次启动时）
-                ShortcutService.EnsureDesktopShortcut();
+                // 首次运行时询问一次；已有快捷方式会自动校验目标路径。
+                ShortcutService.EnsureDesktopShortcut(() => Dialog.ShowConfirm(
+                    "是否在桌面创建“智点精灵”快捷方式？\n\n此选择只询问一次；以后手动删除快捷方式时不会自动重建。",
+                    "创建桌面快捷方式"));
 
                 // 异步检查版本更新（不阻塞启动）
                 _ = CheckForUpdatesAsync();
