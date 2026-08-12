@@ -14,6 +14,7 @@
                  x:Name="MacroListBox"
                  ItemsSource="{Binding Macros}"
                  SelectedItem="{Binding SelectedMacro}"
+                 IsEnabled="{Binding IsNotExecuting}"
                  Style="{StaticResource ModernListBox}">
             <ListBox.ItemContainerStyle>
                 <Style TargetType="ListBoxItem" BasedOn="{StaticResource CardListBoxItem}"/>

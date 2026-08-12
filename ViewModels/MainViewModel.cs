@@ -1,6 +1,8 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using Ming_AutoClicker.Helpers;
@@ -26,6 +28,11 @@ namespace Ming_AutoClicker.ViewModels
         private string _executionStatus = "未运行";
         private int _currentTabIndex;
         private int _autoClickCount;
+        private bool _isStartingMacro;
+        private MacroProfile? _runningMacro;
+        private CancellationTokenSource? _macroStartCancellation;
+        private bool _mainWindowMinimizedForMacro;
+        private WindowState _windowStateBeforeMacro = WindowState.Normal;
 
         #region 属性
 
@@ -62,6 +69,13 @@ namespace Ming_AutoClicker.ViewModels
             get => _selectedMacro;
             set
             {
+                // 执行期间锁定启动时的宏，避免模拟点击改变列表选择。
+                if ((_isStartingMacro || IsExecuting) && _runningMacro != null &&
+                    value?.Id != _runningMacro.Id)
+                {
+                    return;
+                }
+
                 if (SetProperty(ref _selectedMacro, value))
                 {
                     CommandManager.InvalidateRequerySuggested();
@@ -88,7 +102,7 @@ namespace Ming_AutoClicker.ViewModels
         /// <summary>
         /// 是否未在执行宏
         /// </summary>
-        public bool IsNotExecuting => !IsExecuting;
+        public bool IsNotExecuting => !IsExecuting && !_isStartingMacro;
 
         /// <summary>
         /// 状态消息
@@ -169,11 +183,11 @@ namespace Ming_AutoClicker.ViewModels
             _currentTabIndex = 0;
 
             // 初始化命令
-            CreateMacroCommand = new RelayCommand(_ => CreateMacro(), _ => !IsExecuting);
+            CreateMacroCommand = new RelayCommand(_ => CreateMacro(), _ => IsNotExecuting);
             EditMacroCommand = new RelayCommand(_ => EditMacro(), _ => CanEditMacro());
             DeleteMacroCommand = new RelayCommand(_ => DeleteMacro(), _ => CanDeleteMacro());
             DuplicateMacroCommand = new RelayCommand(_ => DuplicateMacro(), _ => CanDuplicateMacro());
-            StartMacroCommand = new RelayCommand(_ => StartMacro(), _ => CanStartMacro());
+            StartMacroCommand = new RelayCommand(_ => _ = StartMacroAsync(), _ => CanStartMacro());
             StopMacroCommand = new RelayCommand(_ => StopMacro(), _ => CanStopMacro());
             ToggleExecutionCommand = new RelayCommand(_ => ToggleExecution());
             SaveAllCommand = new RelayCommand(_ => SaveAll());
@@ -212,7 +226,7 @@ namespace Ming_AutoClicker.ViewModels
             StatusMessage = $"已创建: {newMacro.Name}";
         }
 
-        private bool CanEditMacro() => SelectedMacro != null && !IsExecuting;
+        private bool CanEditMacro() => SelectedMacro != null && IsNotExecuting;
 
         private void EditMacro()
         {
@@ -221,7 +235,7 @@ namespace Ming_AutoClicker.ViewModels
             EditRequested?.Invoke(this, SelectedMacro);
         }
 
-        private bool CanDeleteMacro() => SelectedMacro != null && !IsExecuting;
+        private bool CanDeleteMacro() => SelectedMacro != null && IsNotExecuting;
 
         private void DeleteMacro()
         {
@@ -238,7 +252,7 @@ namespace Ming_AutoClicker.ViewModels
             }
         }
 
-        private bool CanDuplicateMacro() => SelectedMacro != null && !IsExecuting;
+        private bool CanDuplicateMacro() => SelectedMacro != null && IsNotExecuting;
 
         private void DuplicateMacro()
         {
@@ -256,32 +270,85 @@ namespace Ming_AutoClicker.ViewModels
             StatusMessage = $"已复制: {duplicated.Name}";
         }
 
-        private bool CanStartMacro() => SelectedMacro != null && !IsExecuting && SelectedMacro.Actions.Count > 0;
+        private bool CanStartMacro() => SelectedMacro != null && IsNotExecuting && SelectedMacro.Actions.Count > 0;
 
-        private void StartMacro()
+        private async Task StartMacroAsync()
         {
-            if (SelectedMacro == null) return;
+            if (!CanStartMacro() || SelectedMacro == null) return;
 
-            if (_macroExecutor.Start(SelectedMacro))
+            var macroToRun = SelectedMacro;
+            _runningMacro = macroToRun;
+            SetMacroStarting(true);
+            _macroStartCancellation?.Dispose();
+            _macroStartCancellation = new CancellationTokenSource();
+            var cancellation = _macroStartCancellation;
+
+            try
             {
+                MinimizeMainWindowForMacro();
+                StatusMessage = $"准备执行: {macroToRun.Name}";
+
+                // 等待主窗口完全隐藏，避免截图或坐标点击命中程序自身。
+                await Task.Delay(200, cancellation.Token);
+
                 IsExecuting = true;
-                ExecutionStatus = "运行中";
-                StatusMessage = $"开始执行: {SelectedMacro.Name}";
+                ExecutionStatus = "正在启动";
+                StatusMessage = $"开始执行: {macroToRun.Name}";
+
+                if (!_macroExecutor.Start(macroToRun))
+                {
+                    IsExecuting = false;
+                    ExecutionStatus = "启动失败";
+                    StatusMessage = "启动失败";
+                    RestoreMainWindowAfterMacro();
+                    _runningMacro = null;
+                }
             }
-            else
+            catch (OperationCanceledException)
             {
-                StatusMessage = "启动失败";
+                ExecutionStatus = "已停止";
+                StatusMessage = "已取消启动";
+                RestoreRunningMacroSelection();
+                RestoreMainWindowAfterMacro();
+                _runningMacro = null;
+            }
+            catch (Exception ex)
+            {
+                IsExecuting = false;
+                ExecutionStatus = "启动失败";
+                StatusMessage = $"启动失败: {ex.Message}";
+                RestoreRunningMacroSelection();
+                RestoreMainWindowAfterMacro();
+                _runningMacro = null;
+            }
+            finally
+            {
+                if (ReferenceEquals(_macroStartCancellation, cancellation))
+                {
+                    _macroStartCancellation.Dispose();
+                    _macroStartCancellation = null;
+                }
+                SetMacroStarting(false);
             }
         }
 
-        private bool CanStopMacro() => IsExecuting;
+        private bool CanStopMacro() => IsExecuting || _isStartingMacro;
 
         private void StopMacro()
         {
+            if (_isStartingMacro)
+            {
+                _macroStartCancellation?.Cancel();
+                return;
+            }
+
             _macroExecutor.Stop();
             IsExecuting = false;
             ExecutionStatus = "已停止";
             StatusMessage = "已停止执行";
+            RestoreRunningMacroSelection();
+            RestoreMainWindowAfterMacro();
+            _runningMacro = null;
         }
 
         public void ToggleExecution()
@@ -294,7 +361,7 @@ namespace Ming_AutoClicker.ViewModels
             else
             {
                 // 鼠标宏 Tab：原有逻辑
-                if (IsExecuting)
+                if (IsExecuting || _isStartingMacro)
                 {
                     StopMacro();
                 }
@@ -302,7 +369,7 @@ namespace Ming_AutoClicker.ViewModels
                 {
                     if (SelectedMacro != null && SelectedMacro.Actions.Count > 0)
                     {
-                        StartMacro();
+                        _ = StartMacroAsync();
                     }
                 }
             }
@@ -371,7 +438,48 @@ namespace Ming_AutoClicker.ViewModels
                 IsExecuting = false;
                 ExecutionStatus = e.Success ? "已完成" : "已停止";
                 StatusMessage = e.Message;
+                RestoreRunningMacroSelection();
+                RestoreMainWindowAfterMacro();
+                _runningMacro = null;
             });
+        }
+
+        private void SetMacroStarting(bool value)
+        {
+            if (_isStartingMacro == value) return;
+            _isStartingMacro = value;
+            OnPropertyChanged(nameof(IsNotExecuting));
+            CommandManager.InvalidateRequerySuggested();
+        }
+
+        private void MinimizeMainWindowForMacro()
+        {
+            var mainWindow = Application.Current?.MainWindow;
+            if (mainWindow == null || mainWindow.WindowState == WindowState.Minimized)
+                return;
+
+            _windowStateBeforeMacro = mainWindow.WindowState;
+            _mainWindowMinimizedForMacro = true;
+            mainWindow.WindowState = WindowState.Minimized;
+        }
+
+        private void RestoreMainWindowAfterMacro()
+        {
+            if (!_mainWindowMinimizedForMacro) return;
+
+            var mainWindow = Application.Current?.MainWindow;
+            if (mainWindow != null)
+            {
+                mainWindow.WindowState = _windowStateBeforeMacro;
+                mainWindow.Activate();
+            }
+            _mainWindowMinimizedForMacro = false;
+        }
+
+        private void RestoreRunningMacroSelection()
+        {
+            if (_runningMacro != null && Macros.Contains(_runningMacro))
+                SelectedMacro = _runningMacro;
         }
 
         private void OnExecutionStateChanged(object? sender, MacroExecutionState state)
@@ -452,6 +560,9 @@ namespace Ming_AutoClicker.ViewModels
         {
             if (disposing)
             {
+                _macroStartCancellation?.Cancel();
+                _macroStartCancellation?.Dispose();
+                _macroStartCancellation = null;
                 AutoClickViewModel.PropertyChanged -= OnAutoClickViewModelPropertyChanged;
                 AutoClickViewModel.Dispose();
                 _macroExecutor.ActionExecuted -= OnActionExecuted;
