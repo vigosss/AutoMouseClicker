@@ -43,6 +43,7 @@ namespace Ming_AutoClicker.Models
             return new WaitAction
             {
                 Order = Order,
+                Note = Note,
                 WaitSeconds = WaitSeconds
             };
         }

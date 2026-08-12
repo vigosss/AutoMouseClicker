@@ -91,8 +91,28 @@
                         </ListBox.ItemContainerStyle>
                         <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding}" TextTrimming="CharacterEllipsis"
-                                           Style="{StaticResource BodyText}"/>
+                                <StackPanel>
+                                    <TextBlock Text="{Binding}" TextTrimming="CharacterEllipsis"
+                                               Style="{StaticResource BodyText}"/>
+                                    <TextBlock Text="{Binding Note}"
+                                               TextTrimming="CharacterEllipsis"
+                                               ToolTip="{Binding Note}"
+                                               Margin="0,2,0,0">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock" BasedOn="{StaticResource CaptionText}">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Note}" Value="">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Note}" Value="{x:Null}">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </StackPanel>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>
@@ -144,8 +164,26 @@
                     </TextBlock>
 
                     <!-- 属性面板内容：单个 ScrollViewer，内部用 StackPanel 分别控制可见性 -->
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <Grid>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                  Visibility="{Binding IsActionSelected, Converter={StaticResource BoolToVis}}">
+                        <StackPanel>
+                            <!-- 所有动作共用的步骤说明 -->
+                            <StackPanel Margin="0,0,0,16">
+                                <TextBlock Text="步骤说明" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                                <TextBox Text="{Binding ActionNote, UpdateSourceTrigger=PropertyChanged}"
+                                         Style="{StaticResource ModernTextBox}"
+                                         MinHeight="72"
+                                         MaxLength="500"
+                                         AcceptsReturn="True"
+                                         TextWrapping="Wrap"
+                                         VerticalContentAlignment="Top"
+                                         ToolTip="记录这一步的用途，例如：打开订单详情"/>
+                                <TextBlock Text="例如：打开订单详情，方便步骤较多时快速识别"
+                                           Style="{StaticResource CaptionText}"
+                                           Margin="0,4,0,0"/>
+                            </StackPanel>
+
+                            <Grid>
                             <!-- 找图动作属性 -->
                             <StackPanel>
                                 <StackPanel.Style>
@@ -165,6 +203,8 @@
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
                                     <Button Content="截图" Style="{StaticResource PrimaryButton}" Width="68" Height="32"
                                             Command="{Binding CaptureScreenshotCommand}"/>
+                                    <Button Content="上传" Style="{StaticResource BaseButton}" Width="56" Height="32" Margin="6,0,0,0"
+                                            Command="{Binding ImportImageCommand}"/>
                                     <Button Content="清除" Style="{StaticResource BaseButton}" Width="56" Height="32" Margin="6,0,0,0"
                                             Command="{Binding ClearImageCommand}"/>
                                     <Button Content="测试" Style="{StaticResource GhostButton}" Width="56" Height="32" Margin="6,0,0,0"
@@ -200,7 +240,7 @@
                                             </Image.Style>
                                         </Image> 
                                         <!-- 无截图时显示占位文字 -->
-                                        <TextBlock Text="点击上方「截图」按钮捕获图像"
+                                        <TextBlock Text="点击上方「截图」或「上传」添加图像"
                                                    HorizontalAlignment="Center"
                                                    VerticalAlignment="Center"
                                                    Margin="16,12">
@@ -270,7 +310,12 @@
                                 <!-- 等待直到找到 -->
                                 <CheckBox Content="等待直到找到"
                                           Style="{StaticResource ModernCheckBox}"
-                                          IsChecked="{Binding WaitUntilFound}"/>
+                                          IsChecked="{Binding WaitUntilFound}"
+                                          Margin="0,0,0,10"/>
+
+                                <CheckBox Content="自适应缩放（较慢，适合 DPI 或窗口缩放变化）"
+                                          Style="{StaticResource ModernCheckBox}"
+                                          IsChecked="{Binding AdaptiveScale}"/>
                             </StackPanel>
 
                             <!-- 等待动作属性 -->
@@ -346,7 +391,8 @@
                                     <ComboBoxItem Content="RightClick" Style="{StaticResource ModernComboBoxItem}"/>
                                 </ComboBox>
                             </StackPanel>
-                        </Grid>
+                            </Grid>
+                        </StackPanel>
                     </ScrollViewer>
                 </Grid>
             </Border>

@@ -7,6 +7,7 @@ using System.Windows;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
+using Microsoft.Win32;
 using Ming_AutoClicker.Helpers;
 using Ming_AutoClicker.Models;
 using Ming_AutoClicker.Services;
@@ -27,6 +28,7 @@ namespace Ming_AutoClicker.ViewModels
         private MacroAction? _selectedAction;
         private int _selectedActionIndex = -1;
         private string _statusMessage = "就绪";
+        private bool _isTestingMatch;
         private NotifyCollectionChangedEventHandler? _collectionChangedHandler;
 
         /// <summary>
@@ -79,11 +81,13 @@ namespace Ming_AutoClicker.ViewModels
                     OnPropertyChanged(nameof(CanMoveUp));
                     OnPropertyChanged(nameof(CanMoveDown));
                     // 通知属性面板刷新所有动作相关属性
+                    OnPropertyChanged(nameof(ActionNote));
                     OnPropertyChanged(nameof(ImagePath));
                     OnPropertyChanged(nameof(ScreenshotPreview));
                     OnPropertyChanged(nameof(HasScreenshot));
                     OnPropertyChanged(nameof(MatchThreshold));
                     OnPropertyChanged(nameof(WaitUntilFound));
+                    OnPropertyChanged(nameof(AdaptiveScale));
                     OnPropertyChanged(nameof(Operation));
                     OnPropertyChanged(nameof(OffsetX));
                     OnPropertyChanged(nameof(OffsetY));
@@ -194,6 +198,24 @@ namespace Ming_AutoClicker.ViewModels
         /// </summary>
         public bool CanSave => !string.IsNullOrWhiteSpace(_macro.Name);
 
+        /// <summary>
+        /// 当前步骤的用户说明
+        /// </summary>
+        public string ActionNote
+        {
+            get => SelectedAction?.Note ?? string.Empty;
+            set
+            {
+                if (SelectedAction != null && SelectedAction.Note != value)
+                {
+                    SelectedAction.Note = value ?? string.Empty;
+                    _macro.UpdatedAt = DateTime.Now;
+                    OnPropertyChanged();
+                    CollectionViewSource.GetDefaultView(Actions).Refresh();
+                }
+            }
+        }
+
         #endregion
 
         #region 找图动作属性
@@ -291,6 +313,23 @@ namespace Ming_AutoClicker.ViewModels
                 if (FindImageAction != null)
                 {
                     FindImageAction.WaitUntilFound = value;
+                    _macro.UpdatedAt = DateTime.Now;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        /// <summary>
+        /// 是否为当前找图动作启用宽范围缩放搜索
+        /// </summary>
+        public bool AdaptiveScale
+        {
+            get => FindImageAction?.AdaptiveScale ?? false;
+            set
+            {
+                if (FindImageAction != null && FindImageAction.AdaptiveScale != value)
+                {
+                    FindImageAction.AdaptiveScale = value;
                     _macro.UpdatedAt = DateTime.Now;
                     OnPropertyChanged();
                 }
@@ -450,6 +489,7 @@ namespace Ming_AutoClicker.ViewModels
         public ICommand MoveUpCommand { get; }
         public ICommand MoveDownCommand { get; }
         public ICommand CaptureScreenshotCommand { get; }
+        public ICommand ImportImageCommand { get; }
         public ICommand TestMatchCommand { get; }
         public ICommand ClearImageCommand { get; }
         public ICommand PickCoordinateCommand { get; }
@@ -477,7 +517,8 @@ namespace Ming_AutoClicker.ViewModels
             MoveUpCommand = new RelayCommand(_ => MoveUp(), _ => CanMoveUp());
             MoveDownCommand = new RelayCommand(_ => MoveDown(), _ => CanMoveDown());
             CaptureScreenshotCommand = new RelayCommand(_ => CaptureScreenshot());
-            TestMatchCommand = new RelayCommand(_ => TestMatch(), _ => IsActionSelected);
+            ImportImageCommand = new RelayCommand(_ => ImportImage(), _ => FindImageAction != null);
+            TestMatchCommand = new RelayCommand(_ => _ = TestMatchAsync(), _ => FindImageAction != null && !_isTestingMatch);
             ClearImageCommand = new RelayCommand(_ => ClearImage(), _ => IsActionSelected);
             PickCoordinateCommand = new RelayCommand(_ => PickCoordinate());
 
@@ -553,6 +594,7 @@ namespace Ming_AutoClicker.ViewModels
                 ImagePath = "",
                 MatchThreshold = 0.8,
                 WaitUntilFound = false,
+                AdaptiveScale = false,
                 Operation = "Click"
             };
             Actions.Add(action);
@@ -758,7 +800,34 @@ namespace Ming_AutoClicker.ViewModels
             }
         }
 
-        private void TestMatch()
+        private void ImportImage()
+        {
+            if (FindImageAction == null) return;
+
+            var dialog = new OpenFileDialog
+            {
+                Title = "选择用于找图的图片",
+                Filter = "图片文件|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tif;*.tiff|所有文件|*.*",
+                CheckFileExists = true,
+                Multiselect = false
+            };
+
+            if (dialog.ShowDialog(Application.Current.MainWindow) != true) return;
+
+            try
+            {
+                var importedPath = _screenCaptureService.ImportImage(dialog.FileName);
+                ImagePath = _screenCaptureService.GetRelativePath(importedPath);
+                StatusMessage = $"已导入图片: {Path.GetFileName(dialog.FileName)}";
+            }
+            catch (Exception ex)
+            {
+                ShowMessage($"图片导入失败: {ex.Message}", "错误", MessageBoxImage.Error);
+                StatusMessage = $"图片导入失败: {ex.Message}";
+            }
+        }
+
+        private async System.Threading.Tasks.Task TestMatchAsync()
         {
             if (FindImageAction == null || string.IsNullOrEmpty(ImagePath))
             {
@@ -766,22 +835,32 @@ namespace Ming_AutoClicker.ViewModels
                 return;
             }
 
+            _isTestingMatch = true;
+            CommandManager.InvalidateRequerySuggested();
+            StatusMessage = "正在测试匹配...";
+
             try
             {
                 // 最小化主窗口，露出屏幕内容以便截图
                 var mainWindow = Application.Current.MainWindow;
                 mainWindow?.Dispatcher.Invoke(() => mainWindow.WindowState = WindowState.Minimized);
-                System.Threading.Thread.Sleep(200);
+                await System.Threading.Tasks.Task.Delay(200);
 
-                var result = _imageMatchService.TestMatch(ImagePath, MatchThreshold);
+                var imagePath = ImagePath;
+                var threshold = MatchThreshold;
+                var adaptiveScale = AdaptiveScale;
+                var result = await System.Threading.Tasks.Task.Run(
+                    () => _imageMatchService.TestMatch(imagePath, threshold, adaptiveScale));
 
-                if (result.Found)
+                if (result.HasCandidate)
                 {
-                    // 找到匹配：用全屏覆盖窗口可视化展示匹配位置
+                    // 无论是否达到阈值，都展示最佳候选，避免用户盲目调低阈值。
                     var matchWindow = new MatchResultWindow(result);
                     matchWindow.Loaded += (_, _) =>
                     {
-                        StatusMessage = $"匹配成功! 位置: ({result.X}, {result.Y}) 相似度: {result.Similarity:P}";
+                        StatusMessage = result.Found
+                            ? $"匹配成功! 相似度: {result.Similarity:P1}，耗时: {result.ElapsedMilliseconds}ms"
+                            : $"未达到阈值，最佳候选: {result.Similarity:P1}，耗时: {result.ElapsedMilliseconds}ms";
                     };
                     matchWindow.Closed += (_, _) =>
                     {
@@ -792,9 +871,12 @@ namespace Ming_AutoClicker.ViewModels
                 }
                 else
                 {
-                    // 未找到匹配：恢复窗口并弹窗提示
                     mainWindow?.Dispatcher.Invoke(() => mainWindow.WindowState = WindowState.Normal);
-                    ShowMessage($"未找到匹配\n请尝试降低阈值或重新截图", "测试结果", MessageBoxImage.Warning);
+                    var detail = string.IsNullOrWhiteSpace(result.ErrorMessage)
+                        ? GetMatchFailureText(result.FailureReason)
+                        : result.ErrorMessage;
+                    ShowMessage($"匹配测试失败\n{detail}", "测试结果", MessageBoxImage.Warning);
+                    StatusMessage = $"匹配测试失败: {detail}";
                 }
             }
             catch (Exception ex)
@@ -804,6 +886,24 @@ namespace Ming_AutoClicker.ViewModels
                 var mainWindow = Application.Current.MainWindow;
                 mainWindow?.Dispatcher.Invoke(() => mainWindow.WindowState = WindowState.Normal);
             }
+            finally
+            {
+                _isTestingMatch = false;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
+        private static string GetMatchFailureText(MatchFailureReason reason)
+        {
+            return reason switch
+            {
+                MatchFailureReason.InvalidTemplate => "模板图片无效或尺寸不合适",
+                MatchFailureReason.CaptureFailed => "屏幕截图失败",
+                MatchFailureReason.MatchingError => "图像匹配计算失败",
+                MatchFailureReason.Cancelled => "匹配已取消",
+                MatchFailureReason.TimedOut => "等待匹配超时",
+                _ => "屏幕中没有可用的匹配候选"
+            };
         }
 
         private void ClearImage()

@@ -118,7 +118,7 @@ namespace Ming_AutoClicker.Services
         /// <summary>
         /// 找图检查间隔（毫秒）
         /// </summary>
-        public int FindImageIntervalMs { get; set; } = 500;
+        public int FindImageIntervalMs { get; set; } = 200;
 
         public MacroExecutor(ImageMatchService imageMatchService, ScreenCaptureService screenCaptureService)
         {
@@ -418,7 +418,8 @@ namespace Ming_AutoClicker.Services
                     action.MatchThreshold,
                     FindImageTimeoutMs,
                     FindImageIntervalMs,
-                    cancellationToken);
+                    cancellationToken,
+                    action.AdaptiveScale);
 
                 // 检查是否被取消
                 if (cancellationToken.IsCancellationRequested)
@@ -429,12 +430,18 @@ namespace Ming_AutoClicker.Services
             else
             {
                 // 单次查找
-                matchResult = _imageMatchService.FindImage(action.ImagePath, action.MatchThreshold);
+                matchResult = _imageMatchService.FindImage(
+                    action.ImagePath,
+                    action.MatchThreshold,
+                    action.AdaptiveScale);
             }
 
             if (!matchResult.Found)
             {
-                return (false, "未找到目标图像", matchResult);
+                var reason = string.IsNullOrWhiteSpace(matchResult.ErrorMessage)
+                    ? matchResult.FailureReason.ToString()
+                    : matchResult.ErrorMessage;
+                return (false, $"未找到目标图像: {reason} (最佳 {matchResult.Similarity:P1})", matchResult);
             }
 
             // 执行操作

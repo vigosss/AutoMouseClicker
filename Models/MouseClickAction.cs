@@ -43,6 +43,7 @@ namespace Ming_AutoClicker.Models
             return new MouseClickAction
             {
                 Order = Order,
+                Note = Note,
                 X = X,
                 Y = Y,
                 Operation = Operation

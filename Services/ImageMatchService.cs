@@ -1,54 +1,54 @@
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using Emgu.CV;
 using Emgu.CV.CvEnum;
 using Emgu.CV.Structure;
 
 namespace Ming_AutoClicker.Services
 {
+    public enum MatchFailureReason
+    {
+        None,
+        BelowThreshold,
+        InvalidTemplate,
+        CaptureFailed,
+        MatchingError,
+        Cancelled,
+        TimedOut
+    }
+
     /// <summary>
-    /// 图像匹配结果
+    /// 图像匹配结果。即使 Found=false，也可能包含最佳候选位置和相似度。
     /// </summary>
     public class MatchResult
     {
-        /// <summary>
-        /// 是否找到匹配
-        /// </summary>
         public bool Found { get; set; }
-
-        /// <summary>
-        /// 匹配位置（中心点 X 坐标）
-        /// </summary>
         public int X { get; set; }
-
-        /// <summary>
-        /// 匹配位置（中心点 Y 坐标）
-        /// </summary>
         public int Y { get; set; }
-
-        /// <summary>
-        /// 匹配区域宽度
-        /// </summary>
         public int Width { get; set; }
-
-        /// <summary>
-        /// 匹配区域高度
-        /// </summary>
         public int Height { get; set; }
-
-        /// <summary>
-        /// 匹配相似度 (0.0 - 1.0)
-        /// </summary>
         public double Similarity { get; set; }
+        public double Threshold { get; set; }
+        public double SecondBestSimilarity { get; set; }
+        public double Scale { get; set; } = 1.0;
+        public long ElapsedMilliseconds { get; set; }
+        public string MatchMethod { get; set; } = string.Empty;
+        public MatchFailureReason FailureReason { get; set; }
+        public string ErrorMessage { get; set; } = string.Empty;
 
-        /// <summary>
-        /// 创建未找到的结果
-        /// </summary>
-        public static MatchResult NotFound => new MatchResult { Found = false };
+        public bool HasCandidate => Width > 0 && Height > 0;
 
-        /// <summary>
-        /// 获取匹配区域的矩形
-        /// </summary>
+        public static MatchResult NotFound => new()
+        {
+            Found = false,
+            FailureReason = MatchFailureReason.BelowThreshold
+        };
+
         public Rectangle GetRectangle()
         {
             return new Rectangle(X - Width / 2, Y - Height / 2, Width, Height);
@@ -56,21 +56,117 @@ namespace Ming_AutoClicker.Services
     }
 
     /// <summary>
-    /// 图像匹配服务 - 使用 Emgu.CV 进行模板匹配
+    /// 图像匹配服务。默认只检查原尺寸和 ±5%，需要时可启用宽范围自适应缩放。
     /// </summary>
     public class ImageMatchService : IDisposable
     {
+        private sealed class ScaledTemplate : IDisposable
+        {
+            public Image<Bgr, byte> Color { get; }
+            public Image<Gray, byte> Gray { get; }
+
+            public ScaledTemplate(Image<Bgr, byte> color)
+            {
+                Color = color;
+                Gray = color.Convert<Gray, byte>();
+            }
+
+            public void Dispose()
+            {
+                Gray.Dispose();
+                Color.Dispose();
+            }
+        }
+
+        private sealed class CachedTemplate : IDisposable
+        {
+            private readonly Dictionary<int, ScaledTemplate> _scaledTemplates = new();
+
+            public string FullPath { get; }
+            public long LastWriteTicks { get; }
+            public long FileLength { get; }
+            public Image<Bgr, byte> Color { get; }
+            public Image<Gray, byte> Gray { get; }
+            public double GrayStandardDeviation { get; }
+            public long LastAccessSequence { get; set; }
+
+            public CachedTemplate(string fullPath, long lastWriteTicks, long fileLength, Image<Bgr, byte> color)
+            {
+                FullPath = fullPath;
+                LastWriteTicks = lastWriteTicks;
+                FileLength = fileLength;
+                Color = color;
+                Gray = color.Convert<Gray, byte>();
+                GrayStandardDeviation = CalculateStandardDeviation(Gray);
+            }
+
+            public (Image<Bgr, byte> Color, Image<Gray, byte> Gray) GetImages(double scale)
+            {
+                if (Math.Abs(scale - 1.0) < 0.0001)
+                    return (Color, Gray);
+
+                var key = (int)Math.Round(scale * 1000);
+                if (!_scaledTemplates.TryGetValue(key, out var scaled))
+                {
+                    var width = Math.Max(1, (int)Math.Round(Color.Width * scale));
+                    var height = Math.Max(1, (int)Math.Round(Color.Height * scale));
+                    scaled = new ScaledTemplate(Color.Resize(width, height, Inter.Linear));
+                    _scaledTemplates[key] = scaled;
+                }
+
+                return (scaled.Color, scaled.Gray);
+            }
+
+            private static double CalculateStandardDeviation(Image<Gray, byte> image)
+            {
+                var data = image.Data;
+                var count = image.Width * image.Height;
+                if (count <= 0) return 0;
+
+                double sum = 0;
+                double squareSum = 0;
+                for (var y = 0; y < image.Height; y++)
+                {
+                    for (var x = 0; x < image.Width; x++)
+                    {
+                        var value = data[y, x, 0];
+                        sum += value;
+                        squareSum += value * value;
+                    }
+                }
+
+                var mean = sum / count;
+                return Math.Sqrt(Math.Max(0, squareSum / count - mean * mean));
+            }
+
+            public void Dispose()
+            {
+                foreach (var scaled in _scaledTemplates.Values)
+                    scaled.Dispose();
+                _scaledTemplates.Clear();
+                Gray.Dispose();
+                Color.Dispose();
+            }
+        }
+
         private readonly ScreenCaptureService _screenCaptureService;
+        private readonly object _matchLock = new();
+        private readonly Dictionary<string, CachedTemplate> _templateCache = new(StringComparer.OrdinalIgnoreCase);
+        private long _cacheAccessSequence;
         private bool _disposed;
 
-        /// <summary>
-        /// 默认匹配阈值
-        /// </summary>
-        public const double DefaultThreshold = 0.8;
+        private const int MaxCachedTemplates = 16;
+        private const double LowVarianceThreshold = 5.0;
+        private const double HighConfidenceEarlyExit = 0.95;
 
-        /// <summary>
-        /// 匹配超时时间（毫秒）
-        /// </summary>
+        private static readonly double[] FastScaleLevels = { 1.0, 0.95, 1.05 };
+        private static readonly double[] AdaptiveScaleLevels =
+        {
+            1.0, 0.95, 1.05, 0.9, 1.1, 0.85, 1.15, 0.8, 1.2,
+            0.75, 1.25, 0.67, 1.5, 1.75, 0.5, 2.0
+        };
+
+        public const double DefaultThreshold = 0.8;
         public int MatchTimeoutMs { get; set; } = 5000;
 
         public ImageMatchService(ScreenCaptureService screenCaptureService)
@@ -78,422 +174,416 @@ namespace Ming_AutoClicker.Services
             _screenCaptureService = screenCaptureService ?? throw new ArgumentNullException(nameof(screenCaptureService));
         }
 
-        /// <summary>
-        /// 在全屏中查找图像
-        /// </summary>
-        /// <param name="templatePath">模板图像路径</param>
-        /// <param name="threshold">匹配阈值 (0.0 - 1.0)</param>
-        /// <returns>匹配结果</returns>
-        public MatchResult FindImage(string templatePath, double threshold = DefaultThreshold)
+        public MatchResult FindImage(string templatePath, double threshold = DefaultThreshold, bool adaptiveScale = false)
         {
-            // 获取全屏截图
-            using var screenImage = _screenCaptureService.CaptureFullScreen();
-            return FindTemplate(screenImage, templatePath, threshold);
-        }
-
-        /// <summary>
-        /// 在指定区域中查找图像
-        /// </summary>
-        /// <param name="templatePath">模板图像路径</param>
-        /// <param name="x">区域起始 X</param>
-        /// <param name="y">区域起始 Y</param>
-        /// <param name="width">区域宽度</param>
-        /// <param name="height">区域高度</param>
-        /// <param name="threshold">匹配阈值</param>
-        /// <returns>匹配结果（坐标为屏幕绝对坐标）</returns>
-        public MatchResult FindImageInRegion(string templatePath, int x, int y, int width, int height, double threshold = DefaultThreshold)
-        {
-            // 获取区域截图
-            using var regionImage = _screenCaptureService.CaptureRegion(x, y, width, height);
-            var result = FindTemplate(regionImage, templatePath, threshold);
-
-            // 转换为屏幕绝对坐标
-            if (result.Found)
-            {
-                result.X += x;
-                result.Y += y;
-            }
-
-            return result;
-        }
-
-        /// <summary>
-        /// 多尺度搜索的缩放比例列表（覆盖所有常见 DPI 缩放因子）
-        /// 按优先级排序：精确匹配 > 小偏移 > 常见 DPI 缩放 > 大缩放
-        /// </summary>
-        private static readonly double[] _scaleLevels = 
-        { 
-            1.0,    // 精确匹配（最高优先级）
-            0.95, 1.05,   // ±5% 轻微偏移
-            0.9, 1.1,     // ±10% 偏移
-            0.85, 1.15,   // ±15%
-            0.8, 1.2,     // ±20%
-            0.75, 1.25,   // 75%, 125% DPI
-            1.5,          // 150% DPI
-            1.75,         // 175% DPI
-            2.0,          // 200% DPI
-            0.67,         // 2/3 缩放
-            0.5           // 50% 缩放
-        };
-
-        /// <summary>
-        /// 在源图像中查找模板（支持多尺度搜索 + 灰度回退）
-        /// 策略：先在彩色图上多尺度搜索 → 若失败，转灰度再搜一遍
-        /// </summary>
-        /// <param name="source">源图像</param>
-        /// <param name="templatePath">模板路径</param>
-        /// <param name="threshold">匹配阈值</param>
-        /// <returns>匹配结果</returns>
-        private MatchResult FindTemplate(Image<Bgr, byte> source, string templatePath, double threshold)
-        {
+            var stopwatch = Stopwatch.StartNew();
             try
             {
-                // 加载模板图像
-                using var template = _screenCaptureService.LoadImage(templatePath);
-
-                // 检查模板尺寸
-                if (template.Width > source.Width || template.Height > source.Height)
+                using var screenImage = _screenCaptureService.CaptureFullScreen();
+                var result = FindTemplate(screenImage, templatePath, threshold, adaptiveScale);
+                if (result.HasCandidate)
                 {
-                    System.Diagnostics.Debug.WriteLine(
-                        $"模板({template.Width}x{template.Height})大于源图({source.Width}x{source.Height})，尝试灰度缩放匹配...");
-                    // 即使模板比源图大，也先记录，可能灰度多尺度匹配能找到
+                    var (virtualX, virtualY, _, _) = Helpers.Win32Api.GetVirtualScreenBounds();
+                    result.X += virtualX;
+                    result.Y += virtualY;
                 }
 
-                // ===== 第一轮：彩色图多尺度匹配 =====
-                var colorResult = FindTemplateMultiScale(source, template, threshold);
-                if (colorResult.Found)
-                    return colorResult;
-
-                // ===== 第二轮：灰度图多尺度匹配（回退方案，抗亮度/颜色变化） =====
-                System.Diagnostics.Debug.WriteLine("彩色匹配未命中，尝试灰度匹配...");
-                using var sourceGray = source.Convert<Gray, byte>();
-                using var templateGray = template.Convert<Gray, byte>();
-                var grayResult = FindTemplateMultiScaleGray(sourceGray, templateGray, threshold);
-                if (grayResult.Found)
-                {
-                    System.Diagnostics.Debug.WriteLine($"灰度匹配成功: 位置({grayResult.X}, {grayResult.Y}), 相似度 {grayResult.Similarity:P}");
-                    return grayResult;
-                }
-
-                // ===== 第三轮：如果阈值较高，尝试降低阈值再搜（仅灰度，容错） =====
-                if (threshold > 0.5)
-                {
-                    var loweredThreshold = Math.Max(0.5, threshold - 0.15);
-                    System.Diagnostics.Debug.WriteLine($"尝试降低阈值到 {loweredThreshold:P0} ...");
-                    var relaxedResult = FindTemplateMultiScaleGray(sourceGray, templateGray, loweredThreshold);
-                    if (relaxedResult.Found)
-                    {
-                        System.Diagnostics.Debug.WriteLine(
-                            $"降低阈值匹配成功: 位置({relaxedResult.X}, {relaxedResult.Y}), 相似度 {relaxedResult.Similarity:P} (阈值 {loweredThreshold:P0})");
-                        return relaxedResult;
-                    }
-                }
-
-                System.Diagnostics.Debug.WriteLine("所有匹配策略均未命中");
-                return MatchResult.NotFound;
+                result.ElapsedMilliseconds = stopwatch.ElapsedMilliseconds;
+                return result;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"图像匹配失败: {ex.Message}");
-                return MatchResult.NotFound;
+                return CreateFailure(MatchFailureReason.CaptureFailed, ex.Message, stopwatch.ElapsedMilliseconds);
             }
         }
 
-        /// <summary>
-        /// 彩色多尺度模板匹配
-        /// </summary>
-        private MatchResult FindTemplateMultiScale(Image<Bgr, byte> source, Image<Bgr, byte> template, double threshold)
+        public MatchResult FindImageInRegion(
+            string templatePath,
+            int x,
+            int y,
+            int width,
+            int height,
+            double threshold = DefaultThreshold,
+            bool adaptiveScale = false)
         {
-            MatchResult? bestResult = null;
-
-            foreach (var scale in _scaleLevels)
+            var stopwatch = Stopwatch.StartNew();
+            try
             {
-                int scaledWidth = (int)(template.Width * scale);
-                int scaledHeight = (int)(template.Height * scale);
-
-                if (scaledWidth < 5 || scaledHeight < 5)
-                    continue;
-
-                if (scaledWidth > source.Width || scaledHeight > source.Height)
-                    continue;
-
-                using var scaledTemplate = scale == 1.0
-                    ? template.Clone()
-                    : template.Resize(scaledWidth, scaledHeight, Inter.Linear);
-
-                using var result = new Mat();
-                CvInvoke.MatchTemplate(source, scaledTemplate, result, TemplateMatchingType.CcoeffNormed);
-
-                double minVal = 0, maxVal = 0;
-                Point minLoc = Point.Empty, maxLoc = Point.Empty;
-                CvInvoke.MinMaxLoc(result, ref minVal, ref maxVal, ref minLoc, ref maxLoc);
-
-                if (maxVal >= threshold)
+                using var regionImage = _screenCaptureService.CaptureRegion(x, y, width, height);
+                var result = FindTemplate(regionImage, templatePath, threshold, adaptiveScale);
+                if (result.HasCandidate)
                 {
-                    var match = new MatchResult
-                    {
-                        Found = true,
-                        X = maxLoc.X + scaledWidth / 2,
-                        Y = maxLoc.Y + scaledHeight / 2,
-                        Width = scaledWidth,
-                        Height = scaledHeight,
-                        Similarity = maxVal
-                    };
+                    result.X += x;
+                    result.Y += y;
+                }
 
-                    if (scale == 1.0)
+                result.ElapsedMilliseconds = stopwatch.ElapsedMilliseconds;
+                return result;
+            }
+            catch (Exception ex)
+            {
+                return CreateFailure(MatchFailureReason.CaptureFailed, ex.Message, stopwatch.ElapsedMilliseconds);
+            }
+        }
+
+        private MatchResult FindTemplate(
+            Image<Bgr, byte> source,
+            string templatePath,
+            double threshold,
+            bool adaptiveScale)
+        {
+            try
+            {
+                lock (_matchLock)
+                {
+                    ThrowIfDisposed();
+                    var template = GetCachedTemplate(templatePath);
+                    var scales = adaptiveScale ? AdaptiveScaleLevels : FastScaleLevels;
+                    var normalizedThreshold = NormalizeThreshold(threshold);
+                    var useLowVarianceMethod = template.GrayStandardDeviation < LowVarianceThreshold;
+                    using var sourceGray = useLowVarianceMethod ? null : source.Convert<Gray, byte>();
+
+                    MatchResult? best = null;
+                    MatchResult? secondBest = null;
+
+                    foreach (var scale in scales)
                     {
-                        System.Diagnostics.Debug.WriteLine(
-                            $"彩色匹配成功: 缩放 {scale:P0}, 位置({match.X}, {match.Y}), 相似度 {match.Similarity:P}");
-                        return match;
+                        var (scaledColor, scaledGray) = template.GetImages(scale);
+                        if (scaledColor.Width < 5 || scaledColor.Height < 5 ||
+                            scaledColor.Width > source.Width || scaledColor.Height > source.Height)
+                        {
+                            continue;
+                        }
+
+                        var candidate = useLowVarianceMethod
+                            ? MatchLowVariance(source, scaledColor, scale)
+                            : MatchGray(sourceGray!, scaledGray, scale);
+
+                        // 截图环境未变化时通常可接近 100%，走一次匹配即可完成。
+                        if (Math.Abs(scale - 1.0) < 0.0001 &&
+                            candidate.Similarity >= normalizedThreshold &&
+                            candidate.Similarity >= HighConfidenceEarlyExit)
+                        {
+                            candidate.Threshold = normalizedThreshold;
+                            candidate.Found = true;
+                            candidate.FailureReason = MatchFailureReason.None;
+                            return candidate;
+                        }
+
+                        if (best == null || candidate.Similarity > best.Similarity)
+                        {
+                            secondBest = best;
+                            best = candidate;
+                        }
+                        else if (secondBest == null || candidate.Similarity > secondBest.Similarity)
+                        {
+                            secondBest = candidate;
+                        }
                     }
 
-                    if (bestResult == null || match.Similarity > bestResult.Similarity)
+                    if (best == null)
                     {
-                        bestResult = match;
-                        System.Diagnostics.Debug.WriteLine(
-                            $"彩色多尺度命中: 缩放 {scale:P0}, 位置({match.X}, {match.Y}), 相似度 {match.Similarity:P}");
+                        return CreateFailure(
+                            MatchFailureReason.InvalidTemplate,
+                            "模板在所有启用尺度下都大于屏幕，或模板尺寸小于 5 像素");
                     }
+
+                    best.SecondBestSimilarity = secondBest?.Similarity ?? 0;
+                    best.Threshold = normalizedThreshold;
+                    best.Found = best.Similarity >= best.Threshold;
+                    best.FailureReason = best.Found
+                        ? MatchFailureReason.None
+                        : MatchFailureReason.BelowThreshold;
+                    return best;
                 }
             }
-
-            return bestResult ?? MatchResult.NotFound;
+            catch (FileNotFoundException ex)
+            {
+                return CreateFailure(MatchFailureReason.InvalidTemplate, ex.Message);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return CreateFailure(MatchFailureReason.InvalidTemplate, ex.Message);
+            }
+            catch (ArgumentException ex)
+            {
+                return CreateFailure(MatchFailureReason.InvalidTemplate, ex.Message);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"图像匹配失败: {ex}");
+                return CreateFailure(MatchFailureReason.MatchingError, ex.Message);
+            }
         }
 
-        /// <summary>
-        /// 灰度多尺度模板匹配（抗亮度/颜色变化）
-        /// </summary>
-        private MatchResult FindTemplateMultiScaleGray(Image<Gray, byte> source, Image<Gray, byte> template, double threshold)
+        private static MatchResult MatchGray(
+            Image<Gray, byte> source,
+            Image<Gray, byte> template,
+            double scale)
         {
-            MatchResult? bestResult = null;
+            using var result = new Mat();
+            CvInvoke.MatchTemplate(source, template, result, TemplateMatchingType.CcoeffNormed);
 
-            foreach (var scale in _scaleLevels)
+            double minValue = 0;
+            double maxValue = 0;
+            var minLocation = Point.Empty;
+            var maxLocation = Point.Empty;
+            CvInvoke.MinMaxLoc(result, ref minValue, ref maxValue, ref minLocation, ref maxLocation);
+
+            return CreateCandidate(maxLocation, template.Width, template.Height, maxValue, scale, "灰度相关匹配");
+        }
+
+        private static MatchResult MatchLowVariance(
+            Image<Bgr, byte> source,
+            Image<Bgr, byte> template,
+            double scale)
+        {
+            using var result = new Mat();
+            // 非归一化平方差不会在纯黑/纯色模板上出现除零问题。
+            CvInvoke.MatchTemplate(source, template, result, TemplateMatchingType.Sqdiff);
+
+            double minValue = 0;
+            double maxValue = 0;
+            var minLocation = Point.Empty;
+            var maxLocation = Point.Empty;
+            CvInvoke.MinMaxLoc(result, ref minValue, ref maxValue, ref minLocation, ref maxLocation);
+
+            var sampleCount = (double)template.Width * template.Height * 3;
+            var rootMeanSquareError = Math.Sqrt(Math.Max(0, minValue) / sampleCount);
+            var similarity = 1.0 - Math.Clamp(rootMeanSquareError / 255.0, 0, 1);
+            return CreateCandidate(minLocation, template.Width, template.Height, similarity, scale, "低纹理差异匹配");
+        }
+
+        private static MatchResult CreateCandidate(
+            Point location,
+            int width,
+            int height,
+            double similarity,
+            double scale,
+            string method)
+        {
+            if (!double.IsFinite(similarity)) similarity = 0;
+            return new MatchResult
             {
-                int scaledWidth = (int)(template.Width * scale);
-                int scaledHeight = (int)(template.Height * scale);
+                X = location.X + width / 2,
+                Y = location.Y + height / 2,
+                Width = width,
+                Height = height,
+                Similarity = Math.Clamp(similarity, 0, 1),
+                Scale = scale,
+                MatchMethod = method
+            };
+        }
 
-                if (scaledWidth < 5 || scaledHeight < 5)
-                    continue;
+        private static double NormalizeThreshold(double threshold)
+        {
+            return double.IsFinite(threshold)
+                ? Math.Clamp(threshold, 0, 1)
+                : DefaultThreshold;
+        }
 
-                if (scaledWidth > source.Width || scaledHeight > source.Height)
-                    continue;
+        private CachedTemplate GetCachedTemplate(string templatePath)
+        {
+            var fullPath = ResolveTemplatePath(templatePath);
+            var info = new FileInfo(fullPath);
+            if (!info.Exists)
+                throw new FileNotFoundException($"图像文件不存在: {fullPath}", fullPath);
 
-                using var scaledTemplate = scale == 1.0
-                    ? template.Clone()
-                    : template.Resize(scaledWidth, scaledHeight, Inter.Linear);
-
-                using var result = new Mat();
-                CvInvoke.MatchTemplate(source, scaledTemplate, result, TemplateMatchingType.CcoeffNormed);
-
-                double minVal = 0, maxVal = 0;
-                Point minLoc = Point.Empty, maxLoc = Point.Empty;
-                CvInvoke.MinMaxLoc(result, ref minVal, ref maxVal, ref minLoc, ref maxLoc);
-
-                if (maxVal >= threshold)
+            if (_templateCache.TryGetValue(fullPath, out var cached))
+            {
+                if (cached.LastWriteTicks == info.LastWriteTimeUtc.Ticks && cached.FileLength == info.Length)
                 {
-                    var match = new MatchResult
-                    {
-                        Found = true,
-                        X = maxLoc.X + scaledWidth / 2,
-                        Y = maxLoc.Y + scaledHeight / 2,
-                        Width = scaledWidth,
-                        Height = scaledHeight,
-                        Similarity = maxVal
-                    };
-
-                    if (scale == 1.0)
-                    {
-                        return match;
-                    }
-
-                    if (bestResult == null || match.Similarity > bestResult.Similarity)
-                    {
-                        bestResult = match;
-                    }
+                    cached.LastAccessSequence = ++_cacheAccessSequence;
+                    return cached;
                 }
+
+                cached.Dispose();
+                _templateCache.Remove(fullPath);
             }
 
-            return bestResult ?? MatchResult.NotFound;
+            var color = _screenCaptureService.LoadImage(fullPath);
+            var newEntry = new CachedTemplate(fullPath, info.LastWriteTimeUtc.Ticks, info.Length, color)
+            {
+                LastAccessSequence = ++_cacheAccessSequence
+            };
+            _templateCache[fullPath] = newEntry;
+            TrimTemplateCache();
+            return newEntry;
         }
 
-        /// <summary>
-        /// 等待图像出现（异步）
-        /// </summary>
-        /// <param name="templatePath">模板图像路径</param>
-        /// <param name="threshold">匹配阈值</param>
-        /// <param name="timeoutMs">超时时间（毫秒）</param>
-        /// <param name="intervalMs">检查间隔（毫秒）</param>
-        /// <param name="cancellationToken">取消令牌</param>
-        /// <returns>匹配结果</returns>
-        public async System.Threading.Tasks.Task<MatchResult> WaitForImageAsync(string templatePath, double threshold = DefaultThreshold, int timeoutMs = 30000, int intervalMs = 500, System.Threading.CancellationToken cancellationToken = default)
+        private string ResolveTemplatePath(string templatePath)
         {
-            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            if (string.IsNullOrWhiteSpace(templatePath))
+                throw new ArgumentException("模板路径不能为空", nameof(templatePath));
 
-            while (stopwatch.ElapsedMilliseconds < timeoutMs)
+            return Path.GetFullPath(Path.IsPathRooted(templatePath)
+                ? templatePath
+                : Path.Combine(_screenCaptureService.GetScreenshotDirectory(), templatePath));
+        }
+
+        private void TrimTemplateCache()
+        {
+            while (_templateCache.Count > MaxCachedTemplates)
+            {
+                CachedTemplate? oldest = null;
+                foreach (var item in _templateCache.Values)
+                {
+                    if (oldest == null || item.LastAccessSequence < oldest.LastAccessSequence)
+                        oldest = item;
+                }
+
+                if (oldest == null) return;
+                _templateCache.Remove(oldest.FullPath);
+                oldest.Dispose();
+            }
+        }
+
+        public async Task<MatchResult> WaitForImageAsync(
+            string templatePath,
+            double threshold = DefaultThreshold,
+            int timeoutMs = 30000,
+            int intervalMs = 200,
+            CancellationToken cancellationToken = default,
+            bool adaptiveScale = false)
+        {
+            var totalStopwatch = Stopwatch.StartNew();
+            MatchResult? bestCandidate = null;
+
+            while (totalStopwatch.ElapsedMilliseconds < timeoutMs)
             {
                 if (cancellationToken.IsCancellationRequested)
                 {
-                    return MatchResult.NotFound;
+                    var cancelled = bestCandidate ?? MatchResult.NotFound;
+                    cancelled.Found = false;
+                    cancelled.FailureReason = MatchFailureReason.Cancelled;
+                    cancelled.ElapsedMilliseconds = totalStopwatch.ElapsedMilliseconds;
+                    return cancelled;
                 }
 
-                var result = FindImage(templatePath, threshold);
+                var iterationStopwatch = Stopwatch.StartNew();
+                var result = FindImage(templatePath, threshold, adaptiveScale);
                 if (result.Found)
                 {
+                    result.ElapsedMilliseconds = totalStopwatch.ElapsedMilliseconds;
                     return result;
                 }
 
+                if (result.FailureReason is MatchFailureReason.InvalidTemplate or MatchFailureReason.MatchingError)
+                    return result;
+
+                if (result.HasCandidate && (bestCandidate == null || result.Similarity > bestCandidate.Similarity))
+                    bestCandidate = result;
+
+                var remainingDelay = Math.Max(0, intervalMs - (int)iterationStopwatch.ElapsedMilliseconds);
                 try
                 {
-                    await System.Threading.Tasks.Task.Delay(intervalMs, cancellationToken);
+                    if (remainingDelay > 0)
+                        await Task.Delay(remainingDelay, cancellationToken);
                 }
                 catch (OperationCanceledException)
                 {
-                    return MatchResult.NotFound;
+                    var cancelled = bestCandidate ?? MatchResult.NotFound;
+                    cancelled.Found = false;
+                    cancelled.FailureReason = MatchFailureReason.Cancelled;
+                    cancelled.ElapsedMilliseconds = totalStopwatch.ElapsedMilliseconds;
+                    return cancelled;
                 }
             }
 
-            return MatchResult.NotFound;
+            var timedOut = bestCandidate ?? MatchResult.NotFound;
+            timedOut.Found = false;
+            timedOut.FailureReason = MatchFailureReason.TimedOut;
+            timedOut.ElapsedMilliseconds = totalStopwatch.ElapsedMilliseconds;
+            return timedOut;
         }
 
-        /// <summary>
-        /// 查找所有匹配位置
-        /// </summary>
-        /// <param name="templatePath">模板图像路径</param>
-        /// <param name="threshold">匹配阈值</param>
-        /// <returns>所有匹配结果</returns>
         public MatchResult[] FindAllMatches(string templatePath, double threshold = DefaultThreshold)
         {
-            var results = new System.Collections.Generic.List<MatchResult>();
+            var results = new List<MatchResult>();
+            var (virtualX, virtualY, _, _) = Helpers.Win32Api.GetVirtualScreenBounds();
 
             try
             {
                 using var screenImage = _screenCaptureService.CaptureFullScreen();
                 using var template = _screenCaptureService.LoadImage(templatePath);
-
                 if (template.Width > screenImage.Width || template.Height > screenImage.Height)
-                {
                     return results.ToArray();
-                }
 
-                // 执行模板匹配
                 using var result = new Mat();
                 CvInvoke.MatchTemplate(screenImage, template, result, TemplateMatchingType.CcoeffNormed);
-
-                // 获取结果数据（使用 ToImage 转换，避免 CopyTo 类型不匹配）
                 using var resultImage = result.ToImage<Gray, float>();
                 var resultData = resultImage.Data;
 
-                // 查找所有超过阈值的位置
-                for (int y = 0; y < result.Rows; y++)
+                for (var y = 0; y < result.Rows; y++)
                 {
-                    for (int x = 0; x < result.Cols; x++)
+                    for (var x = 0; x < result.Cols; x++)
                     {
                         var value = resultData[y, x, 0];
-                        if (value >= threshold)
+                        if (value < threshold) continue;
+                        results.Add(new MatchResult
                         {
-                            results.Add(new MatchResult
-                            {
-                                Found = true,
-                                X = x + template.Width / 2,
-                                Y = y + template.Height / 2,
-                                Width = template.Width,
-                                Height = template.Height,
-                                Similarity = value
-                            });
-
-                            // 跳过重叠区域，避免重复检测
-                            x += template.Width - 1;
-                        }
+                            Found = true,
+                            X = virtualX + x + template.Width / 2,
+                            Y = virtualY + y + template.Height / 2,
+                            Width = template.Width,
+                            Height = template.Height,
+                            Similarity = value,
+                            Scale = 1.0,
+                            MatchMethod = "彩色相关匹配"
+                        });
+                        x += template.Width - 1;
                     }
                 }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"查找所有匹配失败: {ex.Message}");
+                Debug.WriteLine($"查找所有匹配失败: {ex.Message}");
             }
 
             return results.ToArray();
         }
 
-        /// <summary>
-        /// 测试图像匹配（不执行点击），输出详细诊断信息
-        /// </summary>
-        /// <param name="templatePath">模板图像路径</param>
-        /// <param name="threshold">匹配阈值</param>
-        /// <returns>匹配结果，包含详细信息</returns>
-        public MatchResult TestMatch(string templatePath, double threshold = DefaultThreshold)
+        public MatchResult TestMatch(
+            string templatePath,
+            double threshold = DefaultThreshold,
+            bool adaptiveScale = false)
         {
-            System.Diagnostics.Debug.WriteLine($"===== 图像匹配测试开始 =====");
-            System.Diagnostics.Debug.WriteLine($"模板: {templatePath}, 阈值: {threshold:P0}");
-
-            var result = FindImage(templatePath, threshold);
-            
-            if (result.Found)
-            {
-                System.Diagnostics.Debug.WriteLine($"✅ 匹配成功: 位置({result.X}, {result.Y}), 相似度 {result.Similarity:P}");
-            }
-            else
-            {
-                System.Diagnostics.Debug.WriteLine($"❌ 未找到匹配");
-
-                // 输出最佳匹配分数（帮助用户判断是否只需要降低阈值）
-                try
-                {
-                    using var screenImage = _screenCaptureService.CaptureFullScreen();
-                    using var template = _screenCaptureService.LoadImage(templatePath);
-
-                    double bestScore = 0;
-                    string bestScale = "";
-
-                    foreach (var scale in _scaleLevels)
-                    {
-                        int sw = (int)(template.Width * scale);
-                        int sh = (int)(template.Height * scale);
-                        if (sw < 5 || sh < 5 || sw > screenImage.Width || sh > screenImage.Height)
-                            continue;
-
-                        using var scaled = scale == 1.0 ? template.Clone() : template.Resize(sw, sh, Inter.Linear);
-                        using var res = new Mat();
-                        CvInvoke.MatchTemplate(screenImage, scaled, res, TemplateMatchingType.CcoeffNormed);
-
-                        double minV = 0, maxV = 0;
-                        CvInvoke.MinMaxLoc(res, ref minV, ref maxV);
-
-                        if (maxV > bestScore)
-                        {
-                            bestScore = maxV;
-                            bestScale = $"{scale:P0}";
-                        }
-                    }
-
-                    System.Diagnostics.Debug.WriteLine($"📊 最佳匹配分数: {bestScore:P} (缩放 {bestScale})");
-                    if (bestScore > 0.4)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"💡 建议: 尝试降低阈值到 {Math.Max(0.5, Math.Floor(bestScore * 100) / 100):P0} 以下");
-                    }
-                    else if (bestScore > 0.2)
-                    {
-                        System.Diagnostics.Debug.WriteLine("💡 建议: 匹配度较低，建议重新截图");
-                    }
-                    else
-                    {
-                        System.Diagnostics.Debug.WriteLine("💡 建议: 几乎无匹配，目标图像可能已变化，请重新截图");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"诊断信息获取失败: {ex.Message}");
-                }
-            }
-
-            System.Diagnostics.Debug.WriteLine($"===== 图像匹配测试结束 =====");
+            var result = FindImage(templatePath, threshold, adaptiveScale);
+            Debug.WriteLine(
+                $"匹配测试: Found={result.Found}, Score={result.Similarity:P1}, " +
+                $"Scale={result.Scale:P0}, Time={result.ElapsedMilliseconds}ms, Reason={result.FailureReason}");
             return result;
+        }
+
+        private static MatchResult CreateFailure(
+            MatchFailureReason reason,
+            string message,
+            long elapsedMilliseconds = 0)
+        {
+            return new MatchResult
+            {
+                Found = false,
+                FailureReason = reason,
+                ErrorMessage = message,
+                ElapsedMilliseconds = elapsedMilliseconds
+            };
+        }
+
+        private void ThrowIfDisposed()
+        {
+            if (_disposed)
+                throw new ObjectDisposedException(nameof(ImageMatchService));
         }
 
         public void Dispose()
         {
-            if (!_disposed)
+            lock (_matchLock)
             {
+                if (_disposed) return;
                 _disposed = true;
+                foreach (var cached in _templateCache.Values)
+                    cached.Dispose();
+                _templateCache.Clear();
             }
         }
     }

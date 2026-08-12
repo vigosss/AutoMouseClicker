@@ -38,6 +38,11 @@ namespace Ming_AutoClicker.Models
         public bool WaitUntilFound { get; set; } = false;
 
         /// <summary>
+        /// 是否启用宽范围自适应缩放匹配
+        /// </summary>
+        public bool AdaptiveScale { get; set; } = false;
+
+        /// <summary>
         /// 找到后的操作类型
         /// </summary>
         public string Operation { get; set; } = "Click";
@@ -72,9 +77,11 @@ namespace Ming_AutoClicker.Models
             return new FindImageAction
             {
                 Order = Order,
+                Note = Note,
                 ImagePath = ImagePath,
                 MatchThreshold = MatchThreshold,
                 WaitUntilFound = WaitUntilFound,
+                AdaptiveScale = AdaptiveScale,
                 Operation = Operation,
                 OffsetX = OffsetX,
                 OffsetY = OffsetY

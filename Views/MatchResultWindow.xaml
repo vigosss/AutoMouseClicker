@@ -5,7 +5,8 @@
         WindowStyle="None"
         Topmost="True"
         ResizeMode="NoResize"
-        WindowState="Maximized"
+        WindowState="Normal"
+        WindowStartupLocation="Manual"
         Background="Black"
         ShowInTaskbar="False"
         Focusable="True">
@@ -17,7 +18,7 @@
         <!-- 半透明遮罩 -->
         <Path x:Name="OverlayPath" Fill="#66000000"/>
 
-        <!-- 匹配区域高亮（半透明填充） -->
+        <!-- 最佳候选区域高亮（成功为绿色，未达阈值为橙色） -->
         <Rectangle x:Name="HighlightRect"
                    Fill="#1A52D4A0"
                    Visibility="Collapsed"/>
@@ -50,13 +51,13 @@
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <Ellipse Grid.Column="0" Width="10" Height="10" Fill="#FF52D4A0" Margin="0,0,8,0"
+                    <Ellipse x:Name="StatusDot" Grid.Column="0" Width="10" Height="10" Fill="#FF52D4A0" Margin="0,0,8,0"
                              VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="1" Text="✓ 匹配成功" Foreground="#FF52D4A0" FontWeight="SemiBold" FontSize="15"/>
+                    <TextBlock x:Name="StatusTitle" Grid.Column="1" Text="✓ 匹配成功" Foreground="#FF52D4A0" FontWeight="SemiBold" FontSize="15"/>
                 </Grid>
 
                 <!-- 分隔线 -->
-                <Border Background="#3352D4A0" Height="1" Margin="0,0,0,10"/>
+                <Border x:Name="InfoDivider" Background="#3352D4A0" Height="1" Margin="0,0,0,10"/>
 
                 <!-- 详细信息 -->
                 <Grid>
@@ -65,6 +66,10 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
@@ -80,8 +85,20 @@
                     <TextBlock Grid.Row="2" Grid.Column="0" Text="区　域" Foreground="#99FFFFFF" FontSize="12" Margin="0,0,16,6"/>
                     <TextBlock Grid.Row="2" Grid.Column="1" x:Name="TxtRegion" Foreground="White" FontSize="13" FontFamily="Consolas" Margin="0,0,0,6"/>
 
-                    <TextBlock Grid.Row="3" Grid.Column="0" Text="中　心" Foreground="#99FFFFFF" FontSize="12" Margin="0,0,16,0"/>
-                    <TextBlock Grid.Row="3" Grid.Column="1" x:Name="TxtCenter" Foreground="White" FontSize="13" FontFamily="Consolas"/>
+                    <TextBlock Grid.Row="3" Grid.Column="0" Text="阈　值" Foreground="#99FFFFFF" FontSize="12" Margin="0,0,16,6"/>
+                    <TextBlock Grid.Row="3" Grid.Column="1" x:Name="TxtThreshold" Foreground="White" FontSize="13" FontFamily="Consolas" Margin="0,0,0,6"/>
+
+                    <TextBlock Grid.Row="4" Grid.Column="0" Text="缩　放" Foreground="#99FFFFFF" FontSize="12" Margin="0,0,16,6"/>
+                    <TextBlock Grid.Row="4" Grid.Column="1" x:Name="TxtScale" Foreground="White" FontSize="13" FontFamily="Consolas" Margin="0,0,0,6"/>
+
+                    <TextBlock Grid.Row="5" Grid.Column="0" Text="方　式" Foreground="#99FFFFFF" FontSize="12" Margin="0,0,16,6"/>
+                    <TextBlock Grid.Row="5" Grid.Column="1" x:Name="TxtMethod" Foreground="White" FontSize="13" Margin="0,0,0,6"/>
+
+                    <TextBlock Grid.Row="6" Grid.Column="0" Text="耗　时" Foreground="#99FFFFFF" FontSize="12" Margin="0,0,16,6"/>
+                    <TextBlock Grid.Row="6" Grid.Column="1" x:Name="TxtElapsed" Foreground="White" FontSize="13" FontFamily="Consolas" Margin="0,0,0,6"/>
+
+                    <TextBlock Grid.Row="7" Grid.Column="0" Text="次　佳" Foreground="#99FFFFFF" FontSize="12" Margin="0,0,16,0"/>
+                    <TextBlock Grid.Row="7" Grid.Column="1" x:Name="TxtSecondBest" Foreground="White" FontSize="13" FontFamily="Consolas"/>
                 </Grid>
             </StackPanel>
         </Border>

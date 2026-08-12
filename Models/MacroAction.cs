@@ -24,6 +24,11 @@ namespace Ming_AutoClicker.Models
         public int Order { get; set; }
 
         /// <summary>
+        /// 用户为该步骤填写的说明
+        /// </summary>
+        public string Note { get; set; } = string.Empty;
+
+        /// <summary>
         /// 动作类型
         /// </summary>
         public abstract ActionType Type { get; }

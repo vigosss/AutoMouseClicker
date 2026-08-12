@@ -36,9 +36,9 @@ namespace Ming_AutoClicker.Services
         /// <returns>截图的 Emgu.CV Image 对象</returns>
         public Image<Bgr, byte> CaptureFullScreen()
         {
-            // 获取屏幕尺寸（使用 Win32Api 共享方法）
-            var size = Win32Api.GetMainScreenSize();
-            return CaptureRegion(0, 0, size.Width, size.Height);
+            // 捕获整个虚拟桌面，包含主屏和所有外接显示器。
+            var (x, y, width, height) = Win32Api.GetVirtualScreenBounds();
+            return CaptureRegion(x, y, width, height);
         }
 
         /// <summary>
@@ -135,6 +135,28 @@ namespace Ming_AutoClicker.Services
             bitmap.Save(fullPath, ImageFormat.Png);
 
             return fullPath;
+        }
+
+        /// <summary>
+        /// 将用户选择的本地图像导入截图目录，并统一保存为 PNG。
+        /// </summary>
+        public string ImportImage(string sourcePath)
+        {
+            if (string.IsNullOrWhiteSpace(sourcePath))
+                throw new ArgumentException("图片路径不能为空", nameof(sourcePath));
+            if (!File.Exists(sourcePath))
+                throw new FileNotFoundException("图片文件不存在", sourcePath);
+
+            // Bitmap 构造过程会校验文件确实是可读取的图像，而不仅依赖扩展名。
+            using var source = new System.Drawing.Bitmap(sourcePath);
+            var originalName = Path.GetFileNameWithoutExtension(sourcePath);
+            foreach (var invalidChar in Path.GetInvalidFileNameChars())
+            {
+                originalName = originalName.Replace(invalidChar, '_');
+            }
+            if (string.IsNullOrWhiteSpace(originalName)) originalName = "image";
+
+            return SaveBitmap(source, $"import_{originalName}_{DateTime.Now:yyyyMMdd_HHmmss_fff}.png");
         }
 
         /// <summary>

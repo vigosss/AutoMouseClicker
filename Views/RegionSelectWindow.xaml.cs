@@ -49,6 +49,8 @@ namespace Ming_AutoClicker.Views
 
         private readonly int _screenWidth;
         private readonly int _screenHeight;
+        private readonly int _screenX;
+        private readonly int _screenY;
         private readonly System.Drawing.Bitmap _screenBitmap;
         private System.Drawing.Rectangle? _selectedRegion;
 
@@ -89,7 +91,9 @@ namespace Ming_AutoClicker.Views
             InitializeComponent();
 
             // 获取虚拟屏幕尺寸（支持多显示器），使用共享的 Win32Api 方法
-            var (_, _, screenW, screenH) = Win32Api.GetVirtualScreenBounds();
+            var (screenX, screenY, screenW, screenH) = Win32Api.GetVirtualScreenBounds();
+            _screenX = screenX;
+            _screenY = screenY;
             _screenWidth = screenW;
             _screenHeight = screenH;
 
@@ -100,6 +104,7 @@ namespace Ming_AutoClicker.Views
             _handles = new[] { HandleTL, HandleT, HandleTR, HandleL, HandleR, HandleBL, HandleB, HandleBR };
 
             Loaded += RegionSelectWindow_Loaded;
+            SourceInitialized += (_, _) => Win32Api.FitWindowToVirtualScreen(this);
             KeyDown += RegionSelectWindow_KeyDown;
             MouseLeftButtonDown += RegionSelectWindow_MouseLeftButtonDown;
             MouseMove += RegionSelectWindow_MouseMove;
@@ -110,15 +115,17 @@ namespace Ming_AutoClicker.Views
         {
             // 设置背景图片
             BackgroundImage.Source = Win32Api.BitmapToBitmapSource(_screenBitmap);
-            BackgroundImage.Width = _screenWidth;
-            BackgroundImage.Height = _screenHeight;
+            // WPF 使用 DIP，屏幕截图使用物理像素。让图片填满实际 Canvas，
+            // 确认选区时再按比例换算回物理像素，可兼容不同 DPI 的显示器。
+            BackgroundImage.Width = MainCanvas.ActualWidth;
+            BackgroundImage.Height = MainCanvas.ActualHeight;
 
             // 初始化全屏遮罩
             UpdateOverlay(null);
 
             // 居中提示文字
-            Canvas.SetLeft(TipText, (_screenWidth - TipText.ActualWidth) / 2);
-            Canvas.SetTop(TipText, (_screenHeight - TipText.ActualHeight) / 2);
+            Canvas.SetLeft(TipText, (CanvasWidth - TipText.ActualWidth) / 2);
+            Canvas.SetTop(TipText, (CanvasHeight - TipText.ActualHeight) / 2);
         }
 
         private void RegionSelectWindow_KeyDown(object sender, KeyEventArgs e)
@@ -309,14 +316,33 @@ namespace Ming_AutoClicker.Views
         private void ConfirmSelection()
         {
             var rect = GetCurrentSelectionRect();
+            var pixelRect = ToPixelRectangle(rect);
             _selectedRegion = new System.Drawing.Rectangle(
-                (int)rect.X, (int)rect.Y, (int)rect.Width, (int)rect.Height);
+                _screenX + pixelRect.X, _screenY + pixelRect.Y,
+                pixelRect.Width, pixelRect.Height);
 
             // 从原始屏幕截图裁剪选区（确保不包含选区边框、遮罩等覆盖层）
-            CroppedScreenshot = CropBitmap(_screenBitmap, _selectedRegion.Value);
+            CroppedScreenshot = CropBitmap(_screenBitmap, pixelRect);
 
             SelectionCompleted?.Invoke(_selectedRegion);
             Close();
+        }
+
+        private double CanvasWidth => MainCanvas.ActualWidth > 0 ? MainCanvas.ActualWidth : _screenWidth;
+        private double CanvasHeight => MainCanvas.ActualHeight > 0 ? MainCanvas.ActualHeight : _screenHeight;
+
+        /// <summary>
+        /// 将 WPF 的 DIP 选区换算成虚拟桌面截图中的物理像素区域。
+        /// </summary>
+        private System.Drawing.Rectangle ToPixelRectangle(Rect rect)
+        {
+            var scaleX = _screenBitmap.Width / CanvasWidth;
+            var scaleY = _screenBitmap.Height / CanvasHeight;
+            var left = Math.Clamp((int)Math.Floor(rect.Left * scaleX), 0, _screenBitmap.Width - 1);
+            var top = Math.Clamp((int)Math.Floor(rect.Top * scaleY), 0, _screenBitmap.Height - 1);
+            var right = Math.Clamp((int)Math.Ceiling(rect.Right * scaleX), left + 1, _screenBitmap.Width);
+            var bottom = Math.Clamp((int)Math.Ceiling(rect.Bottom * scaleY), top + 1, _screenBitmap.Height);
+            return new System.Drawing.Rectangle(left, top, right - left, bottom - top);
         }
 
         /// <summary>
@@ -439,8 +465,8 @@ namespace Ming_AutoClicker.Views
             if (h < 5) h = 5;
 
             // 确保不超出屏幕
-            if (x + w > _screenWidth) w = _screenWidth - x;
-            if (y + h > _screenHeight) h = _screenHeight - y;
+            if (x + w > CanvasWidth) w = CanvasWidth - x;
+            if (y + h > CanvasHeight) h = CanvasHeight - y;
 
             return new Rect(x, y, w, h);
         }
@@ -519,7 +545,7 @@ namespace Ming_AutoClicker.Views
                 Canvas.SetTop(InfoPanel, rect.Y + rect.Height + 4);
 
                 // 如果信息面板超出屏幕底部，放到选区上方
-                if (rect.Y + rect.Height + InfoPanel.ActualHeight + 4 > _screenHeight)
+                if (rect.Y + rect.Height + InfoPanel.ActualHeight + 4 > CanvasHeight)
                 {
                     Canvas.SetTop(InfoPanel, rect.Y - InfoPanel.ActualHeight - 4);
                 }
@@ -588,13 +614,13 @@ namespace Ming_AutoClicker.Views
             var toolbarY = rect.Bottom + 12;
 
             // 如果超出屏幕底部，放到选区上方
-            if (toolbarY + toolbarHeight + 8 > _screenHeight)
+            if (toolbarY + toolbarHeight + 8 > CanvasHeight)
             {
                 toolbarY = rect.Y - toolbarHeight - 12;
             }
 
             // 确保不超出左右边界
-            toolbarX = Math.Max(8, Math.Min(toolbarX, _screenWidth - toolbarWidth - 8));
+            toolbarX = Math.Max(8, Math.Min(toolbarX, CanvasWidth - toolbarWidth - 8));
 
             // 确保不超出上方
             if (toolbarY < 8) toolbarY = 8;
@@ -626,14 +652,14 @@ namespace Ming_AutoClicker.Views
             if (selection == null || selection.Value.Width <= 0 || selection.Value.Height <= 0)
             {
                 // 全屏遮罩
-                OverlayPath.Data = new RectangleGeometry(new Rect(0, 0, _screenWidth, _screenHeight));
+                OverlayPath.Data = new RectangleGeometry(new Rect(0, 0, CanvasWidth, CanvasHeight));
                 return;
             }
 
             var s = selection.Value;
 
             // 使用 CombinedGeometry 创建"挖洞"效果：选区外部有遮罩，选区内部透明
-            var fullRect = new RectangleGeometry(new Rect(0, 0, _screenWidth, _screenHeight));
+            var fullRect = new RectangleGeometry(new Rect(0, 0, CanvasWidth, CanvasHeight));
             var cutoutRect = new RectangleGeometry(s);
             var combined = new CombinedGeometry(GeometryCombineMode.Exclude, fullRect, cutoutRect);
             OverlayPath.Data = combined;

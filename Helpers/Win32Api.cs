@@ -1,5 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
+using System.Windows;
+using System.Windows.Interop;
 
 namespace Ming_AutoClicker.Helpers
 {
@@ -208,6 +210,24 @@ namespace Ming_AutoClicker.Helpers
             }
 
             return (x, y, w, h);
+        }
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern bool SetWindowPos(
+            IntPtr hWnd, IntPtr hWndInsertAfter, int x, int y, int cx, int cy, uint uFlags);
+
+        private static readonly IntPtr HWND_TOPMOST = new(-1);
+        private const uint SWP_SHOWWINDOW = 0x0040;
+
+        /// <summary>
+        /// 将无边框覆盖窗口精确铺到整个虚拟桌面（而非只最大化到主屏幕）。
+        /// 参数使用物理像素，因此也适用于副屏位于主屏左侧或上方的布局。
+        /// </summary>
+        public static void FitWindowToVirtualScreen(Window window)
+        {
+            var handle = new WindowInteropHelper(window).Handle;
+            var (x, y, width, height) = GetVirtualScreenBounds();
+            SetWindowPos(handle, HWND_TOPMOST, x, y, width, height, SWP_SHOWWINDOW);
         }
 
         /// <summary>
