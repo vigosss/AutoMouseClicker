@@ -15,6 +15,7 @@ namespace Ming_AutoClicker
     {
         private MainViewModel? _viewModel;
         private PropertyChangedEventHandler? _propertyChangedHandler;
+        private PropertyChangedEventHandler? _autoClickPropertyChangedHandler;
         private HwndSource? _hwndSource;
 
         public MainWindow()
@@ -53,13 +54,14 @@ namespace Ming_AutoClicker
             _viewModel.PropertyChanged += _propertyChangedHandler;
 
             // 监听 AutoClickViewModel 的运行状态
-            _viewModel.AutoClickViewModel.PropertyChanged += (s, args) =>
+            _autoClickPropertyChangedHandler = (s, args) =>
             {
                 if (args.PropertyName == nameof(AutoClickViewModel.IsRunning))
                 {
                     Dispatcher.Invoke(() => UpdateStatusIndicator());
                 }
             };
+            _viewModel.AutoClickViewModel.PropertyChanged += _autoClickPropertyChangedHandler;
 
             // 初始化宏列表视图事件
             MacroListView.RequestEdit += OnRequestEdit;
@@ -69,7 +71,10 @@ namespace Ming_AutoClicker
 
             // 注册全局热键
             var hwnd = new WindowInteropHelper(this).Handle;
-            _viewModel.RegisterHotkey(hwnd);
+            if (!_viewModel.RegisterHotkey(hwnd))
+            {
+                _viewModel.StatusMessage = "F8 全局热键注册失败，可能已被其他程序占用";
+            }
         }
 
         /// <summary>
@@ -129,6 +134,10 @@ namespace Ming_AutoClicker
             if (_viewModel != null && _propertyChangedHandler != null)
             {
                 _viewModel.PropertyChanged -= _propertyChangedHandler;
+            }
+            if (_viewModel != null && _autoClickPropertyChangedHandler != null)
+            {
+                _viewModel.AutoClickViewModel.PropertyChanged -= _autoClickPropertyChangedHandler;
             }
 
             MacroListView.RequestEdit -= OnRequestEdit;

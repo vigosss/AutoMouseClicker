@@ -97,7 +97,7 @@
                     <TextBlock Grid.Row="6" Grid.Column="0" Text="耗　时" Foreground="#99FFFFFF" FontSize="12" Margin="0,0,16,6"/>
                     <TextBlock Grid.Row="6" Grid.Column="1" x:Name="TxtElapsed" Foreground="White" FontSize="13" FontFamily="Consolas" Margin="0,0,0,6"/>
 
-                    <TextBlock Grid.Row="7" Grid.Column="0" Text="次　佳" Foreground="#99FFFFFF" FontSize="12" Margin="0,0,16,0"/>
+                    <TextBlock Grid.Row="7" Grid.Column="0" Text="次佳尺度" Foreground="#99FFFFFF" FontSize="12" Margin="0,0,16,0"/>
                     <TextBlock Grid.Row="7" Grid.Column="1" x:Name="TxtSecondBest" Foreground="White" FontSize="13" FontFamily="Consolas"/>
                 </Grid>
             </StackPanel>

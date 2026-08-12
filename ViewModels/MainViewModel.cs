@@ -246,8 +246,14 @@ namespace Ming_AutoClicker.ViewModels
 
             if (ShowConfirm($"确定要删除宏 \"{name}\" 吗？", "确认删除"))
             {
+                if (!_storageService.Delete(macroToDelete.Id))
+                {
+                    StatusMessage = $"删除失败，宏文件未找到或无法删除: {name}";
+                    return;
+                }
+
                 Macros.Remove(macroToDelete);
-                _storageService.Delete(macroToDelete.Id);
+                _screenCaptureService.CleanupUnusedScreenshots(Macros);
                 StatusMessage = $"已删除: {name}";
             }
         }
@@ -343,12 +349,10 @@ namespace Ming_AutoClicker.ViewModels
             }
 
             _macroExecutor.Stop();
-            IsExecuting = false;
-            ExecutionStatus = "已停止";
-            StatusMessage = "已停止执行";
-            RestoreRunningMacroSelection();
-            RestoreMainWindowAfterMacro();
-            _runningMacro = null;
+            // 保持执行锁定和窗口最小化，直到后台任务确实退出。
+            // ExecutionCompleted 会负责恢复窗口、选择和最终状态。
+            ExecutionStatus = "正在停止";
+            StatusMessage = "正在安全停止，请稍候…";
         }
 
         public void ToggleExecution()
@@ -391,6 +395,7 @@ namespace Ming_AutoClicker.ViewModels
             try
             {
                 _storageService.SaveMacros(Macros.ToList());
+                _screenCaptureService.CleanupUnusedScreenshots(Macros);
                 StatusMessage = "已保存";
             }
             catch (Exception ex)
@@ -403,12 +408,16 @@ namespace Ming_AutoClicker.ViewModels
         {
             try
             {
+                var selectedId = SelectedMacro?.Id;
                 var macros = _storageService.LoadMacros();
                 Macros.Clear();
                 foreach (var macro in macros)
                 {
                     Macros.Add(macro);
                 }
+                SelectedMacro = selectedId == null
+                    ? Macros.FirstOrDefault()
+                    : Macros.FirstOrDefault(m => m.Id == selectedId) ?? Macros.FirstOrDefault();
                 StatusMessage = $"已加载 {Macros.Count} 个宏";
             }
             catch (Exception ex)

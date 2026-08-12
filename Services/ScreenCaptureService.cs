@@ -2,10 +2,12 @@ using System;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Collections.Generic;
 using Emgu.CV;
 using Emgu.CV.CvEnum;
 using Emgu.CV.Structure;
 using Ming_AutoClicker.Helpers;
+using Ming_AutoClicker.Models;
 
 namespace Ming_AutoClicker.Services
 {
@@ -123,13 +125,7 @@ namespace Ming_AutoClicker.Services
             var filePath = Path.Combine(_screenshotDirectory, fileName);
 
             // 验证路径安全性
-            var fullPath = Path.GetFullPath(filePath);
-            var baseDir = Path.GetFullPath(_screenshotDirectory);
-
-            if (!fullPath.StartsWith(baseDir, StringComparison.OrdinalIgnoreCase))
-            {
-                throw new UnauthorizedAccessException($"不允许保存到截图目录外: {fileName}");
-            }
+            var fullPath = EnsurePathInsideScreenshotDirectory(filePath, fileName);
 
             // 保存为 PNG 格式
             bitmap.Save(fullPath, ImageFormat.Png);
@@ -183,13 +179,7 @@ namespace Ming_AutoClicker.Services
             var filePath = Path.Combine(_screenshotDirectory, fileName);
 
             // 验证路径安全性
-            var fullPath = Path.GetFullPath(filePath);
-            var baseDir = Path.GetFullPath(_screenshotDirectory);
-
-            if (!fullPath.StartsWith(baseDir, StringComparison.OrdinalIgnoreCase))
-            {
-                throw new UnauthorizedAccessException($"不允许保存到截图目录外: {fileName}");
-            }
+            var fullPath = EnsurePathInsideScreenshotDirectory(filePath, fileName);
 
             // 保存为 PNG 格式
             image.Save(fullPath);
@@ -211,13 +201,7 @@ namespace Ming_AutoClicker.Services
             }
 
             // 验证路径安全性
-            var fullPath = Path.GetFullPath(filePath);
-            var baseDir = Path.GetFullPath(_screenshotDirectory);
-
-            if (!fullPath.StartsWith(baseDir, StringComparison.OrdinalIgnoreCase))
-            {
-                throw new UnauthorizedAccessException($"不允许访问截图目录外的文件: {filePath}");
-            }
+            var fullPath = EnsurePathInsideScreenshotDirectory(filePath, filePath);
 
             if (!File.Exists(fullPath))
                 throw new FileNotFoundException($"图像文件不存在: {fullPath}");
@@ -242,12 +226,12 @@ namespace Ming_AutoClicker.Services
                 return absolutePath;
 
             var fullPath = Path.GetFullPath(absolutePath);
-            var basePath = Path.GetFullPath(_screenshotDirectory);
-
-            if (fullPath.StartsWith(basePath, StringComparison.OrdinalIgnoreCase))
+            try
             {
-                return fullPath.Substring(basePath.Length).TrimStart(Path.DirectorySeparatorChar);
+                EnsurePathInsideScreenshotDirectory(fullPath, absolutePath);
+                return Path.GetRelativePath(_screenshotDirectory, fullPath);
             }
+            catch (UnauthorizedAccessException) { }
 
             return absolutePath;
         }
@@ -264,13 +248,7 @@ namespace Ming_AutoClicker.Services
                 : Path.Combine(_screenshotDirectory, fileName);
 
             // 验证路径安全性
-            var fullPath = Path.GetFullPath(filePath);
-            var baseDir = Path.GetFullPath(_screenshotDirectory);
-
-            if (!fullPath.StartsWith(baseDir, StringComparison.OrdinalIgnoreCase))
-            {
-                throw new UnauthorizedAccessException($"不允许删除截图目录外的文件: {fileName}");
-            }
+            var fullPath = EnsurePathInsideScreenshotDirectory(filePath, fileName);
 
             if (File.Exists(fullPath))
             {
@@ -291,6 +269,69 @@ namespace Ming_AutoClicker.Services
                 return Array.Empty<string>();
 
             return Directory.GetFiles(_screenshotDirectory, "*.png");
+        }
+
+        /// <summary>
+        /// 清理不再被任何宏引用的截图。截图目录为应用专用目录。
+        /// </summary>
+        public int CleanupUnusedScreenshots(IEnumerable<MacroProfile> profiles)
+        {
+            if (profiles == null) throw new ArgumentNullException(nameof(profiles));
+
+            var referenced = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var profile in profiles)
+            {
+                foreach (var action in profile.Actions)
+                {
+                    if (action is not FindImageAction findImage || string.IsNullOrWhiteSpace(findImage.ImagePath))
+                        continue;
+
+                    var candidate = Path.IsPathRooted(findImage.ImagePath)
+                        ? findImage.ImagePath
+                        : Path.Combine(_screenshotDirectory, findImage.ImagePath);
+                    try
+                    {
+                        referenced.Add(EnsurePathInsideScreenshotDirectory(candidate, findImage.ImagePath));
+                    }
+                    catch (UnauthorizedAccessException)
+                    {
+                        // 非法路径不会因为清理流程而访问或删除目录外文件。
+                    }
+                }
+            }
+
+            var deleted = 0;
+            foreach (var screenshot in ListScreenshots())
+            {
+                var fullPath = Path.GetFullPath(screenshot);
+                if (referenced.Contains(fullPath)) continue;
+                try
+                {
+                    File.Delete(fullPath);
+                    deleted++;
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"清理未使用截图失败: {fullPath}, {ex.Message}");
+                }
+            }
+            return deleted;
+        }
+
+        private string EnsurePathInsideScreenshotDirectory(string path, string displayPath)
+        {
+            var baseDirectory = Path.GetFullPath(_screenshotDirectory);
+            var fullPath = Path.GetFullPath(path);
+            var relativePath = Path.GetRelativePath(baseDirectory, fullPath);
+            var escapesDirectory = Path.IsPathRooted(relativePath) ||
+                relativePath.Equals("..", StringComparison.Ordinal) ||
+                relativePath.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal) ||
+                relativePath.StartsWith(".." + Path.AltDirectorySeparatorChar, StringComparison.Ordinal);
+
+            if (escapesDirectory)
+                throw new UnauthorizedAccessException($"不允许访问截图目录外的文件: {displayPath}");
+
+            return fullPath;
         }
 
         public void Dispose()

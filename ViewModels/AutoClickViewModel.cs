@@ -181,7 +181,7 @@ namespace Ming_AutoClicker.ViewModels
         private void Stop()
         {
             _autoClickService.Stop();
-            StatusText = $"已停止，共点击 {ClickCount} 次";
+            StatusText = "正在停止…";
         }
 
         private string GetButtonName(string button) => button switch
@@ -207,6 +207,7 @@ namespace Ming_AutoClicker.ViewModels
                 {
                     // 停止时立即刷新最终点击次数
                     ClickCount = _autoClickService.ClickCount;
+                    StatusText = $"已停止，共点击 {ClickCount} 次";
                     _clickCountStopwatch.Reset();
                 }
             });
@@ -233,7 +234,7 @@ namespace Ming_AutoClicker.ViewModels
             {
                 _autoClickService.RunningStateChanged -= OnRunningStateChanged;
                 _autoClickService.ClickCountChanged -= OnClickCountChanged;
-                _autoClickService.Stop();
+                _autoClickService.Dispose();
             }
             base.Dispose(disposing);
         }

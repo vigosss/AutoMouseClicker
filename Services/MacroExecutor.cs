@@ -73,7 +73,7 @@ namespace Ming_AutoClicker.Services
         /// <summary>
         /// 是否正在运行
         /// </summary>
-        public bool IsRunning => State == MacroExecutionState.Running;
+        public bool IsRunning => State is MacroExecutionState.Running or MacroExecutionState.Paused;
 
         /// <summary>
         /// 是否已暂停
@@ -135,6 +135,8 @@ namespace Ming_AutoClicker.Services
         {
             if (profile == null)
                 throw new ArgumentNullException(nameof(profile));
+            if (_disposed)
+                throw new ObjectDisposedException(nameof(MacroExecutor));
 
             if (profile.Actions.Count == 0)
             {
@@ -146,22 +148,43 @@ namespace Ming_AutoClicker.Services
                 return false;
             }
 
+            if (profile.LoopEnabled && profile.LoopCount < 0)
+            {
+                OnExecutionCompleted(new MacroExecutionEventArgs
+                {
+                    Success = false,
+                    Message = "循环次数不能为负数；0 表示无限循环"
+                });
+                return false;
+            }
+
+            if (profile.LoopIntervalMs < 0)
+            {
+                OnExecutionCompleted(new MacroExecutionEventArgs
+                {
+                    Success = false,
+                    Message = "循环间隔不能为负数"
+                });
+                return false;
+            }
+
             lock (_lockObject)
             {
-                if (IsRunning)
+                if (_executionTask != null && !_executionTask.IsCompleted)
                 {
                     return false;
                 }
 
+                _cancellationTokenSource?.Dispose();
                 _currentProfile = profile;
                 _cancellationTokenSource = new CancellationTokenSource();
+                var cancellationToken = _cancellationTokenSource.Token;
                 _isPaused = false;
                 CurrentActionIndex = 0;
                 CompletedLoopCount = 0;
 
-                _executionTask = Task.Run(() => ExecuteAsync(_cancellationTokenSource.Token), _cancellationTokenSource.Token);
-
                 SetState(MacroExecutionState.Running);
+                _executionTask = Task.Run(() => ExecuteAsync(cancellationToken), cancellationToken);
                 return true;
             }
         }
@@ -171,8 +194,6 @@ namespace Ming_AutoClicker.Services
         /// </summary>
         public void Stop()
         {
-            Task? taskToWait = null;
-
             lock (_lockObject)
             {
                 if (State != MacroExecutionState.Running && State != MacroExecutionState.Paused)
@@ -181,18 +202,6 @@ namespace Ming_AutoClicker.Services
                 }
 
                 _cancellationTokenSource?.Cancel();
-                SetState(MacroExecutionState.Stopped);
-                taskToWait = _executionTask;
-            }
-
-            // 在锁外等待任务完成，避免死锁
-            try
-            {
-                taskToWait?.Wait(TimeSpan.FromSeconds(5));
-            }
-            catch (AggregateException)
-            {
-                // 任务被取消是预期行为
             }
         }
 
@@ -266,15 +275,7 @@ namespace Ming_AutoClicker.Services
                     for (int i = 0; i < actions.Count; i++)
                     {
                         // 检查取消请求
-                        if (cancellationToken.IsCancellationRequested)
-                        {
-                            OnExecutionCompleted(new MacroExecutionEventArgs
-                            {
-                                Success = false,
-                                Message = "用户取消执行"
-                            });
-                            return;
-                        }
+                        cancellationToken.ThrowIfCancellationRequested();
 
                         // 等待暂停恢复
                         while (_isPaused && !cancellationToken.IsCancellationRequested)
@@ -282,10 +283,7 @@ namespace Ming_AutoClicker.Services
                             await Task.Delay(100, cancellationToken);
                         }
 
-                        if (cancellationToken.IsCancellationRequested)
-                        {
-                            return;
-                        }
+                        cancellationToken.ThrowIfCancellationRequested();
 
                         CurrentActionIndex = i;
                         var action = actions[i];
@@ -303,11 +301,20 @@ namespace Ming_AutoClicker.Services
                             MatchResult = result.MatchResult
                         });
 
-                        // 如果动作失败且不是"直到找到"模式，继续执行下一个
-                        // 如果是"直到找到"模式但超时了，也继续执行
+                        // 默认采用安全策略：任一步骤失败后立即终止，避免后续点击落到错误界面。
                         if (!result.Success)
                         {
                             System.Diagnostics.Debug.WriteLine($"动作执行失败: {result.Message}");
+                            SetState(MacroExecutionState.Stopped);
+                            OnExecutionCompleted(new MacroExecutionEventArgs
+                            {
+                                Action = action,
+                                ActionIndex = i,
+                                Success = false,
+                                Message = $"第 {i + 1} 步执行失败，宏已停止: {result.Message}",
+                                MatchResult = result.MatchResult
+                            });
+                            return;
                         }
                     }
 
@@ -390,7 +397,7 @@ namespace Ming_AutoClicker.Services
             }
             catch (OperationCanceledException)
             {
-                return (false, "动作被取消", null);
+                throw;
             }
             catch (Exception ex)
             {
@@ -422,10 +429,7 @@ namespace Ming_AutoClicker.Services
                     action.AdaptiveScale);
 
                 // 检查是否被取消
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    return (false, "等待被取消", matchResult);
-                }
+                cancellationToken.ThrowIfCancellationRequested();
             }
             else
             {
@@ -435,6 +439,10 @@ namespace Ming_AutoClicker.Services
                     action.MatchThreshold,
                     action.AdaptiveScale);
             }
+
+            // FindImage 是同步 CPU 操作，停止请求可能发生在匹配过程中。
+            // 匹配返回后必须再次检查，绝不能在已停止的情况下继续点击。
+            cancellationToken.ThrowIfCancellationRequested();
 
             if (!matchResult.Found)
             {
@@ -448,9 +456,12 @@ namespace Ming_AutoClicker.Services
             var clickX = matchResult.X + action.OffsetX;
             var clickY = matchResult.Y + action.OffsetY;
 
+            cancellationToken.ThrowIfCancellationRequested();
+
             switch (action.Operation.ToLower())
             {
                 case "click":
+                    cancellationToken.ThrowIfCancellationRequested();
                     if (!Win32Api.LeftClick(clickX, clickY))
                     {
                         return (false, $"点击失败: 无法移动鼠标到 ({clickX}, {clickY})", matchResult);
@@ -459,6 +470,7 @@ namespace Ming_AutoClicker.Services
                     return (true, $"点击位置: ({clickX}, {clickY})", matchResult);
 
                 case "rightclick":
+                    cancellationToken.ThrowIfCancellationRequested();
                     if (!Win32Api.RightClick(clickX, clickY))
                     {
                         return (false, $"右键点击失败: 无法移动鼠标到 ({clickX}, {clickY})", matchResult);
@@ -493,9 +505,12 @@ namespace Ming_AutoClicker.Services
             int x = action.X;
             int y = action.Y;
 
+            cancellationToken.ThrowIfCancellationRequested();
+
             switch (action.Operation.ToLower())
             {
                 case "click":
+                    cancellationToken.ThrowIfCancellationRequested();
                     if (!Win32Api.LeftClick(x, y))
                     {
                         return (false, $"点击失败: 无法移动鼠标到 ({x}, {y})", null);
@@ -504,6 +519,7 @@ namespace Ming_AutoClicker.Services
                     return (true, $"点击位置: ({x}, {y})", null);
 
                 case "rightclick":
+                    cancellationToken.ThrowIfCancellationRequested();
                     if (!Win32Api.RightClick(x, y))
                     {
                         return (false, $"右键点击失败: 无法移动鼠标到 ({x}, {y})", null);

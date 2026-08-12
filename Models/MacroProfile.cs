@@ -30,6 +30,11 @@ namespace Ming_AutoClicker.Models
         public DateTime UpdatedAt { get; set; } = DateTime.Now;
 
         /// <summary>
+        /// 宏在列表中的稳定顺序。null 表示由旧版本创建、尚未迁移。
+        /// </summary>
+        public int? SortOrder { get; set; }
+
+        /// <summary>
         /// 动作列表
         /// </summary>
         public ObservableCollection<MacroAction> Actions { get; set; } = new();
@@ -60,6 +65,7 @@ namespace Ming_AutoClicker.Models
                 Name = Name,
                 CreatedAt = CreatedAt,
                 UpdatedAt = UpdatedAt,
+                SortOrder = SortOrder,
                 LoopEnabled = LoopEnabled,
                 LoopCount = LoopCount,
                 LoopIntervalMs = LoopIntervalMs

@@ -155,7 +155,7 @@ namespace Ming_AutoClicker.ViewModels
             {
                 if (_macro.LoopCount != value)
                 {
-                    _macro.LoopCount = value;
+                    _macro.LoopCount = Math.Max(0, value);
                     _macro.UpdatedAt = DateTime.Now;
                     OnPropertyChanged();
                 }
@@ -172,7 +172,7 @@ namespace Ming_AutoClicker.ViewModels
             {
                 if (_macro.LoopIntervalMs != value)
                 {
-                    _macro.LoopIntervalMs = value;
+                    _macro.LoopIntervalMs = Math.Max(0, value);
                     _macro.UpdatedAt = DateTime.Now;
                     OnPropertyChanged();
                 }
@@ -516,11 +516,11 @@ namespace Ming_AutoClicker.ViewModels
             RemoveActionCommand = new RelayCommand(_ => RemoveAction(), _ => CanRemoveAction());
             MoveUpCommand = new RelayCommand(_ => MoveUp(), _ => CanMoveUp());
             MoveDownCommand = new RelayCommand(_ => MoveDown(), _ => CanMoveDown());
-            CaptureScreenshotCommand = new RelayCommand(_ => CaptureScreenshot());
+            CaptureScreenshotCommand = new RelayCommand(_ => _ = CaptureScreenshotAsync());
             ImportImageCommand = new RelayCommand(_ => ImportImage(), _ => FindImageAction != null);
             TestMatchCommand = new RelayCommand(_ => _ = TestMatchAsync(), _ => FindImageAction != null && !_isTestingMatch);
             ClearImageCommand = new RelayCommand(_ => ClearImage(), _ => IsActionSelected);
-            PickCoordinateCommand = new RelayCommand(_ => PickCoordinate());
+            PickCoordinateCommand = new RelayCommand(_ => _ = PickCoordinateAsync());
 
             // 订阅动作集合变更事件
             _collectionChangedHandler = (s, e) =>
@@ -544,6 +544,8 @@ namespace Ming_AutoClicker.ViewModels
         {
             try
             {
+                _macro.UpdatedAt = DateTime.Now;
+
                 // 重新排序动作
                 for (int i = 0; i < Actions.Count; i++)
                 {
@@ -631,18 +633,19 @@ namespace Ming_AutoClicker.ViewModels
         /// <summary>
         /// 准星拾取坐标 - 最小化窗口后打开全屏覆盖层，按住鼠标拖动拾取坐标
         /// </summary>
-        private void PickCoordinate()
+        private async System.Threading.Tasks.Task PickCoordinateAsync()
         {
             if (MouseClickAction == null) return;
 
+            var mainWindow = Application.Current.MainWindow;
+            var previousWindowState = mainWindow?.WindowState ?? WindowState.Normal;
             try
             {
                 // 最小化主窗口
-                var mainWindow = Application.Current.MainWindow;
-                mainWindow?.Dispatcher.Invoke(() => mainWindow.WindowState = WindowState.Minimized);
+                if (mainWindow != null) mainWindow.WindowState = WindowState.Minimized;
 
                 // 等待窗口最小化完成
-                System.Threading.Thread.Sleep(200);
+                await System.Threading.Tasks.Task.Delay(200);
 
                 // 打开坐标拾取窗口
                 var pickWindow = new CoordinatePickWindow();
@@ -654,18 +657,15 @@ namespace Ming_AutoClicker.ViewModels
                     // 刷新左侧列表显示（因为 MouseClickAction.ToString() 依赖 X/Y 属性）
                     CollectionViewSource.GetDefaultView(Actions).Refresh();
                 };
-                pickWindow.Closed += (_, _) =>
-                {
-                    // 恢复主窗口
-                    mainWindow?.Dispatcher.Invoke(() => mainWindow.WindowState = WindowState.Normal);
-                };
                 pickWindow.ShowDialog();
             }
             catch (Exception ex)
             {
                 StatusMessage = $"坐标拾取失败: {ex.Message}";
-                var mainWindow = Application.Current.MainWindow;
-                mainWindow?.Dispatcher.Invoke(() => mainWindow.WindowState = WindowState.Normal);
+            }
+            finally
+            {
+                if (mainWindow != null) mainWindow.WindowState = previousWindowState;
             }
         }
 
@@ -735,16 +735,17 @@ namespace Ming_AutoClicker.ViewModels
             StatusMessage = "已下移";
         }
 
-        private void CaptureScreenshot()
+        private async System.Threading.Tasks.Task CaptureScreenshotAsync()
         {
+            var mainWindow = Application.Current.MainWindow;
+            var previousWindowState = mainWindow?.WindowState ?? WindowState.Normal;
             try
             {
                 // 最小化主窗口
-                var mainWindow = Application.Current.MainWindow;
-                mainWindow?.Dispatcher.Invoke(() => mainWindow.WindowState = WindowState.Minimized);
+                if (mainWindow != null) mainWindow.WindowState = WindowState.Minimized;
 
                 // 等待窗口最小化完成
-                System.Threading.Thread.Sleep(200);
+                await System.Threading.Tasks.Task.Delay(200);
 
                 // 打开区域选择窗口
                 var selectWindow = new RegionSelectWindow();
@@ -785,8 +786,6 @@ namespace Ming_AutoClicker.ViewModels
                         StatusMessage = "截图已取消";
                     }
 
-                    // 恢复主窗口
-                    mainWindow?.Dispatcher.Invoke(() => mainWindow.WindowState = WindowState.Normal);
                 };
 
                 selectWindow.ShowDialog();
@@ -794,9 +793,10 @@ namespace Ming_AutoClicker.ViewModels
             catch (Exception ex)
             {
                 StatusMessage = $"截图失败: {ex.Message}";
-                // 确保主窗口恢复
-                var mainWindow = Application.Current.MainWindow;
-                mainWindow?.Dispatcher.Invoke(() => mainWindow.WindowState = WindowState.Normal);
+            }
+            finally
+            {
+                if (mainWindow != null) mainWindow.WindowState = previousWindowState;
             }
         }
 
@@ -839,11 +839,12 @@ namespace Ming_AutoClicker.ViewModels
             CommandManager.InvalidateRequerySuggested();
             StatusMessage = "正在测试匹配...";
 
+            var mainWindow = Application.Current.MainWindow;
+            var previousWindowState = mainWindow?.WindowState ?? WindowState.Normal;
             try
             {
                 // 最小化主窗口，露出屏幕内容以便截图
-                var mainWindow = Application.Current.MainWindow;
-                mainWindow?.Dispatcher.Invoke(() => mainWindow.WindowState = WindowState.Minimized);
+                if (mainWindow != null) mainWindow.WindowState = WindowState.Minimized;
                 await System.Threading.Tasks.Task.Delay(200);
 
                 var imagePath = ImagePath;
@@ -862,16 +863,10 @@ namespace Ming_AutoClicker.ViewModels
                             ? $"匹配成功! 相似度: {result.Similarity:P1}，耗时: {result.ElapsedMilliseconds}ms"
                             : $"未达到阈值，最佳候选: {result.Similarity:P1}，耗时: {result.ElapsedMilliseconds}ms";
                     };
-                    matchWindow.Closed += (_, _) =>
-                    {
-                        // 恢复主窗口
-                        mainWindow?.Dispatcher.Invoke(() => mainWindow.WindowState = WindowState.Normal);
-                    };
                     matchWindow.ShowDialog();
                 }
                 else
                 {
-                    mainWindow?.Dispatcher.Invoke(() => mainWindow.WindowState = WindowState.Normal);
                     var detail = string.IsNullOrWhiteSpace(result.ErrorMessage)
                         ? GetMatchFailureText(result.FailureReason)
                         : result.ErrorMessage;
@@ -882,12 +877,10 @@ namespace Ming_AutoClicker.ViewModels
             catch (Exception ex)
             {
                 ShowMessage($"测试失败: {ex.Message}", "错误", MessageBoxImage.Error);
-                // 确保主窗口恢复
-                var mainWindow = Application.Current.MainWindow;
-                mainWindow?.Dispatcher.Invoke(() => mainWindow.WindowState = WindowState.Normal);
             }
             finally
             {
+                if (mainWindow != null) mainWindow.WindowState = previousWindowState;
                 _isTestingMatch = false;
                 CommandManager.InvalidateRequerySuggested();
             }

@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
@@ -19,10 +20,25 @@ namespace Ming_AutoClicker
 
         private HotkeyService? _hotkeyService;
         private MacroExecutor? _macroExecutor;
+        private Mutex? _singleInstanceMutex;
+        private bool _ownsSingleInstanceMutex;
 
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
+
+            _singleInstanceMutex = new Mutex(
+                initiallyOwned: true,
+                name: @"Local\MingAutoClicker.SingleInstance",
+                createdNew: out _ownsSingleInstanceMutex);
+            if (!_ownsSingleInstanceMutex)
+            {
+                MessageBox.Show("鼠标连点器已经在运行。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                _singleInstanceMutex.Dispose();
+                _singleInstanceMutex = null;
+                Shutdown();
+                return;
+            }
 
             // 注册全局异常处理，防止应用静默崩溃
             DispatcherUnhandledException += OnDispatcherUnhandledException;
@@ -80,6 +96,15 @@ namespace Ming_AutoClicker
             _macroExecutor?.Dispose();
             ImageMatchService?.Dispose();
             ScreenCaptureService?.Dispose();
+
+            if (_ownsSingleInstanceMutex)
+            {
+                try { _singleInstanceMutex?.ReleaseMutex(); }
+                catch (ApplicationException) { }
+            }
+            _singleInstanceMutex?.Dispose();
+            _singleInstanceMutex = null;
+            _ownsSingleInstanceMutex = false;
 
             base.OnExit(e);
         }

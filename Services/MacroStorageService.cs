@@ -47,32 +47,35 @@ namespace Ming_AutoClicker.Services
             if (profile == null)
                 throw new ArgumentNullException(nameof(profile));
 
-            // 更新修改时间
-            profile.UpdatedAt = DateTime.Now;
-
             // 生成文件名（使用名称的合法版本）
             var fileName = GetSafeFileName(profile.Name, profile.Id);
             var filePath = Path.Combine(_dataDirectory, fileName);
 
-            // 清理该 ID 的旧文件（处理重命名场景：名称变了，旧文件名不同）
-            CleanupOldFiles(profile.Id, fileName);
-
             // 序列化
             var json = JsonSerializer.Serialize(profile, _jsonOptions);
 
-            // 原子写入：先写入临时文件，再替换目标文件
-            var tempFile = filePath + ".tmp";
-            File.WriteAllText(tempFile, json);
+            // 原子写入：先在同一目录完整写入临时文件并刷盘，再替换目标文件。
+            var tempFile = filePath + $".{Guid.NewGuid():N}.tmp";
 
             try
             {
+                using (var stream = new FileStream(tempFile, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+                using (var writer = new StreamWriter(stream))
+                {
+                    writer.Write(json);
+                    writer.Flush();
+                    stream.Flush(flushToDisk: true);
+                }
+
                 File.Move(tempFile, filePath, overwrite: true);
+
+                // 新文件确认落盘后再清理重命名前的旧文件。
+                CleanupOldFiles(profile.Id, fileName);
             }
             catch
             {
-                // 如果 Move 失败（例如跨分区），回退到直接写入
                 try { File.Delete(tempFile); } catch { /* 忽略清理失败 */ }
-                File.WriteAllText(filePath, json);
+                throw;
             }
 
             return filePath;
@@ -173,8 +176,15 @@ namespace Ming_AutoClicker.Services
                 }
             }
 
-            // 按修改时间排序（最新的在前）
-            profiles.Sort((a, b) => b.UpdatedAt.CompareTo(a.UpdatedAt));
+            // 新版本按持久化顺序加载；旧数据尚无顺序时保持原来的更新时间排序。
+            profiles.Sort((a, b) =>
+            {
+                if (a.SortOrder.HasValue && b.SortOrder.HasValue)
+                    return a.SortOrder.Value.CompareTo(b.SortOrder.Value);
+                if (a.SortOrder.HasValue) return -1;
+                if (b.SortOrder.HasValue) return 1;
+                return b.UpdatedAt.CompareTo(a.UpdatedAt);
+            });
             
             return profiles;
         }
@@ -217,8 +227,11 @@ namespace Ming_AutoClicker.Services
             if (profiles == null)
                 throw new ArgumentNullException(nameof(profiles));
 
-            foreach (var profile in profiles)
+            var orderedProfiles = new List<MacroProfile>(profiles);
+            for (var index = 0; index < orderedProfiles.Count; index++)
             {
+                var profile = orderedProfiles[index];
+                profile.SortOrder = index;
                 Save(profile);
             }
         }

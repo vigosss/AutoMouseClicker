@@ -468,7 +468,8 @@ namespace Ming_AutoClicker.Services
                     return result;
                 }
 
-                if (result.FailureReason is MatchFailureReason.InvalidTemplate or MatchFailureReason.MatchingError)
+                if (result.FailureReason is MatchFailureReason.InvalidTemplate or
+                    MatchFailureReason.MatchingError or MatchFailureReason.CaptureFailed)
                     return result;
 
                 if (result.HasCandidate && (bestCandidate == null || result.Similarity > bestCandidate.Similarity))

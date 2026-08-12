@@ -13,12 +13,13 @@ namespace Ming_AutoClicker.Services
         private Task? _clickTask;
         private CancellationTokenSource? _cts;
         private readonly object _lock = new();
+        private volatile bool _isRunning;
         private bool _disposed;
 
         /// <summary>
         /// 是否正在连点
         /// </summary>
-        public bool IsRunning => _clickTask != null && !_clickTask.IsCompleted;
+        public bool IsRunning => _isRunning;
 
         /// <summary>
         /// 已完成的点击次数
@@ -44,16 +45,20 @@ namespace Ming_AutoClicker.Services
         {
             lock (_lock)
             {
+                if (_disposed) throw new ObjectDisposedException(nameof(AutoClickService));
                 if (IsRunning) return false;
+                if (button is not ("left" or "right" or "middle")) return false;
 
                 // 钳位间隔到合理范围
                 intervalMs = Math.Max(10, Math.Min(60000, intervalMs));
 
                 ClickCount = 0;
+                _cts?.Dispose();
                 _cts = new CancellationTokenSource();
                 var token = _cts.Token;
 
-                _clickTask = Task.Run(() => ClickLoop(button, intervalMs, token), token);
+                _isRunning = true;
+                _clickTask = Task.Run(() => ClickLoopAsync(button, intervalMs, token), token);
                 RunningStateChanged?.Invoke(this, true);
                 return true;
             }
@@ -69,25 +74,13 @@ namespace Ming_AutoClicker.Services
                 if (!IsRunning) return;
 
                 _cts?.Cancel();
-                // 不在锁内等待任务完成，避免死锁
             }
-
-            try
-            {
-                _clickTask?.Wait(TimeSpan.FromSeconds(3));
-            }
-            catch (AggregateException)
-            {
-                // 任务被取消是预期行为
-            }
-
-            RunningStateChanged?.Invoke(this, false);
         }
 
         /// <summary>
         /// 连点循环
         /// </summary>
-        private void ClickLoop(string button, int intervalMs, CancellationToken token)
+        private async Task ClickLoopAsync(string button, int intervalMs, CancellationToken token)
         {
             try
             {
@@ -114,7 +107,7 @@ namespace Ming_AutoClicker.Services
                     ClickCountChanged?.Invoke(this, ClickCount);
 
                     // 等待间隔时间
-                    Thread.Sleep(intervalMs);
+                    await Task.Delay(intervalMs, token);
                 }
             }
             catch (OperationCanceledException)
@@ -124,6 +117,11 @@ namespace Ming_AutoClicker.Services
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"连点异常: {ex.Message}");
+            }
+            finally
+            {
+                _isRunning = false;
+                RunningStateChanged?.Invoke(this, false);
             }
         }
 
