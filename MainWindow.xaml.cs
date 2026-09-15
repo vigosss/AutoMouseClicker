@@ -68,13 +68,11 @@ namespace Ming_AutoClicker
 
             // 订阅 ViewModel 的编辑请求事件
             _viewModel.EditRequested += OnRequestEdit;
+            _viewModel.HotkeySettingsRequested += OnHotkeySettingsRequested;
 
             // 注册全局热键
             var hwnd = new WindowInteropHelper(this).Handle;
-            if (!_viewModel.RegisterHotkey(hwnd))
-            {
-                _viewModel.StatusMessage = "F8 全局热键注册失败，可能已被其他程序占用";
-            }
+            _viewModel.RegisterHotkey(hwnd);
         }
 
         /// <summary>
@@ -144,10 +142,25 @@ namespace Ming_AutoClicker
             if (_viewModel != null)
             {
                 _viewModel.EditRequested -= OnRequestEdit;
+                _viewModel.HotkeySettingsRequested -= OnHotkeySettingsRequested;
             }
 
             _viewModel?.UnregisterHotkey();
             _viewModel?.Dispose();
+        }
+
+        private void OnHotkeySettingsRequested(object? sender, EventArgs e)
+        {
+            if (_viewModel == null || !_viewModel.CanConfigureHotkey)
+                return;
+
+            var dialog = new HotkeySettingsWindow(
+                _viewModel.ConfiguredHotkey,
+                _viewModel.TryUpdateHotkey)
+            {
+                Owner = this
+            };
+            dialog.ShowDialog();
         }
 
         /// <summary>

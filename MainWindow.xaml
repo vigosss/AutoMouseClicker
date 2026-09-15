@@ -89,16 +89,14 @@
                     </TextBlock>
                 </StackPanel>
 
-                <!-- F8 提示 -->
-                <Border Grid.Column="4"
-                        Background="{StaticResource BorderLightBrush}"
-                        CornerRadius="4"
-                        Padding="8,3">
-                    <TextBlock Text="F8 开始/停止"
-                               FontSize="11"
-                               Foreground="{StaticResource TextSecondaryBrush}"
-                               VerticalAlignment="Center"/>
-                </Border>
+                <!-- 全局热键提示（点击可设置） -->
+                <Button Grid.Column="4"
+                        Content="{Binding HotkeyStatusText}"
+                        Command="{Binding ConfigureHotkeyCommand}"
+                        Style="{StaticResource SmallButton}"
+                        Padding="8,3"
+                        FontSize="11"
+                        ToolTip="点击设置全局快捷键"/>
 
                 <!-- 版本号 -->
                 <TextBlock Grid.Column="5"

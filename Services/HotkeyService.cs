@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 using Ming_AutoClicker.Helpers;
+using Ming_AutoClicker.Models;
 
 namespace Ming_AutoClicker.Services
 {
@@ -28,12 +29,16 @@ namespace Ming_AutoClicker.Services
         /// <summary>
         /// 当前注册的修饰键
         /// </summary>
-        public Win32Api.HotkeyModifiers CurrentModifiers { get; private set; }
+        public HotkeyModifierKeys CurrentModifiers { get; private set; }
 
         /// <summary>
         /// 当前注册的虚拟键码
         /// </summary>
-        public Win32Api.VirtualKeyCodes CurrentKey { get; private set; }
+        public uint CurrentKey { get; private set; }
+
+        public HotkeyGesture? CurrentGesture => _isRegistered
+            ? new HotkeyGesture { Modifiers = CurrentModifiers, VirtualKey = CurrentKey }
+            : null;
 
         /// <summary>
         /// 热键是否已注册
@@ -47,7 +52,7 @@ namespace Ming_AutoClicker.Services
         /// <returns>是否注册成功</returns>
         public bool RegisterF8(IntPtr windowHandle)
         {
-            return Register(windowHandle, Win32Api.HotkeyModifiers.None, Win32Api.VirtualKeyCodes.F8);
+            return TryRegister(windowHandle, HotkeyGesture.Default).Success;
         }
 
         /// <summary>
@@ -60,11 +65,24 @@ namespace Ming_AutoClicker.Services
         /// <returns>是否注册成功</returns>
         public bool Register(IntPtr windowHandle, Win32Api.HotkeyModifiers modifiers, Win32Api.VirtualKeyCodes key, int hotkeyId = 0)
         {
-            if (_isRegistered)
+            var gesture = new HotkeyGesture
             {
-                // 先注销现有热键
-                Unregister();
-            }
+                Modifiers = (HotkeyModifierKeys)(uint)modifiers,
+                VirtualKey = (uint)key
+            };
+            return TryRegister(windowHandle, gesture, hotkeyId).Success;
+        }
+
+        /// <summary>
+        /// 原子切换全局热键。新热键注册失败时，旧热键保持有效。
+        /// </summary>
+        public HotkeyRegistrationResult TryRegister(IntPtr windowHandle, HotkeyGesture gesture, int hotkeyId = 0)
+        {
+            if (!HotkeyGestureHelper.TryValidate(gesture, out var validationError))
+                return HotkeyRegistrationResult.Failed(HotkeyRegistrationFailure.InvalidGesture, validationError);
+
+            if (_isRegistered && _windowHandle == windowHandle && CurrentGesture!.Equals(gesture))
+                return HotkeyRegistrationResult.Succeeded();
 
             // 自动分配 ID
             if (hotkeyId == 0)
@@ -77,27 +95,49 @@ namespace Ming_AutoClicker.Services
                 }
             }
 
-            _windowHandle = windowHandle;
-            CurrentHotkeyId = hotkeyId;
-            CurrentModifiers = modifiers;
-            CurrentKey = key;
-
             try
             {
-                _isRegistered = Win32Api.RegisterHotKey(windowHandle, hotkeyId, (uint)modifiers, (uint)key);
-
-                if (!_isRegistered)
+                var registered = Win32Api.RegisterHotKey(
+                    windowHandle, hotkeyId, (uint)gesture.Modifiers, gesture.VirtualKey);
+                if (!registered)
                 {
                     var errorCode = Marshal.GetLastWin32Error();
                     System.Diagnostics.Debug.WriteLine($"热键注册失败，错误码: {errorCode}");
+                    return errorCode == 1409
+                        ? HotkeyRegistrationResult.Failed(
+                            HotkeyRegistrationFailure.AlreadyRegistered,
+                            "该快捷键已被其他程序占用，请换一个组合",
+                            errorCode)
+                        : HotkeyRegistrationResult.Failed(
+                            HotkeyRegistrationFailure.SystemError,
+                            $"系统无法注册该快捷键（错误码 {errorCode}）",
+                            errorCode);
                 }
 
-                return _isRegistered;
+                // 新组合成功后才注销旧组合，确保切换失败时仍可停止正在进行的操作。
+                if (_isRegistered && !Win32Api.UnregisterHotKey(_windowHandle, CurrentHotkeyId))
+                {
+                    var errorCode = Marshal.GetLastWin32Error();
+                    Win32Api.UnregisterHotKey(windowHandle, hotkeyId);
+                    return HotkeyRegistrationResult.Failed(
+                        HotkeyRegistrationFailure.SystemError,
+                        $"无法注销原快捷键（错误码 {errorCode}）",
+                        errorCode);
+                }
+
+                _windowHandle = windowHandle;
+                CurrentHotkeyId = hotkeyId;
+                CurrentModifiers = gesture.Modifiers;
+                CurrentKey = gesture.VirtualKey;
+                _isRegistered = true;
+                return HotkeyRegistrationResult.Succeeded();
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"热键注册异常: {ex.Message}");
-                return false;
+                return HotkeyRegistrationResult.Failed(
+                    HotkeyRegistrationFailure.SystemError,
+                    $"注册快捷键时发生错误：{ex.Message}");
             }
         }
 
@@ -182,11 +222,7 @@ namespace Ming_AutoClicker.Services
             if (!_isRegistered)
                 return "未注册";
 
-            return new HotkeyEventArgs
-            {
-                Modifiers = CurrentModifiers,
-                Key = CurrentKey
-            }.Description;
+            return HotkeyGestureHelper.Format(CurrentGesture);
         }
 
         public void Dispose()
@@ -212,12 +248,12 @@ namespace Ming_AutoClicker.Services
         /// <summary>
         /// 修饰键
         /// </summary>
-        public Win32Api.HotkeyModifiers Modifiers { get; set; }
+        public HotkeyModifierKeys Modifiers { get; set; }
 
         /// <summary>
         /// 虚拟键码
         /// </summary>
-        public Win32Api.VirtualKeyCodes Key { get; set; }
+        public uint Key { get; set; }
 
         /// <summary>
         /// 获取热键描述
@@ -226,21 +262,44 @@ namespace Ming_AutoClicker.Services
         {
             get
             {
-                var desc = string.Empty;
-
-                if (Modifiers.HasFlag(Win32Api.HotkeyModifiers.Control))
-                    desc += "Ctrl + ";
-                if (Modifiers.HasFlag(Win32Api.HotkeyModifiers.Alt))
-                    desc += "Alt + ";
-                if (Modifiers.HasFlag(Win32Api.HotkeyModifiers.Shift))
-                    desc += "Shift + ";
-                if (Modifiers.HasFlag(Win32Api.HotkeyModifiers.Win))
-                    desc += "Win + ";
-
-                desc += Key.ToString();
-
-                return desc;
+                return HotkeyGestureHelper.Format(new HotkeyGesture
+                {
+                    Modifiers = Modifiers,
+                    VirtualKey = Key
+                });
             }
+        }
+    }
+
+    public enum HotkeyRegistrationFailure
+    {
+        None,
+        InvalidGesture,
+        AlreadyRegistered,
+        SystemError,
+        SettingsSaveFailed
+    }
+
+    public sealed class HotkeyRegistrationResult
+    {
+        public bool Success { get; private init; }
+        public HotkeyRegistrationFailure Failure { get; private init; }
+        public string Message { get; private init; } = string.Empty;
+        public int ErrorCode { get; private init; }
+
+        public static HotkeyRegistrationResult Succeeded() => new HotkeyRegistrationResult { Success = true };
+
+        public static HotkeyRegistrationResult Failed(
+            HotkeyRegistrationFailure failure,
+            string message,
+            int errorCode = 0)
+        {
+            return new HotkeyRegistrationResult
+            {
+                Failure = failure,
+                Message = message,
+                ErrorCode = errorCode
+            };
         }
     }
 }

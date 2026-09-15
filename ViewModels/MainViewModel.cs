@@ -21,6 +21,8 @@ namespace Ming_AutoClicker.ViewModels
         private readonly ImageMatchService _imageMatchService;
         private readonly MacroExecutor _macroExecutor;
         private readonly HotkeyService _hotkeyService;
+        private readonly AppSettingsService _appSettingsService;
+        private readonly AppSettings _appSettings;
 
         private MacroProfile? _selectedMacro;
         private bool _isExecuting;
@@ -33,6 +35,8 @@ namespace Ming_AutoClicker.ViewModels
         private CancellationTokenSource? _macroStartCancellation;
         private bool _mainWindowMinimizedForMacro;
         private WindowState _windowStateBeforeMacro = WindowState.Normal;
+        private IntPtr _mainWindowHandle;
+        private string _activeHotkeyDescription = "F8";
 
         #region 属性
 
@@ -94,6 +98,7 @@ namespace Ming_AutoClicker.ViewModels
                 if (SetProperty(ref _isExecuting, value))
                 {
                     OnPropertyChanged(nameof(IsNotExecuting));
+                    OnPropertyChanged(nameof(CanConfigureHotkey));
                     CommandManager.InvalidateRequerySuggested();
                 }
             }
@@ -137,9 +142,39 @@ namespace Ming_AutoClicker.ViewModels
         }
 
         /// <summary>
+        /// 当前实际注册成功的全局启停热键。
+        /// </summary>
+        public string ActiveHotkeyDescription
+        {
+            get => _activeHotkeyDescription;
+            private set
+            {
+                if (SetProperty(ref _activeHotkeyDescription, value))
+                {
+                    OnPropertyChanged(nameof(HotkeyStatusText));
+                    OnPropertyChanged(nameof(MacroHotkeyHintText));
+                }
+            }
+        }
+
+        public string HotkeyStatusText => ActiveHotkeyDescription == "未启用"
+            ? "全局热键未启用"
+            : $"{ActiveHotkeyDescription} 开始/停止";
+
+        public string MacroHotkeyHintText => ActiveHotkeyDescription == "未启用"
+            ? "选中宏后点击开始运行（全局热键未启用）"
+            : $"选中宏后点击开始或按 {ActiveHotkeyDescription} 运行";
+
+        public bool CanConfigureHotkey => IsNotExecuting && AutoClickViewModel.IsNotRunning;
+
+        public HotkeyGesture ConfiguredHotkey => _appSettings.Hotkeys.ToggleExecution.Clone();
+
+        /// <summary>
         /// 请求编辑宏事件（由 MainWindow 订阅以切换到编辑器视图）
         /// </summary>
         public event EventHandler<MacroProfile>? EditRequested;
+
+        public event EventHandler? HotkeySettingsRequested;
 
         #endregion
 
@@ -154,6 +189,7 @@ namespace Ming_AutoClicker.ViewModels
         public ICommand ToggleExecutionCommand { get; }
         public ICommand SaveAllCommand { get; }
         public ICommand RefreshCommand { get; }
+        public ICommand ConfigureHotkeyCommand { get; }
 
         #endregion
 
@@ -163,6 +199,7 @@ namespace Ming_AutoClicker.ViewModels
             ImageMatchService imageMatchService,
             MacroExecutor macroExecutor,
             HotkeyService hotkeyService,
+            AppSettingsService appSettingsService,
             AutoClickService autoClickService)
         {
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
@@ -170,6 +207,8 @@ namespace Ming_AutoClicker.ViewModels
             _imageMatchService = imageMatchService ?? throw new ArgumentNullException(nameof(imageMatchService));
             _macroExecutor = macroExecutor ?? throw new ArgumentNullException(nameof(macroExecutor));
             _hotkeyService = hotkeyService ?? throw new ArgumentNullException(nameof(hotkeyService));
+            _appSettingsService = appSettingsService ?? throw new ArgumentNullException(nameof(appSettingsService));
+            _appSettings = _appSettingsService.Load();
 
             Macros = new ObservableCollection<MacroProfile>();
 
@@ -192,6 +231,9 @@ namespace Ming_AutoClicker.ViewModels
             ToggleExecutionCommand = new RelayCommand(_ => ToggleExecution());
             SaveAllCommand = new RelayCommand(_ => SaveAll());
             RefreshCommand = new RelayCommand(_ => LoadMacros());
+            ConfigureHotkeyCommand = new RelayCommand(
+                _ => HotkeySettingsRequested?.Invoke(this, EventArgs.Empty),
+                _ => CanConfigureHotkey);
 
             // 订阅执行器事件
             _macroExecutor.ActionExecuted += OnActionExecuted;
@@ -458,6 +500,7 @@ namespace Ming_AutoClicker.ViewModels
             if (_isStartingMacro == value) return;
             _isStartingMacro = value;
             OnPropertyChanged(nameof(IsNotExecuting));
+            OnPropertyChanged(nameof(CanConfigureHotkey));
             CommandManager.InvalidateRequerySuggested();
         }
 
@@ -530,6 +573,9 @@ namespace Ming_AutoClicker.ViewModels
                             StatusMessage = $"已停止，共点击 {AutoClickViewModel.ClickCount} 次";
                         }
                     }
+
+                    OnPropertyChanged(nameof(CanConfigureHotkey));
+                    CommandManager.InvalidateRequerySuggested();
                 });
             }
             else if (e.PropertyName == nameof(AutoClickViewModel.ClickCount))
@@ -546,7 +592,86 @@ namespace Ming_AutoClicker.ViewModels
 
         public bool RegisterHotkey(IntPtr windowHandle)
         {
-            return _hotkeyService.RegisterF8(windowHandle);
+            _mainWindowHandle = windowHandle;
+            var configured = _appSettings.Hotkeys.ToggleExecution;
+            var result = _hotkeyService.TryRegister(windowHandle, configured);
+            if (result.Success)
+            {
+                UpdateActiveHotkeyDescription();
+                return true;
+            }
+
+            var configuredText = HotkeyGestureHelper.Format(configured);
+            if (!configured.Equals(HotkeyGesture.Default))
+            {
+                var fallback = _hotkeyService.TryRegister(windowHandle, HotkeyGesture.Default);
+                if (fallback.Success)
+                {
+                    UpdateActiveHotkeyDescription();
+                    StatusMessage = $"{configuredText} 不可用，已临时使用 F8；可点击右下角重新设置";
+                    return true;
+                }
+            }
+
+            ActiveHotkeyDescription = "未启用";
+            StatusMessage = $"全局热键未启用：{result.Message}；仍可使用界面按钮";
+            return false;
+        }
+
+        /// <summary>
+        /// 注册并保存新热键。注册或保存失败时恢复原有热键。
+        /// </summary>
+        public HotkeyRegistrationResult TryUpdateHotkey(HotkeyGesture gesture)
+        {
+            if (!CanConfigureHotkey)
+            {
+                return HotkeyRegistrationResult.Failed(
+                    HotkeyRegistrationFailure.SystemError,
+                    "请先停止连点或宏执行，再修改快捷键");
+            }
+
+            if (_mainWindowHandle == IntPtr.Zero)
+            {
+                return HotkeyRegistrationResult.Failed(
+                    HotkeyRegistrationFailure.SystemError,
+                    "主窗口尚未就绪，暂时无法注册快捷键");
+            }
+
+            var previousActive = _hotkeyService.CurrentGesture?.Clone();
+            var previousConfigured = _appSettings.Hotkeys.ToggleExecution.Clone();
+            var registration = _hotkeyService.TryRegister(_mainWindowHandle, gesture);
+            if (!registration.Success)
+                return registration;
+
+            try
+            {
+                _appSettings.Hotkeys.ToggleExecution = gesture.Clone();
+                _appSettingsService.Save(_appSettings);
+            }
+            catch (Exception ex)
+            {
+                _appSettings.Hotkeys.ToggleExecution = previousConfigured;
+                if (previousActive != null)
+                    _hotkeyService.TryRegister(_mainWindowHandle, previousActive);
+                else
+                    _hotkeyService.Unregister();
+
+                UpdateActiveHotkeyDescription();
+                return HotkeyRegistrationResult.Failed(
+                    HotkeyRegistrationFailure.SettingsSaveFailed,
+                    $"快捷键设置无法保存：{ex.Message}");
+            }
+
+            UpdateActiveHotkeyDescription();
+            StatusMessage = $"全局快捷键已设置为 {ActiveHotkeyDescription}";
+            return HotkeyRegistrationResult.Succeeded();
+        }
+
+        private void UpdateActiveHotkeyDescription()
+        {
+            ActiveHotkeyDescription = _hotkeyService.IsRegistered
+                ? _hotkeyService.GetCurrentHotkeyDescription()
+                : "未启用";
         }
 
         public void UnregisterHotkey()
@@ -578,6 +703,7 @@ namespace Ming_AutoClicker.ViewModels
                 _macroExecutor.ExecutionCompleted -= OnExecutionCompleted;
                 _macroExecutor.StateChanged -= OnExecutionStateChanged;
                 _hotkeyService.HotkeyPressed -= OnHotkeyPressed;
+                HotkeySettingsRequested = null;
                 SaveAll();
             }
             base.Dispose(disposing);

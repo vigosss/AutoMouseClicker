@@ -73,7 +73,7 @@
                                 CornerRadius="4"
                                 Padding="8,4"
                                 Margin="0,0,8,0">
-                            <TextBlock Text="F8"
+                            <TextBlock Text="{Binding DataContext.ActiveHotkeyDescription, RelativeSource={RelativeSource AncestorType=Window}}"
                                        FontSize="13" FontWeight="SemiBold"
                                        Foreground="{StaticResource PrimaryBrush}"
                                        VerticalAlignment="Center"/>

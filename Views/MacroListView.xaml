@@ -81,7 +81,7 @@
             </Grid.ColumnDefinitions>
 
             <TextBlock Grid.Column="0"
-                       Text="选中宏后点击开始或按 F8 运行"
+                       Text="{Binding MacroHotkeyHintText}"
                        Style="{StaticResource CaptionText}"
                        VerticalAlignment="Center"/>
 

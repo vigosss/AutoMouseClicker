@@ -23,7 +23,7 @@ A Windows desktop automation tool built with WPF + OpenCV, featuring auto-clicki
 - 支持左键、中键、右键点击
 - 可自定义点击间隔（10ms ~ 60000ms）
 - 实时显示点击次数统计
-- 全局热键 `F8` 一键启停
+- 可配置全局热键一键启停（默认 `F8`）
 
 ### 📋 宏编辑器 Macro Editor
 - 可视化宏配置管理（创建、编辑、复制、删除）
@@ -79,7 +79,7 @@ A Windows desktop automation tool built with WPF + OpenCV, featuring auto-clicki
 2. 选择点击类型（左键 / 中键 / 右键）
 3. 设置点击间隔（单位：毫秒）
 4. 将鼠标移至目标位置
-5. 按 `F8` 键开始连点，再次按 `F8` 停止
+5. 按全局快捷键（默认 `F8`）开始连点，再次按下停止；点击主窗口右下角可修改
 
 ### 宏编辑模式
 
@@ -88,7 +88,7 @@ A Windows desktop automation tool built with WPF + OpenCV, featuring auto-clicki
 3. 点击「✏️ 编辑」进入宏编辑器
 4. 添加动作（🔍 找图 / ⏱ 等待）
 5. 配置动作参数后点击「💾 保存」
-6. 选中宏后点击「▶ 开始」或按 `F8` 运行
+6. 选中宏后点击「▶ 开始」或按已设置的全局快捷键运行
 
 ### 找图动作配置
 
@@ -104,8 +104,10 @@ A Windows desktop automation tool built with WPF + OpenCV, featuring auto-clicki
 
 | 快捷键 | 功能 |
 |--------|------|
-| `F8` | 开始 / 停止（连点或宏执行） |
+| `F8`（默认，可修改） | 开始 / 停止（连点或宏执行） |
 | `ESC` | 关闭截图窗口 / 匹配结果窗口 |
+
+点击主窗口右下角的快捷键提示可重新设置；支持 F1–F12，以及带 Ctrl、Alt 或 Shift 的字母和数字组合。
 
 
 ## 📋 更新日志 Changelog
