@@ -164,7 +164,8 @@ namespace Ming_AutoClicker.Views
             var accentBrush = new SolidColorBrush(accent);
             StatusDot.Fill = accentBrush;
             StatusTitle.Foreground = accentBrush;
-            StatusTitle.Text = _matchResult.Found ? "✓ 匹配成功" : "! 最佳候选未达阈值";
+            StatusTitle.Text = LocalizationService.Current.GetString(
+                _matchResult.Found ? "MatchSuccess" : "MatchBelowThreshold");
             InfoPanel.BorderBrush = accentBrush;
             InfoDivider.Background = new SolidColorBrush(Color.FromArgb(80, accent.R, accent.G, accent.B));
 
@@ -204,10 +205,13 @@ namespace Ming_AutoClicker.Views
         private void DrawBottomTip()
         {
             BottomTipText.Text = _matchResult.Found
-                ? "按 ESC 退出"
-                : $"最佳候选 {_matchResult.Similarity:P1}，低于阈值 {_matchResult.Threshold:P1}；建议检查截图、缩放或阈值 · 按 ESC 退出";
+                ? LocalizationService.Current.GetString("MatchFoundTip")
+                : LocalizationService.Current.Format(
+                    "MatchExitWithInfo",
+                    LocalizationService.Current.Format(
+                        "MatchFailureDetail", _matchResult.Similarity, _matchResult.Threshold));
             if (!string.IsNullOrWhiteSpace(_additionalInfo))
-                BottomTipText.Text = $"{_additionalInfo} · 按 ESC 退出";
+                BottomTipText.Text = LocalizationService.Current.Format("MatchExitWithInfo", _additionalInfo);
 
             BottomTip.Visibility = Visibility.Visible;
             BottomTip.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));

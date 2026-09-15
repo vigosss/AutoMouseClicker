@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Data;
 using System.Windows.Input;
 using Ming_AutoClicker.Helpers;
 using Ming_AutoClicker.Models;
@@ -26,8 +27,8 @@ namespace Ming_AutoClicker.ViewModels
 
         private MacroProfile? _selectedMacro;
         private bool _isExecuting;
-        private string _statusMessage = "就绪";
-        private string _executionStatus = "未运行";
+        private string _statusMessage = string.Empty;
+        private string _executionStatus = string.Empty;
         private int _currentTabIndex;
         private int _autoClickCount;
         private bool _isStartingMacro;
@@ -98,7 +99,7 @@ namespace Ming_AutoClicker.ViewModels
                 if (SetProperty(ref _isExecuting, value))
                 {
                     OnPropertyChanged(nameof(IsNotExecuting));
-                    OnPropertyChanged(nameof(CanConfigureHotkey));
+                    OnPropertyChanged(nameof(CanConfigureSettings));
                     CommandManager.InvalidateRequerySuggested();
                 }
             }
@@ -157,24 +158,25 @@ namespace Ming_AutoClicker.ViewModels
             }
         }
 
-        public string HotkeyStatusText => ActiveHotkeyDescription == "未启用"
-            ? "全局热键未启用"
-            : $"{ActiveHotkeyDescription} 开始/停止";
+        public string HotkeyStatusText => !_hotkeyService.IsRegistered
+            ? LocalizationService.Current.GetString("HotkeyStatusDisabled")
+            : LocalizationService.Current.Format("HotkeyStatus", ActiveHotkeyDescription);
 
-        public string MacroHotkeyHintText => ActiveHotkeyDescription == "未启用"
-            ? "选中宏后点击开始运行（全局热键未启用）"
-            : $"选中宏后点击开始或按 {ActiveHotkeyDescription} 运行";
+        public string MacroHotkeyHintText => !_hotkeyService.IsRegistered
+            ? LocalizationService.Current.GetString("HotkeyMacroHintDisabled")
+            : LocalizationService.Current.Format("HotkeyMacroHint", ActiveHotkeyDescription);
 
-        public bool CanConfigureHotkey => IsNotExecuting && AutoClickViewModel.IsNotRunning;
+        public bool CanConfigureSettings => IsNotExecuting && AutoClickViewModel.IsNotRunning;
 
         public HotkeyGesture ConfiguredHotkey => _appSettings.Hotkeys.ToggleExecution.Clone();
+        public AppLanguage ConfiguredLanguage => _appSettings.Language;
 
         /// <summary>
         /// 请求编辑宏事件（由 MainWindow 订阅以切换到编辑器视图）
         /// </summary>
         public event EventHandler<MacroProfile>? EditRequested;
 
-        public event EventHandler? HotkeySettingsRequested;
+        public event EventHandler? SettingsRequested;
 
         #endregion
 
@@ -189,7 +191,7 @@ namespace Ming_AutoClicker.ViewModels
         public ICommand ToggleExecutionCommand { get; }
         public ICommand SaveAllCommand { get; }
         public ICommand RefreshCommand { get; }
-        public ICommand ConfigureHotkeyCommand { get; }
+        public ICommand ConfigureSettingsCommand { get; }
 
         #endregion
 
@@ -200,6 +202,7 @@ namespace Ming_AutoClicker.ViewModels
             MacroExecutor macroExecutor,
             HotkeyService hotkeyService,
             AppSettingsService appSettingsService,
+            AppSettings appSettings,
             AutoClickService autoClickService)
         {
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
@@ -208,7 +211,9 @@ namespace Ming_AutoClicker.ViewModels
             _macroExecutor = macroExecutor ?? throw new ArgumentNullException(nameof(macroExecutor));
             _hotkeyService = hotkeyService ?? throw new ArgumentNullException(nameof(hotkeyService));
             _appSettingsService = appSettingsService ?? throw new ArgumentNullException(nameof(appSettingsService));
-            _appSettings = _appSettingsService.Load();
+            _appSettings = appSettings ?? throw new ArgumentNullException(nameof(appSettings));
+            _statusMessage = LocalizationService.Current.GetString("StatusReady");
+            _executionStatus = LocalizationService.Current.GetString("StatusNotRunning");
 
             Macros = new ObservableCollection<MacroProfile>();
 
@@ -231,9 +236,9 @@ namespace Ming_AutoClicker.ViewModels
             ToggleExecutionCommand = new RelayCommand(_ => ToggleExecution());
             SaveAllCommand = new RelayCommand(_ => SaveAll());
             RefreshCommand = new RelayCommand(_ => LoadMacros());
-            ConfigureHotkeyCommand = new RelayCommand(
-                _ => HotkeySettingsRequested?.Invoke(this, EventArgs.Empty),
-                _ => CanConfigureHotkey);
+            ConfigureSettingsCommand = new RelayCommand(
+                _ => SettingsRequested?.Invoke(this, EventArgs.Empty),
+                _ => CanConfigureSettings);
 
             // 订阅执行器事件
             _macroExecutor.ActionExecuted += OnActionExecuted;
@@ -242,6 +247,7 @@ namespace Ming_AutoClicker.ViewModels
 
             // 订阅热键事件
             _hotkeyService.HotkeyPressed += OnHotkeyPressed;
+            LocalizationService.Current.LanguageChanged += OnLanguageChanged;
 
             // 加载宏列表
             LoadMacros();
@@ -256,7 +262,7 @@ namespace Ming_AutoClicker.ViewModels
         {
             var newMacro = new MacroProfile
             {
-                Name = $"新宏 {Macros.Count + 1}",
+                Name = LocalizationService.Current.Format("DefaultMacroName", Macros.Count + 1),
                 CreatedAt = DateTime.Now,
                 UpdatedAt = DateTime.Now
             };
@@ -265,7 +271,7 @@ namespace Ming_AutoClicker.ViewModels
             SelectedMacro = newMacro;
             SaveAll();
 
-            StatusMessage = $"已创建: {newMacro.Name}";
+            StatusMessage = LocalizationService.Current.Format("StatusCreatedMacro", newMacro.Name);
         }
 
         private bool CanEditMacro() => SelectedMacro != null && IsNotExecuting;
@@ -273,7 +279,7 @@ namespace Ming_AutoClicker.ViewModels
         private void EditMacro()
         {
             if (SelectedMacro == null) return;
-            StatusMessage = $"编辑: {SelectedMacro.Name}";
+            StatusMessage = LocalizationService.Current.Format("StatusEditingMacro", SelectedMacro.Name);
             EditRequested?.Invoke(this, SelectedMacro);
         }
 
@@ -286,17 +292,19 @@ namespace Ming_AutoClicker.ViewModels
             var macroToDelete = SelectedMacro;
             var name = macroToDelete.Name;
 
-            if (ShowConfirm($"确定要删除宏 \"{name}\" 吗？", "确认删除"))
+            if (ShowConfirm(
+                    LocalizationService.Current.Format("DeleteMacroPrompt", name),
+                    LocalizationService.Current.GetString("DeleteMacroTitle")))
             {
                 if (!_storageService.Delete(macroToDelete.Id))
                 {
-                    StatusMessage = $"删除失败，宏文件未找到或无法删除: {name}";
+                    StatusMessage = LocalizationService.Current.Format("StatusDeleteFailed", name);
                     return;
                 }
 
                 Macros.Remove(macroToDelete);
                 _screenCaptureService.CleanupUnusedScreenshots(Macros);
-                StatusMessage = $"已删除: {name}";
+                StatusMessage = LocalizationService.Current.Format("StatusDeletedMacro", name);
             }
         }
 
@@ -308,14 +316,14 @@ namespace Ming_AutoClicker.ViewModels
 
             var duplicated = SelectedMacro.DeepClone();
             duplicated.Id = Guid.NewGuid().ToString();
-            duplicated.Name = $"{SelectedMacro.Name} (副本)";
+            duplicated.Name = SelectedMacro.Name + LocalizationService.Current.GetString("DuplicateMacroSuffix");
             duplicated.CreatedAt = DateTime.Now;
             duplicated.UpdatedAt = DateTime.Now;
 
             Macros.Add(duplicated);
             SelectedMacro = duplicated;
             SaveAll();
-            StatusMessage = $"已复制: {duplicated.Name}";
+            StatusMessage = LocalizationService.Current.Format("StatusDuplicatedMacro", duplicated.Name);
         }
 
         private bool CanStartMacro() => SelectedMacro != null && IsNotExecuting && SelectedMacro.Actions.Count > 0;
@@ -334,28 +342,28 @@ namespace Ming_AutoClicker.ViewModels
             try
             {
                 MinimizeMainWindowForMacro();
-                StatusMessage = $"准备执行: {macroToRun.Name}";
+                StatusMessage = LocalizationService.Current.Format("StatusPreparingMacro", macroToRun.Name);
 
                 // 等待主窗口完全隐藏，避免截图或坐标点击命中程序自身。
                 await Task.Delay(200, cancellation.Token);
 
                 IsExecuting = true;
-                ExecutionStatus = "正在启动";
-                StatusMessage = $"开始执行: {macroToRun.Name}";
+                ExecutionStatus = LocalizationService.Current.GetString("StatusStarting");
+                StatusMessage = LocalizationService.Current.Format("StatusStartingMacro", macroToRun.Name);
 
                 if (!_macroExecutor.Start(macroToRun))
                 {
                     IsExecuting = false;
-                    ExecutionStatus = "启动失败";
-                    StatusMessage = "启动失败";
+                    ExecutionStatus = LocalizationService.Current.GetString("StatusStartFailed");
+                    StatusMessage = LocalizationService.Current.GetString("StatusStartFailed");
                     RestoreMainWindowAfterMacro();
                     _runningMacro = null;
                 }
             }
             catch (OperationCanceledException)
             {
-                ExecutionStatus = "已停止";
-                StatusMessage = "已取消启动";
+                ExecutionStatus = LocalizationService.Current.GetString("StatusStopped");
+                StatusMessage = LocalizationService.Current.GetString("StatusStartCancelled");
                 RestoreRunningMacroSelection();
                 RestoreMainWindowAfterMacro();
                 _runningMacro = null;
@@ -363,8 +371,8 @@ namespace Ming_AutoClicker.ViewModels
             catch (Exception ex)
             {
                 IsExecuting = false;
-                ExecutionStatus = "启动失败";
-                StatusMessage = $"启动失败: {ex.Message}";
+                ExecutionStatus = LocalizationService.Current.GetString("StatusStartFailed");
+                StatusMessage = LocalizationService.Current.Format("StatusStartError", ex.Message);
                 RestoreRunningMacroSelection();
                 RestoreMainWindowAfterMacro();
                 _runningMacro = null;
@@ -393,8 +401,8 @@ namespace Ming_AutoClicker.ViewModels
             _macroExecutor.Stop();
             // 保持执行锁定和窗口最小化，直到后台任务确实退出。
             // ExecutionCompleted 会负责恢复窗口、选择和最终状态。
-            ExecutionStatus = "正在停止";
-            StatusMessage = "正在安全停止，请稍候…";
+            ExecutionStatus = LocalizationService.Current.GetString("StatusStopping");
+            StatusMessage = LocalizationService.Current.GetString("StatusSafeStopping");
         }
 
         public void ToggleExecution()
@@ -428,7 +436,19 @@ namespace Ming_AutoClicker.ViewModels
         {
             if (_currentTabIndex == 0)
             {
-                ExecutionStatus = AutoClickViewModel.IsRunning ? "连点中" : "未运行";
+                ExecutionStatus = LocalizationService.Current.GetString(
+                    AutoClickViewModel.IsRunning ? "StatusAutoClicking" : "StatusNotRunning");
+            }
+            else
+            {
+                ExecutionStatus = _macroExecutor.State switch
+                {
+                    MacroExecutionState.Running => LocalizationService.Current.GetString("StatusRunning"),
+                    MacroExecutionState.Paused => LocalizationService.Current.GetString("StatusPaused"),
+                    MacroExecutionState.Stopped => LocalizationService.Current.GetString("StatusStopped"),
+                    MacroExecutionState.Completed => LocalizationService.Current.GetString("StatusCompleted"),
+                    _ => LocalizationService.Current.GetString("StatusNotRunning")
+                };
             }
         }
 
@@ -438,11 +458,11 @@ namespace Ming_AutoClicker.ViewModels
             {
                 _storageService.SaveMacros(Macros.ToList());
                 _screenCaptureService.CleanupUnusedScreenshots(Macros);
-                StatusMessage = "已保存";
+                StatusMessage = LocalizationService.Current.GetString("StatusSaved");
             }
             catch (Exception ex)
             {
-                StatusMessage = $"保存失败: {ex.Message}";
+                StatusMessage = LocalizationService.Current.Format("StatusSaveFailed", ex.Message);
             }
         }
 
@@ -460,11 +480,11 @@ namespace Ming_AutoClicker.ViewModels
                 SelectedMacro = selectedId == null
                     ? Macros.FirstOrDefault()
                     : Macros.FirstOrDefault(m => m.Id == selectedId) ?? Macros.FirstOrDefault();
-                StatusMessage = $"已加载 {Macros.Count} 个宏";
+                StatusMessage = LocalizationService.Current.Format("StatusLoadedMacros", Macros.Count);
             }
             catch (Exception ex)
             {
-                StatusMessage = $"加载失败: {ex.Message}";
+                StatusMessage = LocalizationService.Current.Format("StatusLoadFailed", ex.Message);
             }
         }
 
@@ -476,9 +496,10 @@ namespace Ming_AutoClicker.ViewModels
         {
             OnUIThread(() =>
             {
-                var actionDesc = e.Action?.GetDescription() ?? "未知动作";
-                var status = e.Success ? "成功" : "失败";
-                StatusMessage = $"动作 {e.ActionIndex + 1}: {actionDesc} - {status}";
+                var actionDesc = e.Action?.GetDescription() ?? LocalizationService.Current.GetString("ActionUnknown");
+                var status = LocalizationService.Current.GetString(e.Success ? "StatusSuccess" : "StatusFailed");
+                StatusMessage = LocalizationService.Current.Format(
+                    "StatusActionResult", e.ActionIndex + 1, actionDesc, status);
             });
         }
 
@@ -487,7 +508,8 @@ namespace Ming_AutoClicker.ViewModels
             OnUIThread(() =>
             {
                 IsExecuting = false;
-                ExecutionStatus = e.Success ? "已完成" : "已停止";
+                ExecutionStatus = LocalizationService.Current.GetString(
+                    e.Success ? "StatusCompleted" : "StatusStopped");
                 StatusMessage = e.Message;
                 RestoreRunningMacroSelection();
                 RestoreMainWindowAfterMacro();
@@ -500,7 +522,7 @@ namespace Ming_AutoClicker.ViewModels
             if (_isStartingMacro == value) return;
             _isStartingMacro = value;
             OnPropertyChanged(nameof(IsNotExecuting));
-            OnPropertyChanged(nameof(CanConfigureHotkey));
+            OnPropertyChanged(nameof(CanConfigureSettings));
             CommandManager.InvalidateRequerySuggested();
         }
 
@@ -540,12 +562,12 @@ namespace Ming_AutoClicker.ViewModels
             {
                 ExecutionStatus = state switch
                 {
-                    MacroExecutionState.Idle => "空闲",
-                    MacroExecutionState.Running => "运行中",
-                    MacroExecutionState.Paused => "已暂停",
-                    MacroExecutionState.Stopped => "已停止",
-                    MacroExecutionState.Completed => "已完成",
-                    _ => "未知"
+                    MacroExecutionState.Idle => LocalizationService.Current.GetString("StatusIdle"),
+                    MacroExecutionState.Running => LocalizationService.Current.GetString("StatusRunning"),
+                    MacroExecutionState.Paused => LocalizationService.Current.GetString("StatusPaused"),
+                    MacroExecutionState.Stopped => LocalizationService.Current.GetString("StatusStopped"),
+                    MacroExecutionState.Completed => LocalizationService.Current.GetString("StatusCompleted"),
+                    _ => LocalizationService.Current.GetString("StatusUnknown")
                 };
             });
         }
@@ -563,18 +585,20 @@ namespace Ming_AutoClicker.ViewModels
                 {
                     if (_currentTabIndex == 0)
                     {
-                        ExecutionStatus = AutoClickViewModel.IsRunning ? "连点中" : "未运行";
+                        ExecutionStatus = LocalizationService.Current.GetString(
+                            AutoClickViewModel.IsRunning ? "StatusAutoClicking" : "StatusNotRunning");
                         if (AutoClickViewModel.IsRunning)
                         {
                             StatusMessage = AutoClickViewModel.StatusText;
                         }
                         else if (AutoClickViewModel.ClickCount > 0)
                         {
-                            StatusMessage = $"已停止，共点击 {AutoClickViewModel.ClickCount} 次";
+                            StatusMessage = LocalizationService.Current.Format(
+                                "StatusStoppedClicks", AutoClickViewModel.ClickCount);
                         }
                     }
 
-                    OnPropertyChanged(nameof(CanConfigureHotkey));
+                    OnPropertyChanged(nameof(CanConfigureSettings));
                     CommandManager.InvalidateRequerySuggested();
                 });
             }
@@ -608,62 +632,69 @@ namespace Ming_AutoClicker.ViewModels
                 if (fallback.Success)
                 {
                     UpdateActiveHotkeyDescription();
-                    StatusMessage = $"{configuredText} 不可用，已临时使用 F8；可点击右下角重新设置";
+                    StatusMessage = LocalizationService.Current.Format("HotkeyFallback", configuredText);
                     return true;
                 }
             }
 
-            ActiveHotkeyDescription = "未启用";
-            StatusMessage = $"全局热键未启用：{result.Message}；仍可使用界面按钮";
+            ActiveHotkeyDescription = LocalizationService.Current.GetString("HotkeyDisabled");
+            StatusMessage = LocalizationService.Current.Format("HotkeyUnavailable", result.Message);
             return false;
         }
 
         /// <summary>
-        /// 注册并保存新热键。注册或保存失败时恢复原有热键。
+        /// 注册并保存设置。注册或保存失败时恢复原有配置。
         /// </summary>
-        public HotkeyRegistrationResult TryUpdateHotkey(HotkeyGesture gesture)
+        public HotkeyRegistrationResult TryUpdateSettings(HotkeyGesture gesture, AppLanguage language)
         {
-            if (!CanConfigureHotkey)
+            if (!CanConfigureSettings)
             {
                 return HotkeyRegistrationResult.Failed(
                     HotkeyRegistrationFailure.SystemError,
-                    "请先停止连点或宏执行，再修改快捷键");
+                    LocalizationService.Current.GetString("HotkeyStopBeforeSettings"));
             }
 
             if (_mainWindowHandle == IntPtr.Zero)
             {
                 return HotkeyRegistrationResult.Failed(
                     HotkeyRegistrationFailure.SystemError,
-                    "主窗口尚未就绪，暂时无法注册快捷键");
+                    LocalizationService.Current.GetString("HotkeyWindowNotReady"));
             }
 
             var previousActive = _hotkeyService.CurrentGesture?.Clone();
             var previousConfigured = _appSettings.Hotkeys.ToggleExecution.Clone();
-            var registration = _hotkeyService.TryRegister(_mainWindowHandle, gesture);
+            var previousLanguage = _appSettings.Language;
+            var registration = previousActive?.Equals(gesture) == true
+                ? HotkeyRegistrationResult.Succeeded()
+                : _hotkeyService.TryRegister(_mainWindowHandle, gesture);
             if (!registration.Success)
                 return registration;
 
             try
             {
                 _appSettings.Hotkeys.ToggleExecution = gesture.Clone();
+                _appSettings.Language = language;
                 _appSettingsService.Save(_appSettings);
             }
             catch (Exception ex)
             {
                 _appSettings.Hotkeys.ToggleExecution = previousConfigured;
+                _appSettings.Language = previousLanguage;
                 if (previousActive != null)
                     _hotkeyService.TryRegister(_mainWindowHandle, previousActive);
                 else
                     _hotkeyService.Unregister();
 
+                LocalizationService.Current.ApplyLanguage(previousLanguage);
                 UpdateActiveHotkeyDescription();
                 return HotkeyRegistrationResult.Failed(
                     HotkeyRegistrationFailure.SettingsSaveFailed,
-                    $"快捷键设置无法保存：{ex.Message}");
+                    LocalizationService.Current.Format("HotkeySettingsSaveFailed", ex.Message));
             }
 
+            LocalizationService.Current.ApplyLanguage(language);
             UpdateActiveHotkeyDescription();
-            StatusMessage = $"全局快捷键已设置为 {ActiveHotkeyDescription}";
+            StatusMessage = LocalizationService.Current.Format("HotkeyConfigured", ActiveHotkeyDescription);
             return HotkeyRegistrationResult.Succeeded();
         }
 
@@ -671,7 +702,22 @@ namespace Ming_AutoClicker.ViewModels
         {
             ActiveHotkeyDescription = _hotkeyService.IsRegistered
                 ? _hotkeyService.GetCurrentHotkeyDescription()
-                : "未启用";
+                : LocalizationService.Current.GetString("HotkeyDisabled");
+        }
+
+        private void OnLanguageChanged(object? sender, EventArgs e)
+        {
+            OnUIThread(() =>
+            {
+                UpdateActiveHotkeyDescription();
+                OnPropertyChanged(nameof(HotkeyStatusText));
+                OnPropertyChanged(nameof(MacroHotkeyHintText));
+                UpdateExecutionStatus();
+                StatusMessage = AutoClickViewModel.IsRunning
+                    ? AutoClickViewModel.StatusText
+                    : LocalizationService.Current.GetString("StatusReady");
+                CollectionViewSource.GetDefaultView(Macros).Refresh();
+            });
         }
 
         public void UnregisterHotkey()
@@ -703,7 +749,8 @@ namespace Ming_AutoClicker.ViewModels
                 _macroExecutor.ExecutionCompleted -= OnExecutionCompleted;
                 _macroExecutor.StateChanged -= OnExecutionStateChanged;
                 _hotkeyService.HotkeyPressed -= OnHotkeyPressed;
-                HotkeySettingsRequested = null;
+                LocalizationService.Current.LanguageChanged -= OnLanguageChanged;
+                SettingsRequested = null;
                 SaveAll();
             }
             base.Dispose(disposing);

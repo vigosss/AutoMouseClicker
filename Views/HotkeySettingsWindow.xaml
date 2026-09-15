@@ -1,7 +1,7 @@
 <Window x:Class="Ming_AutoClicker.Views.HotkeySettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="快捷键设置"
+        Title="{DynamicResource SettingsTitle}"
         Width="460"
         SizeToContent="Height"
         WindowStartupLocation="CenterOwner"
@@ -9,7 +9,8 @@
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
-        ShowInTaskbar="False">
+        ShowInTaskbar="False"
+        PreviewKeyDown="OnWindowPreviewKeyDown">
     <Border Background="{StaticResource SurfaceBrush}"
             CornerRadius="12"
             Margin="12"
@@ -32,8 +33,8 @@
                     Padding="20,14"
                     MouseLeftButtonDown="OnTitleBarMouseLeftButtonDown">
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="⌨" FontSize="20" Margin="0,0,12,0" VerticalAlignment="Center"/>
-                    <TextBlock Text="全局快捷键设置"
+                    <TextBlock Text="⚙" FontSize="20" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="{DynamicResource SettingsHeader}"
                                FontSize="15"
                                FontWeight="SemiBold"
                                Foreground="White"
@@ -42,10 +43,25 @@
             </Border>
 
             <StackPanel Grid.Row="1" Margin="24,20">
-                <TextBlock Text="开始 / 停止"
+                <TextBlock Text="{DynamicResource SettingsLanguage}"
                            Style="{StaticResource SectionTitleText}"
                            Margin="0,0,0,8"/>
-                <TextBlock Text="点击下方输入框，然后直接按下新的按键组合。"
+                <ComboBox x:Name="LanguageComboBox"
+                          Height="36"
+                          Style="{StaticResource ModernComboBox}"
+                          SelectionChanged="OnLanguageSelectionChanged">
+                    <ComboBoxItem Content="{DynamicResource SettingsLanguageSystem}" Tag="System" Style="{StaticResource ModernComboBoxItem}"/>
+                    <ComboBoxItem Content="{DynamicResource SettingsLanguageChinese}" Tag="SimplifiedChinese" Style="{StaticResource ModernComboBoxItem}"/>
+                    <ComboBoxItem Content="{DynamicResource SettingsLanguageEnglish}" Tag="English" Style="{StaticResource ModernComboBoxItem}"/>
+                </ComboBox>
+                <TextBlock Text="{DynamicResource SettingsLanguageHint}"
+                           Style="{StaticResource CaptionText}"
+                           Margin="0,6,0,20"/>
+
+                <TextBlock Text="{DynamicResource SettingsHotkey}"
+                           Style="{StaticResource SectionTitleText}"
+                           Margin="0,0,0,8"/>
+                <TextBlock Text="{DynamicResource SettingsHotkeyHint}"
                            Style="{StaticResource CaptionText}"
                            Margin="0,0,0,12"/>
 
@@ -70,7 +86,7 @@
                 <TextBlock Margin="0,8,0,0"
                            Style="{StaticResource CaptionText}"
                            TextWrapping="Wrap"
-                           Text="支持 F1–F12，或 Ctrl / Alt / Shift + 字母、数字。字母和数字不能单独使用，以免打字时误触。"/>
+                           Text="{DynamicResource SettingsHotkeySupport}"/>
             </StackPanel>
 
             <Border Grid.Row="2"
@@ -80,18 +96,18 @@
                     BorderThickness="0,1,0,0"
                     BorderBrush="{StaticResource BorderBrush}">
                 <Grid>
-                    <Button Content="恢复默认 F8"
+                    <Button Content="{DynamicResource SettingsResetHotkey}"
                             Style="{StaticResource GhostButton}"
                             HorizontalAlignment="Left"
                             Click="OnResetClick"/>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button Content="取消"
+                        <Button Content="{DynamicResource CommonCancel}"
                                 Style="{StaticResource BaseButton}"
                                 MinWidth="80"
                                 Margin="0,0,12,0"
                                 Click="OnCancelClick"/>
                         <Button x:Name="SaveButton"
-                                Content="保存"
+                                Content="{DynamicResource CommonSave}"
                                 Style="{StaticResource PrimaryButton}"
                                 MinWidth="80"
                                 Click="OnSaveClick"/>

@@ -1,4 +1,5 @@
 using System.IO;
+using Ming_AutoClicker.Services;
 
 namespace Ming_AutoClicker.Models
 {
@@ -63,8 +64,16 @@ namespace Ming_AutoClicker.Models
         public override string GetDescription()
         {
             var fileName = Path.GetFileName(ImagePath);
-            var waitText = WaitUntilFound ? " (等待)" : "";
-            return $"找图: {fileName}{waitText} - {Operation}";
+            var waitText = WaitUntilFound
+                ? LocalizationService.Current.GetString("ActionWaitingSuffix")
+                : string.Empty;
+            var operation = Operation switch
+            {
+                "Click" => LocalizationService.Current.GetString("EditorLeftClick"),
+                "RightClick" => LocalizationService.Current.GetString("EditorRightClick"),
+                _ => Operation
+            };
+            return LocalizationService.Current.Format("ActionFindImage", fileName, waitText, operation);
         }
 
         public override string ToString() => GetDescription();

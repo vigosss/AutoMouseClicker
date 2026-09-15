@@ -139,9 +139,10 @@ namespace Ming_AutoClicker.Services
         public string ImportImage(string sourcePath)
         {
             if (string.IsNullOrWhiteSpace(sourcePath))
-                throw new ArgumentException("图片路径不能为空", nameof(sourcePath));
+                throw new ArgumentException(LocalizationService.Current.GetString("ImagePathEmpty"), nameof(sourcePath));
             if (!File.Exists(sourcePath))
-                throw new FileNotFoundException("图片文件不存在", sourcePath);
+                throw new FileNotFoundException(
+                    LocalizationService.Current.Format("ImageFileNotFound", sourcePath), sourcePath);
 
             // Bitmap 构造过程会校验文件确实是可读取的图像，而不仅依赖扩展名。
             using var source = new System.Drawing.Bitmap(sourcePath);
@@ -204,7 +205,7 @@ namespace Ming_AutoClicker.Services
             var fullPath = EnsurePathInsideScreenshotDirectory(filePath, filePath);
 
             if (!File.Exists(fullPath))
-                throw new FileNotFoundException($"图像文件不存在: {fullPath}");
+                throw new FileNotFoundException(LocalizationService.Current.Format("ImageFileNotFound", fullPath));
 
             return new Image<Bgr, byte>(fullPath);
         }
@@ -329,7 +330,8 @@ namespace Ming_AutoClicker.Services
                 relativePath.StartsWith(".." + Path.AltDirectorySeparatorChar, StringComparison.Ordinal);
 
             if (escapesDirectory)
-                throw new UnauthorizedAccessException($"不允许访问截图目录外的文件: {displayPath}");
+                throw new UnauthorizedAccessException(
+                    LocalizationService.Current.Format("ImageOutsideScreenshots", displayPath));
 
             return fullPath;
         }

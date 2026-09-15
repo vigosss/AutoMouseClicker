@@ -17,7 +17,7 @@ namespace Ming_AutoClicker.Models
         /// <summary>
         /// 宏名称
         /// </summary>
-        public string Name { get; set; } = "新宏";
+        public string Name { get; set; } = string.Empty;
 
         /// <summary>
         /// 创建时间

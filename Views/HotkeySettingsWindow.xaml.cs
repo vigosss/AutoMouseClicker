@@ -1,6 +1,7 @@
 using System;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Controls;
 using Ming_AutoClicker.Models;
 using Ming_AutoClicker.Services;
 
@@ -8,16 +9,30 @@ namespace Ming_AutoClicker.Views
 {
     public partial class HotkeySettingsWindow : Window
     {
-        private readonly Func<HotkeyGesture, HotkeyRegistrationResult> _save;
+        private readonly Func<HotkeyGesture, AppLanguage, HotkeyRegistrationResult> _save;
+        private readonly AppLanguage _originalLanguage;
         private HotkeyGesture _candidate;
+        private AppLanguage _candidateLanguage;
+        private bool _initializing = true;
+        private bool _committed;
 
         public HotkeySettingsWindow(
             HotkeyGesture currentGesture,
-            Func<HotkeyGesture, HotkeyRegistrationResult> save)
+            AppLanguage currentLanguage,
+            Func<HotkeyGesture, AppLanguage, HotkeyRegistrationResult> save)
         {
             InitializeComponent();
             _candidate = currentGesture?.Clone() ?? HotkeyGesture.Default;
+            _originalLanguage = currentLanguage;
+            _candidateLanguage = currentLanguage;
             _save = save ?? throw new ArgumentNullException(nameof(save));
+            LanguageComboBox.SelectedIndex = currentLanguage switch
+            {
+                AppLanguage.SimplifiedChinese => 1,
+                AppLanguage.English => 2,
+                _ => 0
+            };
+            _initializing = false;
             UpdateCandidateDisplay();
 
             Loaded += (_, _) => HotkeyInput.Focus();
@@ -33,7 +48,7 @@ namespace Ming_AutoClicker.Views
                 Key.LeftShift or Key.RightShift or
                 Key.LWin or Key.RWin)
             {
-                ValidationText.Text = "请继续按下字母、数字或 F1–F12";
+                ValidationText.Text = LocalizationService.Current.GetString("HotkeyContinue");
                 return;
             }
 
@@ -74,7 +89,7 @@ namespace Ming_AutoClicker.Views
                 return;
             }
 
-            var result = _save(_candidate.Clone());
+            var result = _save(_candidate.Clone(), _candidateLanguage);
             if (!result.Success)
             {
                 ValidationText.Text = result.Message;
@@ -82,6 +97,7 @@ namespace Ming_AutoClicker.Views
                 return;
             }
 
+            _committed = true;
             DialogResult = true;
         }
 
@@ -93,6 +109,35 @@ namespace Ming_AutoClicker.Views
         }
 
         private void OnCancelClick(object sender, RoutedEventArgs e) => Close();
+
+        private void OnLanguageSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_initializing || LanguageComboBox.SelectedItem is not ComboBoxItem item ||
+                !Enum.TryParse<AppLanguage>(item.Tag?.ToString(), out var language))
+            {
+                return;
+            }
+
+            _candidateLanguage = language;
+            LocalizationService.Current.ApplyLanguage(language);
+            UpdateCandidateDisplay();
+        }
+
+        private void OnWindowPreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Escape)
+            {
+                e.Handled = true;
+                Close();
+            }
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            if (!_committed)
+                LocalizationService.Current.ApplyLanguage(_originalLanguage);
+            base.OnClosed(e);
+        }
 
         private void OnInputGotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
         {

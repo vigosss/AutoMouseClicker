@@ -23,13 +23,13 @@ namespace Ming_AutoClicker.Services
         {
             if (gesture == null)
             {
-                errorMessage = "请按下一个快捷键组合";
+                errorMessage = LocalizationService.Current.GetString("HotkeyPressCombination");
                 return false;
             }
 
             if ((gesture.Modifiers & ~SupportedModifiers) != 0)
             {
-                errorMessage = "不支持 Windows 键，请使用 Ctrl、Alt 或 Shift";
+                errorMessage = LocalizationService.Current.GetString("HotkeyNoWindowsKey");
                 return false;
             }
 
@@ -40,13 +40,13 @@ namespace Ming_AutoClicker.Services
 
             if (!isFunctionKey && !isLetter && !isTopRowNumber && !isNumPadNumber)
             {
-                errorMessage = "仅支持 F1–F12，或带 Ctrl/Alt/Shift 的字母和数字";
+                errorMessage = LocalizationService.Current.GetString("HotkeyUnsupported");
                 return false;
             }
 
             if (!isFunctionKey && gesture.Modifiers == HotkeyModifierKeys.None)
             {
-                errorMessage = "字母和数字必须搭配 Ctrl、Alt 或 Shift，以避免打字时误触";
+                errorMessage = LocalizationService.Current.GetString("HotkeyModifierRequired");
                 return false;
             }
 
@@ -57,7 +57,7 @@ namespace Ming_AutoClicker.Services
         public static string Format(HotkeyGesture? gesture)
         {
             if (gesture == null)
-                return "未启用";
+                return LocalizationService.Current.GetString("HotkeyDisabled");
 
             var parts = new List<string>();
             if (gesture.Modifiers.HasFlag(HotkeyModifierKeys.Control)) parts.Add("Ctrl");

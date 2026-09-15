@@ -37,5 +37,8 @@ namespace Ming_AutoClicker.Models
         /// 获取动作描述
         /// </summary>
         public abstract string GetDescription();
+
+        [JsonIgnore]
+        public string Description => GetDescription();
     }
 }

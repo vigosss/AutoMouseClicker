@@ -1,3 +1,5 @@
+using Ming_AutoClicker.Services;
+
 namespace Ming_AutoClicker.Models
 {
     /// <summary>
@@ -30,7 +32,7 @@ namespace Ming_AutoClicker.Models
         /// </summary>
         public override string GetDescription()
         {
-            return $"等待: {WaitSeconds:F1} 秒";
+            return LocalizationService.Current.Format("ActionWait", WaitSeconds);
         }
 
         public override string ToString() => GetDescription();

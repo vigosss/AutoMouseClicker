@@ -143,7 +143,7 @@ namespace Ming_AutoClicker.Services
                 OnExecutionCompleted(new MacroExecutionEventArgs
                 {
                     Success = false,
-                    Message = "宏配置中没有动作"
+                    Message = LocalizationService.Current.GetString("ExecutorNoActions")
                 });
                 return false;
             }
@@ -153,7 +153,7 @@ namespace Ming_AutoClicker.Services
                 OnExecutionCompleted(new MacroExecutionEventArgs
                 {
                     Success = false,
-                    Message = "循环次数不能为负数；0 表示无限循环"
+                    Message = LocalizationService.Current.GetString("ExecutorNegativeLoopCount")
                 });
                 return false;
             }
@@ -163,7 +163,7 @@ namespace Ming_AutoClicker.Services
                 OnExecutionCompleted(new MacroExecutionEventArgs
                 {
                     Success = false,
-                    Message = "循环间隔不能为负数"
+                    Message = LocalizationService.Current.GetString("ExecutorNegativeLoopInterval")
                 });
                 return false;
             }
@@ -311,7 +311,7 @@ namespace Ming_AutoClicker.Services
                                 Action = action,
                                 ActionIndex = i,
                                 Success = false,
-                                Message = $"第 {i + 1} 步执行失败，宏已停止: {result.Message}",
+                                Message = LocalizationService.Current.Format("ExecutorStepFailed", i + 1, result.Message),
                                 MatchResult = result.MatchResult
                             });
                             return;
@@ -341,7 +341,7 @@ namespace Ming_AutoClicker.Services
                 OnExecutionCompleted(new MacroExecutionEventArgs
                 {
                     Success = true,
-                    Message = $"宏执行完成，共 {CompletedLoopCount} 次循环"
+                    Message = LocalizationService.Current.Format("ExecutorCompleted", CompletedLoopCount)
                 });
             }
             catch (OperationCanceledException)
@@ -350,7 +350,7 @@ namespace Ming_AutoClicker.Services
                 OnExecutionCompleted(new MacroExecutionEventArgs
                 {
                     Success = false,
-                    Message = "执行已取消"
+                    Message = LocalizationService.Current.GetString("ExecutorCancelled")
                 });
             }
             catch (Exception ex)
@@ -359,7 +359,7 @@ namespace Ming_AutoClicker.Services
                 OnExecutionCompleted(new MacroExecutionEventArgs
                 {
                     Success = false,
-                    Message = $"执行出错: {ex.Message}"
+                    Message = LocalizationService.Current.Format("ExecutorError", ex.Message)
                 });
                 System.Diagnostics.Debug.WriteLine($"宏执行异常: {ex}");
             }
@@ -392,7 +392,7 @@ namespace Ming_AutoClicker.Services
                         return await ExecuteMouseClickActionAsync(mouseClickAction, cancellationToken);
 
                     default:
-                        return (false, $"未知的动作类型: {action.Type}", null);
+                        return (false, LocalizationService.Current.Format("ActionUnknownType", action.Type), null);
                 }
             }
             catch (OperationCanceledException)
@@ -401,7 +401,7 @@ namespace Ming_AutoClicker.Services
             }
             catch (Exception ex)
             {
-                return (false, $"动作执行异常: {ex.Message}", null);
+                return (false, LocalizationService.Current.Format("ExecutorActionError", ex.Message), null);
             }
         }
 
@@ -412,7 +412,7 @@ namespace Ming_AutoClicker.Services
         {
             if (string.IsNullOrEmpty(action.ImagePath))
             {
-                return (false, "图像路径为空", null);
+                return (false, LocalizationService.Current.GetString("ExecutorEmptyImagePath"), null);
             }
 
             MatchResult? matchResult = null;
@@ -447,9 +447,9 @@ namespace Ming_AutoClicker.Services
             if (!matchResult.Found)
             {
                 var reason = string.IsNullOrWhiteSpace(matchResult.ErrorMessage)
-                    ? matchResult.FailureReason.ToString()
+                    ? LocalizationService.Current.GetMatchFailureText(matchResult.FailureReason)
                     : matchResult.ErrorMessage;
-                return (false, $"未找到目标图像: {reason} (最佳 {matchResult.Similarity:P1})", matchResult);
+                return (false, LocalizationService.Current.Format("ExecutorImageNotFound", reason, matchResult.Similarity), matchResult);
             }
 
             // 执行操作
@@ -464,22 +464,22 @@ namespace Ming_AutoClicker.Services
                     cancellationToken.ThrowIfCancellationRequested();
                     if (!Win32Api.LeftClick(clickX, clickY))
                     {
-                        return (false, $"点击失败: 无法移动鼠标到 ({clickX}, {clickY})", matchResult);
+                        return (false, LocalizationService.Current.Format("ExecutorMoveFailed", clickX, clickY), matchResult);
                     }
                     await Task.Delay(50, cancellationToken); // 短暂延迟确保点击生效
-                    return (true, $"点击位置: ({clickX}, {clickY})", matchResult);
+                    return (true, LocalizationService.Current.Format("ExecutorClicked", clickX, clickY), matchResult);
 
                 case "rightclick":
                     cancellationToken.ThrowIfCancellationRequested();
                     if (!Win32Api.RightClick(clickX, clickY))
                     {
-                        return (false, $"右键点击失败: 无法移动鼠标到 ({clickX}, {clickY})", matchResult);
+                        return (false, LocalizationService.Current.Format("ExecutorRightMoveFailed", clickX, clickY), matchResult);
                     }
                     await Task.Delay(50, cancellationToken);
-                    return (true, $"右键点击位置: ({clickX}, {clickY})", matchResult);
+                    return (true, LocalizationService.Current.Format("ExecutorRightClicked", clickX, clickY), matchResult);
 
                 default:
-                    return (false, $"未知的操作类型: {action.Operation}", matchResult);
+                    return (false, LocalizationService.Current.Format("ExecutorUnknownOperation", action.Operation), matchResult);
             }
         }
 
@@ -490,11 +490,11 @@ namespace Ming_AutoClicker.Services
         {
             if (action.WaitSeconds <= 0)
             {
-                return (true, "等待时间为0，跳过", null);
+                return (true, LocalizationService.Current.GetString("ExecutorZeroWait"), null);
             }
 
             await Task.Delay((int)(action.WaitSeconds * 1000), cancellationToken);
-            return (true, $"等待 {action.WaitSeconds} 秒", null);
+            return (true, LocalizationService.Current.Format("ExecutorWaited", action.WaitSeconds), null);
         }
 
         /// <summary>
@@ -513,22 +513,22 @@ namespace Ming_AutoClicker.Services
                     cancellationToken.ThrowIfCancellationRequested();
                     if (!Win32Api.LeftClick(x, y))
                     {
-                        return (false, $"点击失败: 无法移动鼠标到 ({x}, {y})", null);
+                        return (false, LocalizationService.Current.Format("ExecutorMoveFailed", x, y), null);
                     }
                     await Task.Delay(50, cancellationToken);
-                    return (true, $"点击位置: ({x}, {y})", null);
+                    return (true, LocalizationService.Current.Format("ExecutorClicked", x, y), null);
 
                 case "rightclick":
                     cancellationToken.ThrowIfCancellationRequested();
                     if (!Win32Api.RightClick(x, y))
                     {
-                        return (false, $"右键点击失败: 无法移动鼠标到 ({x}, {y})", null);
+                        return (false, LocalizationService.Current.Format("ExecutorRightMoveFailed", x, y), null);
                     }
                     await Task.Delay(50, cancellationToken);
-                    return (true, $"右键点击位置: ({x}, {y})", null);
+                    return (true, LocalizationService.Current.Format("ExecutorRightClicked", x, y), null);
 
                 default:
-                    return (false, $"未知的操作类型: {action.Operation}", null);
+                    return (false, LocalizationService.Current.Format("ExecutorUnknownOperation", action.Operation), null);
             }
         }
 

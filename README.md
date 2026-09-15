@@ -1,5 +1,7 @@
 <div align="center">
 
+[简体中文](README.md) | [English](README.en.md)
+
 # 🎯 智点精灵 Ming-AutoClicker
 
 ![License](https://img.shields.io/github/license/vigosss/AutoMouseClicker)
@@ -54,6 +56,7 @@ A Windows desktop automation tool built with WPF + OpenCV, featuring auto-clicki
 - 统一的色彩系统和排版规范
 - 响应式布局，窗口可自由缩放
 - 底部状态栏实时反馈运行状态
+- 支持简体中文和 English，可跟随系统语言或在设置中即时切换
 
 ---
 
@@ -107,10 +110,18 @@ A Windows desktop automation tool built with WPF + OpenCV, featuring auto-clicki
 | `F8`（默认，可修改） | 开始 / 停止（连点或宏执行） |
 | `ESC` | 关闭截图窗口 / 匹配结果窗口 |
 
-点击主窗口右下角的快捷键提示可重新设置；支持 F1–F12，以及带 Ctrl、Alt 或 Shift 的字母和数字组合。
+点击主窗口右下角的「⚙ 设置」可修改全局快捷键；支持 F1–F12，以及带 Ctrl、Alt 或 Shift 的字母和数字组合。
+
+### 语言设置
+
+应用首次启动时跟随 Windows 显示语言：中文系统显示简体中文，其他系统显示英文。点击主窗口右下角的「⚙ 设置」，可选择「跟随系统」「简体中文」或「English」，切换后立即生效。
 
 
 ## 📋 更新日志 Changelog
+
+### 未发布
+- 🌐 新增简体中文 / English 双语界面，支持跟随系统语言和即时切换
+- ⚙️ 将语言与全局快捷键整合到统一设置窗口
 
 ### v0.5.0
 - ⌨️ 支持自定义全局启停热键，默认保留 F8

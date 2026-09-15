@@ -285,7 +285,7 @@ namespace Ming_AutoClicker.Services
                     {
                         return CreateFailure(
                             MatchFailureReason.InvalidTemplate,
-                            "模板在所有启用尺度下都大于屏幕，或模板尺寸小于 5 像素");
+                            LocalizationService.Current.GetString("MatchTemplateTooLarge"));
                     }
 
                     best.SecondBestSimilarity = secondBest?.Similarity ?? 0;
@@ -330,7 +330,9 @@ namespace Ming_AutoClicker.Services
             var maxLocation = Point.Empty;
             CvInvoke.MinMaxLoc(result, ref minValue, ref maxValue, ref minLocation, ref maxLocation);
 
-            return CreateCandidate(maxLocation, template.Width, template.Height, maxValue, scale, "灰度相关匹配");
+            return CreateCandidate(
+                maxLocation, template.Width, template.Height, maxValue, scale,
+                LocalizationService.Current.GetString("MatchMethodGray"));
         }
 
         private static MatchResult MatchLowVariance(
@@ -351,7 +353,9 @@ namespace Ming_AutoClicker.Services
             var sampleCount = (double)template.Width * template.Height * 3;
             var rootMeanSquareError = Math.Sqrt(Math.Max(0, minValue) / sampleCount);
             var similarity = 1.0 - Math.Clamp(rootMeanSquareError / 255.0, 0, 1);
-            return CreateCandidate(minLocation, template.Width, template.Height, similarity, scale, "低纹理差异匹配");
+            return CreateCandidate(
+                minLocation, template.Width, template.Height, similarity, scale,
+                LocalizationService.Current.GetString("MatchMethodLowTexture"));
         }
 
         private static MatchResult CreateCandidate(
@@ -387,7 +391,8 @@ namespace Ming_AutoClicker.Services
             var fullPath = ResolveTemplatePath(templatePath);
             var info = new FileInfo(fullPath);
             if (!info.Exists)
-                throw new FileNotFoundException($"图像文件不存在: {fullPath}", fullPath);
+                throw new FileNotFoundException(
+                    LocalizationService.Current.Format("ImageFileNotFound", fullPath), fullPath);
 
             if (_templateCache.TryGetValue(fullPath, out var cached))
             {
@@ -414,7 +419,8 @@ namespace Ming_AutoClicker.Services
         private string ResolveTemplatePath(string templatePath)
         {
             if (string.IsNullOrWhiteSpace(templatePath))
-                throw new ArgumentException("模板路径不能为空", nameof(templatePath));
+                throw new ArgumentException(
+                    LocalizationService.Current.GetString("TemplatePathEmpty"), nameof(templatePath));
 
             return Path.GetFullPath(Path.IsPathRooted(templatePath)
                 ? templatePath
@@ -530,7 +536,7 @@ namespace Ming_AutoClicker.Services
                             Height = template.Height,
                             Similarity = value,
                             Scale = 1.0,
-                            MatchMethod = "彩色相关匹配"
+                            MatchMethod = LocalizationService.Current.GetString("MatchMethodColor")
                         });
                         x += template.Width - 1;
                     }

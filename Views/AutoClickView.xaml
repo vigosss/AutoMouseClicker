@@ -20,17 +20,17 @@
             </Border.Effect>
             <StackPanel>
                 <!-- 点击类型 -->
-                <TextBlock Text="点击类型" Style="{StaticResource SectionTitleText}" Margin="0,0,0,12"/>
+                <TextBlock Text="{DynamicResource AutoClickType}" Style="{StaticResource SectionTitleText}" Margin="0,0,0,12"/>
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,24">
-                    <RadioButton Content="鼠标左键"
+                    <RadioButton Content="{DynamicResource AutoClickLeft}"
                                  Style="{StaticResource ModernRadioButton}"
                                  IsChecked="{Binding IsLeftButton, Mode=TwoWay}"
                                  GroupName="ClickButton"/>
-                    <RadioButton Content="鼠标中键"
+                    <RadioButton Content="{DynamicResource AutoClickMiddle}"
                                  Style="{StaticResource ModernRadioButton}"
                                  IsChecked="{Binding IsMiddleButton, Mode=TwoWay}"
                                  GroupName="ClickButton"/>
-                    <RadioButton Content="鼠标右键"
+                    <RadioButton Content="{DynamicResource AutoClickRight}"
                                  Style="{StaticResource ModernRadioButton}"
                                  IsChecked="{Binding IsRightButton, Mode=TwoWay}"
                                  GroupName="ClickButton"/>
@@ -40,7 +40,7 @@
                 <Border Background="{StaticResource BorderBrush}" Height="1" Margin="0,0,0,24"/>
 
                 <!-- 点击间隔 -->
-                <TextBlock Text="点击间隔" Style="{StaticResource SectionTitleText}" Margin="0,0,0,12"/>
+                <TextBlock Text="{DynamicResource AutoClickInterval}" Style="{StaticResource SectionTitleText}" Margin="0,0,0,12"/>
                 <Grid Margin="0,0,0,24">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="120"/>
@@ -53,7 +53,7 @@
                              FontSize="14"
                              HorizontalContentAlignment="Center"/>
                     <TextBlock Grid.Column="1"
-                               Text="毫秒 (ms)"
+                               Text="{DynamicResource AutoClickMilliseconds}"
                                Style="{StaticResource BodyText}"
                                VerticalAlignment="Center"
                                Margin="10,0,0,0"

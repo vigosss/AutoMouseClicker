@@ -17,6 +17,7 @@ namespace Ming_AutoClicker
         public static MacroStorageService? StorageService { get; private set; }
         public static ScreenCaptureService? ScreenCaptureService { get; private set; }
         public static ImageMatchService? ImageMatchService { get; private set; }
+        public static Services.LocalizationService Localization => Services.LocalizationService.Current;
 
         private HotkeyService? _hotkeyService;
         private MacroExecutor? _macroExecutor;
@@ -27,13 +28,21 @@ namespace Ming_AutoClicker
         {
             base.OnStartup(e);
 
+            var appSettingsService = new AppSettingsService();
+            var appSettings = appSettingsService.Load();
+            LocalizationService.Current.ApplyLanguage(appSettings.Language);
+
             _singleInstanceMutex = new Mutex(
                 initiallyOwned: true,
                 name: @"Local\MingAutoClicker.SingleInstance",
                 createdNew: out _ownsSingleInstanceMutex);
             if (!_ownsSingleInstanceMutex)
             {
-                MessageBox.Show("鼠标连点器已经在运行。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(
+                    LocalizationService.Current.GetString("AppAlreadyRunning"),
+                    LocalizationService.Current.GetString("CommonPrompt"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
                 _singleInstanceMutex.Dispose();
                 _singleInstanceMutex = null;
                 Shutdown();
@@ -53,7 +62,6 @@ namespace Ming_AutoClicker
                 ImageMatchService = new ImageMatchService(ScreenCaptureService);
                 _macroExecutor = new MacroExecutor(ImageMatchService, ScreenCaptureService);
                 _hotkeyService = new HotkeyService();
-                var appSettingsService = new AppSettingsService();
                 var autoClickService = new AutoClickService();
 
                 // 创建主 ViewModel
@@ -64,6 +72,7 @@ namespace Ming_AutoClicker
                     _macroExecutor,
                     _hotkeyService,
                     appSettingsService,
+                    appSettings,
                     autoClickService);
 
                 // 创建并显示主窗口
@@ -75,8 +84,8 @@ namespace Ming_AutoClicker
 
                 // 首次运行时询问一次；已有快捷方式会自动校验目标路径。
                 ShortcutService.EnsureDesktopShortcut(() => Dialog.ShowConfirm(
-                    "是否在桌面创建“智点精灵”快捷方式？\n\n此选择只询问一次；以后手动删除快捷方式时不会自动重建。",
-                    "创建桌面快捷方式"));
+                    LocalizationService.Current.GetString("ShortcutPrompt"),
+                    LocalizationService.Current.GetString("ShortcutPromptTitle")));
 
                 // 异步检查版本更新（不阻塞启动）
                 _ = CheckForUpdatesAsync();
@@ -84,8 +93,8 @@ namespace Ming_AutoClicker
             catch (Exception ex)
             {
                 MessageBox.Show(
-                    $"应用启动失败:\n\n{ex.Message}\n\n{ex.StackTrace}",
-                    "启动错误",
+                    LocalizationService.Current.Format("AppStartupFailed", ex.Message, ex.StackTrace ?? string.Empty),
+                    LocalizationService.Current.GetString("AppStartupErrorTitle"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
                 Shutdown(1);
@@ -157,14 +166,14 @@ namespace Ming_AutoClicker
         {
             e.Handled = true;
 
-            var message = e.Exception?.Message ?? "未知错误";
+            var message = e.Exception?.Message ?? LocalizationService.Current.GetString("CommonUnknownError");
             var detail = e.Exception?.ToString() ?? "";
 
             System.Diagnostics.Debug.WriteLine($"[UI线程异常] {detail}");
 
             MessageBox.Show(
-                $"发生了一个未预期的错误:\n\n{message}\n\n应用将继续运行，但可能出现异常行为。",
-                "错误",
+                LocalizationService.Current.Format("AppUnexpectedError", message),
+                LocalizationService.Current.GetString("CommonError"),
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
         }
@@ -175,7 +184,7 @@ namespace Ming_AutoClicker
         private void OnDomainUnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
             var ex = e.ExceptionObject as Exception;
-            var message = ex?.Message ?? "未知错误";
+            var message = ex?.Message ?? LocalizationService.Current.GetString("CommonUnknownError");
             var detail = ex?.ToString() ?? "";
 
             System.Diagnostics.Debug.WriteLine($"[非UI线程异常] IsTerminating={e.IsTerminating}\n{detail}");
@@ -183,8 +192,8 @@ namespace Ming_AutoClicker
             if (!e.IsTerminating)
             {
                 MessageBox.Show(
-                    $"发生了一个严重的错误:\n\n{message}",
-                    "严重错误",
+                    LocalizationService.Current.Format("AppSevereError", message),
+                    LocalizationService.Current.GetString("AppSevereErrorTitle"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
             }
@@ -197,7 +206,8 @@ namespace Ming_AutoClicker
         {
             e.SetObserved();
 
-            var message = e.Exception?.InnerException?.Message ?? e.Exception?.Message ?? "未知错误";
+            var message = e.Exception?.InnerException?.Message ?? e.Exception?.Message ??
+                LocalizationService.Current.GetString("CommonUnknownError");
             var detail = e.Exception?.ToString() ?? "";
 
             System.Diagnostics.Debug.WriteLine($"[Task未观察异常] {detail}");
@@ -205,8 +215,8 @@ namespace Ming_AutoClicker
             Dispatcher.BeginInvoke(() =>
             {
                 MessageBox.Show(
-                    $"后台任务发生错误:\n\n{message}",
-                    "任务错误",
+                    LocalizationService.Current.Format("AppBackgroundError", message),
+                    LocalizationService.Current.GetString("AppBackgroundErrorTitle"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
             });

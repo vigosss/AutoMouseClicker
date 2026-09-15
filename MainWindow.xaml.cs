@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
 using Ming_AutoClicker.Models;
+using Ming_AutoClicker.Services;
 using Ming_AutoClicker.ViewModels;
 using Ming_AutoClicker.Views;
 
@@ -68,7 +69,7 @@ namespace Ming_AutoClicker
 
             // 订阅 ViewModel 的编辑请求事件
             _viewModel.EditRequested += OnRequestEdit;
-            _viewModel.HotkeySettingsRequested += OnHotkeySettingsRequested;
+            _viewModel.SettingsRequested += OnSettingsRequested;
 
             // 注册全局热键
             var hwnd = new WindowInteropHelper(this).Handle;
@@ -142,21 +143,22 @@ namespace Ming_AutoClicker
             if (_viewModel != null)
             {
                 _viewModel.EditRequested -= OnRequestEdit;
-                _viewModel.HotkeySettingsRequested -= OnHotkeySettingsRequested;
+                _viewModel.SettingsRequested -= OnSettingsRequested;
             }
 
             _viewModel?.UnregisterHotkey();
             _viewModel?.Dispose();
         }
 
-        private void OnHotkeySettingsRequested(object? sender, EventArgs e)
+        private void OnSettingsRequested(object? sender, EventArgs e)
         {
-            if (_viewModel == null || !_viewModel.CanConfigureHotkey)
+            if (_viewModel == null || !_viewModel.CanConfigureSettings)
                 return;
 
             var dialog = new HotkeySettingsWindow(
                 _viewModel.ConfiguredHotkey,
-                _viewModel.TryUpdateHotkey)
+                _viewModel.ConfiguredLanguage,
+                _viewModel.TryUpdateSettings)
             {
                 Owner = this
             };
@@ -183,7 +185,7 @@ namespace Ming_AutoClicker
             // 创建编辑器弹窗
             var editorWindow = new Window
             {
-                Title = $"编辑宏 - {macro.Name}",
+                Title = LocalizationService.Current.Format("EditorWindowTitle", macro.Name),
                 Width = 800,
                 Height = 600,
                 MinWidth = 700,

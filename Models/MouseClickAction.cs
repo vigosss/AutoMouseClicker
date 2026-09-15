@@ -1,3 +1,5 @@
+using Ming_AutoClicker.Services;
+
 namespace Ming_AutoClicker.Models
 {
     /// <summary>
@@ -30,7 +32,14 @@ namespace Ming_AutoClicker.Models
         /// </summary>
         public override string GetDescription()
         {
-            return $"点击位置: ({X}, {Y}) - {Operation}";
+            var operation = Operation switch
+            {
+                "Click" => LocalizationService.Current.GetString("EditorLeftClick"),
+                "RightClick" => LocalizationService.Current.GetString("EditorRightClick"),
+                "MiddleClick" => LocalizationService.Current.GetString("EditorMiddleClick"),
+                _ => Operation
+            };
+            return LocalizationService.Current.Format("ActionClickPosition", X, Y, operation);
         }
 
         public override string ToString() => GetDescription();

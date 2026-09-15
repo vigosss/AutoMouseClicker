@@ -1,7 +1,46 @@
 using System;
+using System.Text.Json.Serialization;
+using System.Text.Json;
 
 namespace Ming_AutoClicker.Models
 {
+    [JsonConverter(typeof(AppLanguageJsonConverter))]
+    public enum AppLanguage
+    {
+        System,
+        SimplifiedChinese,
+        English
+    }
+
+    public sealed class AppLanguageJsonConverter : JsonConverter<AppLanguage>
+    {
+        public override AppLanguage Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            if (reader.TokenType == JsonTokenType.String &&
+                Enum.TryParse<AppLanguage>(reader.GetString(), ignoreCase: true, out var value) &&
+                Enum.IsDefined(value))
+            {
+                return value;
+            }
+
+            if (reader.TokenType == JsonTokenType.Number && reader.TryGetInt32(out var numeric) &&
+                Enum.IsDefined(typeof(AppLanguage), numeric))
+            {
+                return (AppLanguage)numeric;
+            }
+
+            if (reader.TokenType is JsonTokenType.StartObject or JsonTokenType.StartArray)
+                reader.Skip();
+
+            return AppLanguage.System;
+        }
+
+        public override void Write(Utf8JsonWriter writer, AppLanguage value, JsonSerializerOptions options)
+        {
+            writer.WriteStringValue(Enum.IsDefined(value) ? value.ToString() : AppLanguage.System.ToString());
+        }
+    }
+
     [Flags]
     public enum HotkeyModifierKeys : uint
     {
@@ -53,7 +92,8 @@ namespace Ming_AutoClicker.Models
 
     public sealed class AppSettings
     {
-        public int SchemaVersion { get; set; } = 1;
+        public int SchemaVersion { get; set; } = 2;
+        public AppLanguage Language { get; set; } = AppLanguage.System;
         public HotkeySettings Hotkeys { get; set; } = new HotkeySettings();
     }
 }

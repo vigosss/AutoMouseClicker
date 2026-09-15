@@ -88,7 +88,7 @@ namespace Ming_AutoClicker.ViewModels
         /// <summary>
         /// 显示消息框（使用自定义对话框）
         /// </summary>
-        protected void ShowMessage(string message, string title = "提示", MessageBoxImage icon = MessageBoxImage.Information)
+        protected void ShowMessage(string message, string? title = null, MessageBoxImage icon = MessageBoxImage.Information)
         {
             switch (icon)
             {
@@ -107,7 +107,7 @@ namespace Ming_AutoClicker.ViewModels
         /// <summary>
         /// 显示确认对话框（使用自定义对话框）
         /// </summary>
-        protected bool ShowConfirm(string message, string title = "确认")
+        protected bool ShowConfirm(string message, string? title = null)
         {
             return Dialog.ShowConfirm(message, title);
         }

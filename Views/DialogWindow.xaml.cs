@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using Ming_AutoClicker.Services;
 
 namespace Ming_AutoClicker.Views
 {
@@ -112,15 +113,15 @@ namespace Ming_AutoClicker.Views
             switch (buttons)
             {
                 case DialogButtons.OK:
-                    AddButton("确定", true, "PrimaryButton");
+                    AddButton(LocalizationService.Current.GetString("CommonOk"), true, "PrimaryButton");
                     break;
                 case DialogButtons.OKCancel:
-                    AddButton("取消", false, "BaseButton", 12);
-                    AddButton("确定", true, "PrimaryButton");
+                    AddButton(LocalizationService.Current.GetString("CommonCancel"), false, "BaseButton", 12);
+                    AddButton(LocalizationService.Current.GetString("CommonOk"), true, "PrimaryButton");
                     break;
                 case DialogButtons.YesNo:
-                    AddButton("否", false, "BaseButton", 12);
-                    AddButton("是", true, "PrimaryButton");
+                    AddButton(LocalizationService.Current.GetString("CommonNo"), false, "BaseButton", 12);
+                    AddButton(LocalizationService.Current.GetString("CommonYes"), true, "PrimaryButton");
                     break;
             }
         }
@@ -174,33 +175,33 @@ namespace Ming_AutoClicker.Views
         /// <summary>
         /// 显示信息提示对话框
         /// </summary>
-        public static void ShowInfo(string message, string title = "提示")
+        public static void ShowInfo(string message, string? title = null)
         {
-            ShowDialog(message, title, DialogType.Info, DialogButtons.OK);
+            ShowDialog(message, title ?? LocalizationService.Current.GetString("CommonPrompt"), DialogType.Info, DialogButtons.OK);
         }
 
         /// <summary>
         /// 显示警告提示对话框
         /// </summary>
-        public static void ShowWarning(string message, string title = "警告")
+        public static void ShowWarning(string message, string? title = null)
         {
-            ShowDialog(message, title, DialogType.Warning, DialogButtons.OK);
+            ShowDialog(message, title ?? LocalizationService.Current.GetString("CommonWarning"), DialogType.Warning, DialogButtons.OK);
         }
 
         /// <summary>
         /// 显示错误提示对话框
         /// </summary>
-        public static void ShowError(string message, string title = "错误")
+        public static void ShowError(string message, string? title = null)
         {
-            ShowDialog(message, title, DialogType.Error, DialogButtons.OK);
+            ShowDialog(message, title ?? LocalizationService.Current.GetString("CommonError"), DialogType.Error, DialogButtons.OK);
         }
 
         /// <summary>
         /// 显示确认对话框，返回用户是否确认
         /// </summary>
-        public static bool ShowConfirm(string message, string title = "确认")
+        public static bool ShowConfirm(string message, string? title = null)
         {
-            return ShowDialog(message, title, DialogType.Question, DialogButtons.YesNo) == true;
+            return ShowDialog(message, title ?? LocalizationService.Current.GetString("CommonConfirm"), DialogType.Question, DialogButtons.YesNo) == true;
         }
 
         /// <summary>

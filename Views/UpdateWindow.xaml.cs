@@ -43,7 +43,7 @@ namespace Ming_AutoClicker.Views
 
             // 更新说明
             ReleaseNotesText.Text = string.IsNullOrWhiteSpace(_updateInfo.ReleaseNotes)
-                ? "暂无更新说明"
+                ? LocalizationService.Current.GetString("UpdateNoReleaseNotes")
                 : _updateInfo.ReleaseNotes;
 
             // 订阅下载进度事件
@@ -86,7 +86,7 @@ namespace Ming_AutoClicker.Views
 
             // 切换到下载状态 UI
             UpdateButton.IsEnabled = false;
-            UpdateButton.Content = "下载中...";
+            UpdateButton.Content = LocalizationService.Current.GetString("UpdateDownloading");
 
             // 显示进度区域
             ProgressArea.Visibility = Visibility.Visible;
@@ -100,8 +100,8 @@ namespace Ming_AutoClicker.Views
                 if (filePath != null)
                 {
                     // 下载成功，执行更新
-                    UpdateButton.Content = "正在更新...";
-                    ProgressPercentText.Text = "正在安装更新...";
+                    UpdateButton.Content = LocalizationService.Current.GetString("UpdateInstalling");
+                    ProgressPercentText.Text = LocalizationService.Current.GetString("UpdateInstallProgress");
 
                     // 稍微延迟以确保文件写入完成
                     await Task.Delay(500);
@@ -110,8 +110,8 @@ namespace Ming_AutoClicker.Views
                     if (!success)
                     {
                         MessageBox.Show(
-                            "更新失败，请重新启动应用再试。",
-                            "更新错误",
+                            LocalizationService.Current.GetString("UpdateApplyFailed"),
+                            LocalizationService.Current.GetString("UpdateErrorTitle"),
                             MessageBoxButton.OK,
                             MessageBoxImage.Error);
 
@@ -124,8 +124,8 @@ namespace Ming_AutoClicker.Views
                 {
                     // 下载失败，允许重试
                     MessageBox.Show(
-                        "下载失败，请检查网络连接后重试。",
-                        "下载失败",
+                        LocalizationService.Current.GetString("UpdateDownloadFailed"),
+                        LocalizationService.Current.GetString("UpdateDownloadFailedTitle"),
                         MessageBoxButton.OK,
                         MessageBoxImage.Warning);
                     ResetToInitialState();
@@ -146,7 +146,7 @@ namespace Ming_AutoClicker.Views
 
             // 恢复按钮
             UpdateButton.IsEnabled = true;
-            UpdateButton.Content = "立即更新";
+            UpdateButton.Content = LocalizationService.Current.GetString("UpdateNow");
 
             // 隐藏进度区域
             ProgressArea.Visibility = Visibility.Collapsed;

@@ -23,7 +23,8 @@ namespace Ming_AutoClicker.Services
         {
             var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             if (string.IsNullOrWhiteSpace(localAppData))
-                throw new InvalidOperationException("无法获取本地应用数据目录");
+                throw new InvalidOperationException(
+                    LocalizationService.Current.GetString("LocalAppDataUnavailable"));
 
             _settingsPath = Path.Combine(localAppData, DirectoryName, FileName);
         }
@@ -38,11 +39,32 @@ namespace Ming_AutoClicker.Services
                 var settings = JsonSerializer.Deserialize<AppSettings>(
                     File.ReadAllText(_settingsPath), _jsonOptions);
 
-                if (settings?.Hotkeys?.ToggleExecution == null ||
+                if (settings == null)
+                    return CreateDefault();
+
+                var requiresMigration = settings.SchemaVersion != 2;
+                settings.SchemaVersion = 2;
+                if (!Enum.IsDefined(settings.Language))
+                    settings.Language = AppLanguage.System;
+
+                settings.Hotkeys ??= new HotkeySettings();
+                if (settings.Hotkeys.ToggleExecution == null ||
                     !HotkeyGestureHelper.TryValidate(settings.Hotkeys.ToggleExecution, out _))
                 {
                     Debug.WriteLine("[设置] 热键配置无效，已使用默认 F8");
-                    return CreateDefault();
+                    settings.Hotkeys.ToggleExecution = HotkeyGesture.Default;
+                }
+
+                if (requiresMigration)
+                {
+                    try
+                    {
+                        Save(settings);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"[设置] 配置迁移保存失败，将继续使用内存中的新配置: {ex.Message}");
+                    }
                 }
 
                 return settings;

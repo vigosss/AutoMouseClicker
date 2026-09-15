@@ -1,7 +1,7 @@
 <Window x:Class="Ming_AutoClicker.Views.RegionSelectWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="区域截图"
+        Title="{DynamicResource RegionTitle}"
         WindowStyle="None"
         Topmost="True"
         ResizeMode="NoResize"
@@ -46,7 +46,7 @@
 
         <!-- 提示文字 -->
         <TextBlock x:Name="TipText"
-                   Text="按住鼠标左键拖拽选择截图区域，按 ESC 取消"
+                   Text="{DynamicResource RegionInstruction}"
                    Foreground="White"
                    FontSize="16"
                    Opacity="0.8"/>
@@ -58,7 +58,7 @@
                 Padding="16,10"
                 Visibility="Collapsed">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                <Button x:Name="BtnRedo" Content="🔄 重新选择" 
+                <Button x:Name="BtnRedo" Content="{DynamicResource RegionRedo}"
                         Background="Transparent" Foreground="White" 
                         BorderThickness="1" BorderBrush="#55FFFFFF"
                         Padding="14,6" FontSize="13" Cursor="Hand"
@@ -82,7 +82,7 @@
                         </ControlTemplate>
                     </Button.Template>
                 </Button>
-                <Button x:Name="BtnCancel" Content="✕ 取消" 
+                <Button x:Name="BtnCancel" Content="{DynamicResource RegionCancel}"
                         Background="Transparent" Foreground="#FF6B6B" 
                         BorderThickness="1" BorderBrush="#55FF6B6B"
                         Padding="14,6" FontSize="13" Cursor="Hand"
@@ -106,7 +106,7 @@
                         </ControlTemplate>
                     </Button.Template>
                 </Button>
-                <Button x:Name="BtnConfirm" Content="✓ 确认选区" 
+                <Button x:Name="BtnConfirm" Content="{DynamicResource RegionConfirm}"
                         Background="#FF409CFF" Foreground="White" 
                         BorderThickness="0"
                         Padding="14,6" FontSize="13" Cursor="Hand" FontWeight="Medium"

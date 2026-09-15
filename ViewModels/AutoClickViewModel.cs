@@ -16,7 +16,7 @@ namespace Ming_AutoClicker.ViewModels
         private string _selectedButton = "left";
         private int _intervalMs = 100;
         private bool _isRunning;
-        private string _statusText = "就绪";
+        private string _statusText = string.Empty;
         private int _clickCount;
         private int _pendingClickCount;
         private readonly Stopwatch _clickCountStopwatch = new Stopwatch();
@@ -115,7 +115,8 @@ namespace Ming_AutoClicker.ViewModels
         /// <summary>
         /// 快捷键提示文本
         /// </summary>
-        public string HotkeyHintText => _isRunning ? "停止连点" : "开始连点";
+        public string HotkeyHintText => LocalizationService.Current.GetString(
+            _isRunning ? "AutoClickStopHint" : "AutoClickStartHint");
 
         /// <summary>
         /// 状态文本
@@ -146,12 +147,14 @@ namespace Ming_AutoClicker.ViewModels
         public AutoClickViewModel(AutoClickService autoClickService)
         {
             _autoClickService = autoClickService ?? throw new ArgumentNullException(nameof(autoClickService));
+            _statusText = LocalizationService.Current.GetString("StatusReady");
 
             ToggleCommand = new RelayCommand(_ => Toggle(), _ => true);
 
             // 订阅服务事件
             _autoClickService.RunningStateChanged += OnRunningStateChanged;
             _autoClickService.ClickCountChanged += OnClickCountChanged;
+            LocalizationService.Current.LanguageChanged += OnLanguageChanged;
         }
 
         /// <summary>
@@ -171,24 +174,25 @@ namespace Ming_AutoClicker.ViewModels
 
         private void Start()
         {
-            StatusText = $"已开始连点 ({GetButtonName(SelectedButton)}, {IntervalMs}ms)";
+            StatusText = LocalizationService.Current.Format(
+                "AutoClickStarted", GetButtonName(SelectedButton), IntervalMs);
             if (!_autoClickService.Start(SelectedButton, IntervalMs))
             {
-                StatusText = "启动失败";
+                StatusText = LocalizationService.Current.GetString("StatusStartFailed");
             }
         }
 
         private void Stop()
         {
             _autoClickService.Stop();
-            StatusText = "正在停止…";
+            StatusText = LocalizationService.Current.GetString("AutoClickStopping");
         }
 
         private string GetButtonName(string button) => button switch
         {
-            "left" => "左键",
-            "middle" => "中键",
-            "right" => "右键",
+            "left" => LocalizationService.Current.GetString("MouseButtonLeft"),
+            "middle" => LocalizationService.Current.GetString("MouseButtonMiddle"),
+            "right" => LocalizationService.Current.GetString("MouseButtonRight"),
             _ => button
         };
 
@@ -207,7 +211,7 @@ namespace Ming_AutoClicker.ViewModels
                 {
                     // 停止时立即刷新最终点击次数
                     ClickCount = _autoClickService.ClickCount;
-                    StatusText = $"已停止，共点击 {ClickCount} 次";
+                    StatusText = LocalizationService.Current.Format("StatusStoppedClicks", ClickCount);
                     _clickCountStopwatch.Reset();
                 }
             });
@@ -226,6 +230,19 @@ namespace Ming_AutoClicker.ViewModels
             }
         }
 
+        private void OnLanguageChanged(object? sender, EventArgs e)
+        {
+            OnUIThread(() =>
+            {
+                OnPropertyChanged(nameof(HotkeyHintText));
+                StatusText = IsRunning
+                    ? LocalizationService.Current.Format("AutoClickStarted", GetButtonName(SelectedButton), IntervalMs)
+                    : ClickCount > 0
+                        ? LocalizationService.Current.Format("StatusStoppedClicks", ClickCount)
+                        : LocalizationService.Current.GetString("StatusReady");
+            });
+        }
+
         #endregion
 
         protected override void Dispose(bool disposing)
@@ -234,6 +251,7 @@ namespace Ming_AutoClicker.ViewModels
             {
                 _autoClickService.RunningStateChanged -= OnRunningStateChanged;
                 _autoClickService.ClickCountChanged -= OnClickCountChanged;
+                LocalizationService.Current.LanguageChanged -= OnLanguageChanged;
                 _autoClickService.Dispose();
             }
             base.Dispose(disposing);

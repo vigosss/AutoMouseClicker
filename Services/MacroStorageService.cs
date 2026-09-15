@@ -113,13 +113,15 @@ namespace Ming_AutoClicker.Services
         public MacroProfile Load(string filePath)
         {
             if (!File.Exists(filePath))
-                throw new FileNotFoundException($"宏文件不存在: {filePath}");
+                throw new FileNotFoundException(
+                    LocalizationService.Current.Format("MacroFileNotFound", filePath));
 
             var json = File.ReadAllText(filePath);
             var profile = JsonSerializer.Deserialize<MacroProfile>(json, _jsonOptions);
             
             if (profile == null)
-                throw new InvalidOperationException($"无法解析宏文件: {filePath}");
+                throw new InvalidOperationException(
+                    LocalizationService.Current.Format("MacroFileInvalid", filePath));
 
             return profile;
         }
@@ -286,7 +288,7 @@ namespace Ming_AutoClicker.Services
             
             // 读取类型字段
             if (!root.TryGetProperty("Type", out var typeProp))
-                throw new JsonException("缺少 Type 属性");
+                throw new JsonException(LocalizationService.Current.GetString("MacroMissingType"));
 
             var typeString = typeProp.GetString();
             
@@ -298,7 +300,7 @@ namespace Ming_AutoClicker.Services
             if (string.Equals(typeString, "MouseClick", StringComparison.OrdinalIgnoreCase))
                 return JsonSerializer.Deserialize<MouseClickAction>(root.GetRawText(), options)!;
 
-            throw new JsonException($"未知的动作类型: {typeString}");
+            throw new JsonException(LocalizationService.Current.Format("ActionUnknownType", typeString));
         }
 
         public override void Write(Utf8JsonWriter writer, MacroAction value, JsonSerializerOptions options)

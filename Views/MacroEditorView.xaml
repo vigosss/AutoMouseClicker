@@ -28,28 +28,28 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <TextBlock Grid.Column="0" Text="宏名称" Style="{StaticResource LabelText}"
+                <TextBlock Grid.Column="0" Text="{DynamicResource EditorMacroName}" Style="{StaticResource LabelText}"
                            VerticalAlignment="Center" Margin="0,0,8,0"/>
                 <TextBox Grid.Column="1"
                          Text="{Binding MacroName, UpdateSourceTrigger=PropertyChanged}"
                          Style="{StaticResource ModernTextBox}"
                          Height="32"/>
 
-                <CheckBox Grid.Column="2" Content="循环"
+                <CheckBox Grid.Column="2" Content="{DynamicResource EditorLoop}"
                           Style="{StaticResource ModernCheckBox}"
                           IsChecked="{Binding LoopEnabled}"
                           VerticalAlignment="Center" Margin="16,0,12,0"/>
 
                 <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center"
                             Visibility="{Binding LoopEnabled, Converter={StaticResource BoolToVis}}">
-                    <TextBlock Text="次数" Style="{StaticResource LabelText}"
+                    <TextBlock Text="{DynamicResource EditorLoopCount}" Style="{StaticResource LabelText}"
                                VerticalAlignment="Center" Margin="0,0,6,0"/>
                     <TextBox Text="{Binding LoopCount}" Width="52" Height="32"
                              Style="{StaticResource ModernTextBox}"
-                             ToolTip="0 = 无限循环"/>
-                    <TextBlock Text="(0=无限)" Style="{StaticResource CaptionText}"
+                             ToolTip="{DynamicResource EditorInfiniteTooltip}"/>
+                    <TextBlock Text="{DynamicResource EditorInfiniteHint}" Style="{StaticResource CaptionText}"
                                VerticalAlignment="Center" Margin="6,0,0,0"/>
-                    <TextBlock Text="间隔(ms)" Style="{StaticResource LabelText}"
+                    <TextBlock Text="{DynamicResource EditorLoopInterval}" Style="{StaticResource LabelText}"
                                VerticalAlignment="Center" Margin="12,0,6,0"/>
                     <TextBox Text="{Binding LoopIntervalMs}" Width="60" Height="32"
                              Style="{StaticResource ModernTextBox}"/>
@@ -92,7 +92,7 @@
                         <ListBox.ItemTemplate>
                             <DataTemplate>
                                 <StackPanel>
-                                    <TextBlock Text="{Binding}" TextTrimming="CharacterEllipsis"
+                                    <TextBlock Text="{Binding Description}" TextTrimming="CharacterEllipsis"
                                                Style="{StaticResource BodyText}"/>
                                     <TextBlock Text="{Binding Note}"
                                                TextTrimming="CharacterEllipsis"
@@ -119,22 +119,22 @@
 
                     <!-- 添加动作按钮 -->
                     <UniformGrid Grid.Row="1" Columns="3" Margin="0,8,0,6">
-                        <Button Content="🔍 找图" Style="{StaticResource SmallButton}" Margin="0,0,4,0"
+                        <Button Content="{DynamicResource EditorAddFindImage}" Style="{StaticResource SmallButton}" Margin="0,0,4,0"
                                 Command="{Binding AddFindImageActionCommand}"/>
-                        <Button Content="⏱ 等待" Style="{StaticResource SmallButton}" Margin="2,0,2,0"
+                        <Button Content="{DynamicResource EditorAddWait}" Style="{StaticResource SmallButton}" Margin="2,0,2,0"
                                 Command="{Binding AddWaitActionCommand}"/>
-                        <Button Content="🎯 点击" Style="{StaticResource SmallButton}" Margin="4,0,0,0"
+                        <Button Content="{DynamicResource EditorAddClick}" Style="{StaticResource SmallButton}" Margin="4,0,0,0"
                                 Command="{Binding AddMouseClickActionCommand}"/>
                     </UniformGrid>
 
                     <!-- 动作操作按钮 -->
                     <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,4">
                         <Button Content="↑" Style="{StaticResource SmallButton}" Width="34" Margin="0,0,4,0"
-                                Command="{Binding MoveUpCommand}" ToolTip="上移"/>
+                                Command="{Binding MoveUpCommand}" ToolTip="{DynamicResource EditorMoveUp}"/>
                         <Button Content="↓" Style="{StaticResource SmallButton}" Width="34" Margin="0,0,4,0"
-                                Command="{Binding MoveDownCommand}" ToolTip="下移"/>
+                                Command="{Binding MoveDownCommand}" ToolTip="{DynamicResource EditorMoveDown}"/>
                         <Button Content="×" Style="{StaticResource DangerButton}" Width="34"
-                                Command="{Binding RemoveActionCommand}" ToolTip="删除"/>
+                                Command="{Binding RemoveActionCommand}" ToolTip="{DynamicResource EditorDeleteAction}"/>
                     </StackPanel>
                 </Grid>
             </Border>
@@ -149,7 +149,7 @@
                 </Border.Effect>
                 <Grid>
                     <!-- 未选中动作时的提示 -->
-                    <TextBlock Text="← 选择一个动作以编辑其属性"
+                    <TextBlock Text="{DynamicResource EditorSelectAction}"
                                HorizontalAlignment="Center" VerticalAlignment="Center">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock" BasedOn="{StaticResource CaptionText}">
@@ -169,7 +169,7 @@
                         <StackPanel>
                             <!-- 所有动作共用的步骤说明 -->
                             <StackPanel Margin="0,0,0,16">
-                                <TextBlock Text="步骤说明" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                                <TextBlock Text="{DynamicResource EditorStepNote}" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
                                 <TextBox Text="{Binding ActionNote, UpdateSourceTrigger=PropertyChanged}"
                                          Style="{StaticResource ModernTextBox}"
                                          MinHeight="72"
@@ -177,8 +177,8 @@
                                          AcceptsReturn="True"
                                          TextWrapping="Wrap"
                                          VerticalContentAlignment="Top"
-                                         ToolTip="记录这一步的用途，例如：打开订单详情"/>
-                                <TextBlock Text="例如：打开订单详情，方便步骤较多时快速识别"
+                                         ToolTip="{DynamicResource EditorStepNoteTooltip}"/>
+                                <TextBlock Text="{DynamicResource EditorStepNoteHint}"
                                            Style="{StaticResource CaptionText}"
                                            Margin="0,4,0,0"/>
                             </StackPanel>
@@ -197,22 +197,22 @@
                                     </Style>
                                 </StackPanel.Style>
 
-                                <TextBlock Text="🔍 找图设置" Style="{StaticResource SectionTitleText}" Margin="0,0,0,12"/>
+                                <TextBlock Text="{DynamicResource EditorFindSettings}" Style="{StaticResource SectionTitleText}" Margin="0,0,0,12"/>
 
                                 <!-- 截图操作按钮 -->
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                                    <Button Content="截图" Style="{StaticResource PrimaryButton}" Width="68" Height="32"
+                                    <Button Content="{DynamicResource EditorCapture}" Style="{StaticResource PrimaryButton}" MinWidth="68" Height="32"
                                             Command="{Binding CaptureScreenshotCommand}"/>
-                                    <Button Content="上传" Style="{StaticResource BaseButton}" Width="56" Height="32" Margin="6,0,0,0"
+                                    <Button Content="{DynamicResource EditorUpload}" Style="{StaticResource BaseButton}" MinWidth="56" Height="32" Margin="6,0,0,0"
                                             Command="{Binding ImportImageCommand}"/>
-                                    <Button Content="清除" Style="{StaticResource BaseButton}" Width="56" Height="32" Margin="6,0,0,0"
+                                    <Button Content="{DynamicResource EditorClear}" Style="{StaticResource BaseButton}" MinWidth="56" Height="32" Margin="6,0,0,0"
                                             Command="{Binding ClearImageCommand}"/>
-                                    <Button Content="测试" Style="{StaticResource GhostButton}" Width="56" Height="32" Margin="6,0,0,0"
+                                    <Button Content="{DynamicResource EditorTest}" Style="{StaticResource GhostButton}" MinWidth="56" Height="32" Margin="6,0,0,0"
                                             Command="{Binding TestMatchCommand}"/>
                                 </StackPanel>
 
                                 <!-- 截图预览 -->
-                                <TextBlock Text="截图预览" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                                <TextBlock Text="{DynamicResource EditorImagePreview}" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
                                 <Border Background="{StaticResource BackgroundBrush}"
                                         BorderBrush="{StaticResource BorderBrush}"
                                         BorderThickness="1"
@@ -240,7 +240,7 @@
                                             </Image.Style>
                                         </Image> 
                                         <!-- 无截图时显示占位文字 -->
-                                        <TextBlock Text="点击上方「截图」或「上传」添加图像"
+                                        <TextBlock Text="{DynamicResource EditorImagePlaceholder}"
                                                    HorizontalAlignment="Center"
                                                    VerticalAlignment="Center"
                                                    Margin="16,12">
@@ -265,7 +265,7 @@
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0">
-                                        <TextBlock Text="匹配度" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                                        <TextBlock Text="{DynamicResource EditorThreshold}" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
                                         <Slider Style="{StaticResource ModernSlider}"
                                                 Minimum="0.1" Maximum="1.0" Value="{Binding MatchThreshold}"
                                                 TickFrequency="0.05" IsSnapToTickEnabled="True"
@@ -281,12 +281,12 @@
                                 </Grid>
 
                                 <!-- 操作类型 -->
-                                <TextBlock Text="操作" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
-                                <ComboBox SelectedValue="{Binding Operation}" SelectedValuePath="Content"
+                                <TextBlock Text="{DynamicResource EditorOperation}" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                                <ComboBox SelectedValue="{Binding Operation}" SelectedValuePath="Tag"
                                           Height="32" Style="{StaticResource ModernComboBox}"
                                           Margin="0,0,0,12">
-                                    <ComboBoxItem Content="Click" Style="{StaticResource ModernComboBoxItem}"/>
-                                    <ComboBoxItem Content="RightClick" Style="{StaticResource ModernComboBoxItem}"/>
+                                    <ComboBoxItem Content="{DynamicResource EditorLeftClick}" Tag="Click" Style="{StaticResource ModernComboBoxItem}"/>
+                                    <ComboBoxItem Content="{DynamicResource EditorRightClick}" Tag="RightClick" Style="{StaticResource ModernComboBoxItem}"/>
                                 </ComboBox>
 
                                 <!-- 偏移 -->
@@ -296,24 +296,24 @@
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0" Margin="0,0,8,0">
-                                        <TextBlock Text="X 偏移" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                                        <TextBlock Text="{DynamicResource EditorOffsetX}" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
                                         <TextBox Text="{Binding OffsetX}" Height="32"
                                                  Style="{StaticResource ModernTextBox}"/>
                                     </StackPanel>
                                     <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                                        <TextBlock Text="Y 偏移" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                                        <TextBlock Text="{DynamicResource EditorOffsetY}" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
                                         <TextBox Text="{Binding OffsetY}" Height="32"
                                                  Style="{StaticResource ModernTextBox}"/>
                                     </StackPanel>
                                 </Grid>
 
                                 <!-- 等待直到找到 -->
-                                <CheckBox Content="等待直到找到"
+                                <CheckBox Content="{DynamicResource EditorWaitUntilFound}"
                                           Style="{StaticResource ModernCheckBox}"
                                           IsChecked="{Binding WaitUntilFound}"
                                           Margin="0,0,0,10"/>
 
-                                <CheckBox Content="自适应缩放（较慢，适合 DPI 或窗口缩放变化）"
+                                <CheckBox Content="{DynamicResource EditorAdaptiveScale}"
                                           Style="{StaticResource ModernCheckBox}"
                                           IsChecked="{Binding AdaptiveScale}"/>
                             </StackPanel>
@@ -331,13 +331,13 @@
                                     </Style>
                                 </StackPanel.Style>
 
-                                <TextBlock Text="⏱ 等待设置" Style="{StaticResource SectionTitleText}" Margin="0,0,0,12"/>
+                                <TextBlock Text="{DynamicResource EditorWaitSettings}" Style="{StaticResource SectionTitleText}" Margin="0,0,0,12"/>
 
-                                <TextBlock Text="等待时间(秒)" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                                <TextBlock Text="{DynamicResource EditorWaitSeconds}" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
                                 <TextBox Text="{Binding WaitSeconds}" Height="32"
                                          Style="{StaticResource ModernTextBox}"
                                          Margin="0,0,0,8"/>
-                                <TextBlock Text="支持小数，如 0.5 表示半秒" Style="{StaticResource CaptionText}"/>
+                                <TextBlock Text="{DynamicResource EditorWaitHint}" Style="{StaticResource CaptionText}"/>
                             </StackPanel>
 
                             <!-- 鼠标点击位置动作属性 -->
@@ -353,7 +353,7 @@
                                     </Style>
                                 </StackPanel.Style>
 
-                                <TextBlock Text="🎯 鼠标点击位置" Style="{StaticResource SectionTitleText}" Margin="0,0,0,12"/>
+                                <TextBlock Text="{DynamicResource EditorClickSettings}" Style="{StaticResource SectionTitleText}" Margin="0,0,0,12"/>
 
                                 <!-- 坐标输入 -->
                                 <Grid Margin="0,0,0,12">
@@ -362,20 +362,20 @@
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0" Margin="0,0,8,0">
-                                        <TextBlock Text="X 坐标" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                                        <TextBlock Text="{DynamicResource EditorCoordinateX}" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
                                         <TextBox Text="{Binding ClickX}" Height="32"
                                                  Style="{StaticResource ModernTextBox}"/>
                                     </StackPanel>
                                     <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                                        <TextBlock Text="Y 坐标" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                                        <TextBlock Text="{DynamicResource EditorCoordinateY}" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
                                         <TextBox Text="{Binding ClickY}" Height="32"
                                                  Style="{StaticResource ModernTextBox}"/>
                                     </StackPanel>
                                 </Grid>
 
                                 <!-- 准星拾取按钮 -->
-                                <TextBlock Text="准星拾取" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
-                                <Button Content="🎯 按住拖到目标位置获取坐标"
+                                <TextBlock Text="{DynamicResource EditorPickCoordinate}" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                                <Button Content="{DynamicResource EditorPickCoordinateButton}"
                                         Style="{StaticResource PrimaryButton}"
                                         Height="36"
                                         HorizontalAlignment="Stretch"
@@ -383,12 +383,12 @@
                                         Margin="0,0,0,12"/>
 
                                 <!-- 操作类型 -->
-                                <TextBlock Text="操作" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
-                                <ComboBox SelectedValue="{Binding ClickOperation}" SelectedValuePath="Content"
+                                <TextBlock Text="{DynamicResource EditorOperation}" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                                <ComboBox SelectedValue="{Binding ClickOperation}" SelectedValuePath="Tag"
                                           Height="32" Style="{StaticResource ModernComboBox}"
                                           Margin="0,0,0,12">
-                                    <ComboBoxItem Content="Click" Style="{StaticResource ModernComboBoxItem}"/>
-                                    <ComboBoxItem Content="RightClick" Style="{StaticResource ModernComboBoxItem}"/>
+                                    <ComboBoxItem Content="{DynamicResource EditorLeftClick}" Tag="Click" Style="{StaticResource ModernComboBoxItem}"/>
+                                    <ComboBoxItem Content="{DynamicResource EditorRightClick}" Tag="RightClick" Style="{StaticResource ModernComboBoxItem}"/>
                                 </ComboBox>
                             </StackPanel>
                             </Grid>
@@ -413,13 +413,13 @@
                        TextTrimming="CharacterEllipsis"/>
 
             <Button Grid.Column="1"
-                    Content="取消"
+                    Content="{DynamicResource CommonCancel}"
                     Style="{StaticResource BaseButton}"
                     Width="76" Height="36" FontSize="13"
                     Margin="0,0,8,0"
                     Command="{Binding CancelCommand}"/>
             <Button Grid.Column="2"
-                    Content="💾 保存"
+                    Content="{DynamicResource EditorSave}"
                     Style="{StaticResource PrimaryButton}"
                     Width="76" Height="36" FontSize="13"
                     Command="{Binding SaveCommand}"/>

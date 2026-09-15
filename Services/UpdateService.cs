@@ -80,7 +80,7 @@ namespace Ming_AutoClicker.Services
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    result.ErrorMessage = $"API 请求失败: {response.StatusCode}";
+                    result.ErrorMessage = LocalizationService.Current.Format("UpdateApiFailed", response.StatusCode);
                     return result;
                 }
 
@@ -89,14 +89,14 @@ namespace Ming_AutoClicker.Services
 
                 if (release == null || string.IsNullOrEmpty(release.TagName))
                 {
-                    result.ErrorMessage = "无法解析版本信息";
+                    result.ErrorMessage = LocalizationService.Current.GetString("UpdateParseFailed");
                     return result;
                 }
 
                 // 跳过预发布和草稿
                 if (release.PreRelease || release.Draft)
                 {
-                    result.ErrorMessage = "最新版本尚未正式发布";
+                    result.ErrorMessage = LocalizationService.Current.GetString("UpdateNotPublished");
                     return result;
                 }
 
@@ -104,13 +104,13 @@ namespace Ming_AutoClicker.Services
                 var versionTag = release.TagName.TrimStart('v', 'V');
                 if (!Version.TryParse(versionTag, out var latestVersion))
                 {
-                    result.ErrorMessage = $"无法解析版本号: {release.TagName}";
+                    result.ErrorMessage = LocalizationService.Current.Format("UpdateVersionInvalid", release.TagName);
                     return result;
                 }
 
                 result.LatestVersion = latestVersion;
                 result.LatestVersionTag = release.TagName;
-                result.ReleaseNotes = release.Body ?? "暂无更新说明";
+                result.ReleaseNotes = release.Body ?? LocalizationService.Current.GetString("UpdateNoReleaseNotes");
                 result.PublishedAt = release.PublishedAt;
                 result.ReleasePageUrl = release.HtmlUrl;
 
@@ -135,15 +135,15 @@ namespace Ming_AutoClicker.Services
             }
             catch (TaskCanceledException)
             {
-                result.ErrorMessage = "请求超时，请检查网络连接";
+                result.ErrorMessage = LocalizationService.Current.GetString("UpdateRequestTimeout");
             }
             catch (HttpRequestException ex)
             {
-                result.ErrorMessage = $"网络错误: {ex.Message}";
+                result.ErrorMessage = LocalizationService.Current.Format("UpdateNetworkError", ex.Message);
             }
             catch (Exception ex)
             {
-                result.ErrorMessage = $"检查更新失败: {ex.Message}";
+                result.ErrorMessage = LocalizationService.Current.Format("UpdateCheckFailed", ex.Message);
             }
 
             return result;

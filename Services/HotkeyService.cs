@@ -106,11 +106,11 @@ namespace Ming_AutoClicker.Services
                     return errorCode == 1409
                         ? HotkeyRegistrationResult.Failed(
                             HotkeyRegistrationFailure.AlreadyRegistered,
-                            "该快捷键已被其他程序占用，请换一个组合",
+                            LocalizationService.Current.GetString("HotkeyInUse"),
                             errorCode)
                         : HotkeyRegistrationResult.Failed(
                             HotkeyRegistrationFailure.SystemError,
-                            $"系统无法注册该快捷键（错误码 {errorCode}）",
+                            LocalizationService.Current.Format("HotkeyRegisterSystemError", errorCode),
                             errorCode);
                 }
 
@@ -121,7 +121,7 @@ namespace Ming_AutoClicker.Services
                     Win32Api.UnregisterHotKey(windowHandle, hotkeyId);
                     return HotkeyRegistrationResult.Failed(
                         HotkeyRegistrationFailure.SystemError,
-                        $"无法注销原快捷键（错误码 {errorCode}）",
+                        LocalizationService.Current.Format("HotkeyUnregisterError", errorCode),
                         errorCode);
                 }
 
@@ -137,7 +137,7 @@ namespace Ming_AutoClicker.Services
                 System.Diagnostics.Debug.WriteLine($"热键注册异常: {ex.Message}");
                 return HotkeyRegistrationResult.Failed(
                     HotkeyRegistrationFailure.SystemError,
-                    $"注册快捷键时发生错误：{ex.Message}");
+                    LocalizationService.Current.Format("HotkeyRegisterException", ex.Message));
             }
         }
 
@@ -220,7 +220,7 @@ namespace Ming_AutoClicker.Services
         public string GetCurrentHotkeyDescription()
         {
             if (!_isRegistered)
-                return "未注册";
+                return LocalizationService.Current.GetString("HotkeyNotRegistered");
 
             return HotkeyGestureHelper.Format(CurrentGesture);
         }

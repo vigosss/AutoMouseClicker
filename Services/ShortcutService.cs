@@ -11,7 +11,7 @@ namespace Ming_AutoClicker.Services
     /// </summary>
     public static class ShortcutService
     {
-        private const string ShortcutName = "智点精灵.lnk";
+        private static string ShortcutName => $"{LocalizationService.Current.GetString("AppTitle")}.lnk";
         private const string PreferenceDirectoryName = "Ming-AutoClicker";
         private const string PreferenceFileName = "desktop-shortcut-choice";
 
@@ -81,7 +81,7 @@ namespace Ming_AutoClicker.Services
         {
             var shellType = Type.GetTypeFromProgID("WScript.Shell");
             if (shellType == null)
-                throw new InvalidOperationException("当前系统不支持 WScript.Shell");
+                throw new InvalidOperationException(LocalizationService.Current.GetString("ShortcutUnsupported"));
 
             dynamic? shell = null;
             dynamic? shortcut = null;
@@ -99,7 +99,7 @@ namespace Ming_AutoClicker.Services
                 var iconLocation = File.Exists(icoPath)
                     ? $"{icoPath},0"
                     : $"{targetPath},0";
-                const string description = "智点精灵 - 自动点击工具";
+                var description = LocalizationService.Current.GetString("ShortcutDescription");
 
                 var needsUpdate = !PathsEqual((string?)shortcut.TargetPath, targetPath) ||
                     !PathsEqual((string?)shortcut.WorkingDirectory, appDir) ||
@@ -182,7 +182,7 @@ namespace Ming_AutoClicker.Services
         {
             var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             if (string.IsNullOrWhiteSpace(localAppData))
-                throw new InvalidOperationException("无法获取本地应用数据目录");
+                throw new InvalidOperationException(LocalizationService.Current.GetString("LocalAppDataUnavailable"));
 
             return Path.Combine(localAppData, PreferenceDirectoryName, PreferenceFileName);
         }

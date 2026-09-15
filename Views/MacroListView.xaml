@@ -33,7 +33,8 @@
                                        Foreground="{StaticResource TextPrimaryBrush}"
                                        TextTrimming="CharacterEllipsis"/>
                             <TextBlock Style="{StaticResource CaptionText}" Margin="0,4,0,0">
-                                <Run Text="{Binding Actions.Count, Mode=OneWay, StringFormat='{}{0} 个动作'}"/>
+                                <Run Text="{Binding Actions.Count, Mode=OneWay}"/>
+                                <Run Text="{DynamicResource MacroActionCountSuffix}"/>
                                 <Run Text=" · "/>
                                 <Run Text="{Binding UpdatedAt, StringFormat='{}{0:MM-dd HH:mm}'}"/>
                             </TextBlock>
@@ -51,12 +52,12 @@
                                     </Style.Triggers>
                                 </Style>
                             </StackPanel.Style>
-                            <Button Content="✏️ 编辑" Style="{StaticResource GhostButton}" Margin="0,0,4,0"
+                            <Button Content="{DynamicResource MacroEdit}" Style="{StaticResource GhostButton}" Margin="0,0,4,0"
                                     Click="OnEditClick" Tag="{Binding}"
                                     IsEnabled="{Binding DataContext.IsNotExecuting, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
-                            <Button Content="📋 复制" Style="{StaticResource GhostButton}" Margin="0,0,4,0"
+                            <Button Content="{DynamicResource MacroDuplicate}" Style="{StaticResource GhostButton}" Margin="0,0,4,0"
                                     Command="{Binding DataContext.DuplicateMacroCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
-                            <Button Content="🗑 删除" Style="{StaticResource DangerButton}"
+                            <Button Content="{DynamicResource MacroDelete}" Style="{StaticResource DangerButton}"
                                     Command="{Binding DataContext.DeleteMacroCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
                         </StackPanel>
                     </Grid>
@@ -66,7 +67,7 @@
 
         <!-- 创建新宏按钮 -->
         <Button Grid.Row="1"
-                Content="＋ 创建新宏"
+                Content="{DynamicResource MacroCreate}"
                 Style="{StaticResource PrimaryButton}"
                 Height="38"
                 Margin="0,12,0,0"
@@ -86,13 +87,13 @@
                        VerticalAlignment="Center"/>
 
             <Button Grid.Column="1"
-                    Content="▶ 开始"
+                    Content="{DynamicResource MacroStart}"
                     Style="{StaticResource SuccessButton}"
                     Width="80" Height="36" FontSize="13"
                     Margin="0,0,8,0"
                     Command="{Binding StartMacroCommand}"/>
             <Button Grid.Column="2"
-                    Content="■ 停止"
+                    Content="{DynamicResource MacroStop}"
                     Style="{StaticResource DangerButton}"
                     Width="80" Height="36" FontSize="13"
                     Command="{Binding StopMacroCommand}"/>

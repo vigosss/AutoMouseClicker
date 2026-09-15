@@ -27,7 +27,7 @@ namespace Ming_AutoClicker.ViewModels
         private MacroProfile _macro;
         private MacroAction? _selectedAction;
         private int _selectedActionIndex = -1;
-        private string _statusMessage = "就绪";
+        private string _statusMessage = string.Empty;
         private bool _isTestingMatch;
         private NotifyCollectionChangedEventHandler? _collectionChangedHandler;
 
@@ -109,7 +109,7 @@ namespace Ming_AutoClicker.ViewModels
         /// <summary>
         /// 选中动作的类型
         /// </summary>
-        public string SelectedActionType => SelectedAction?.Type.ToString() ?? "无";
+        public string SelectedActionType => SelectedAction?.Type.ToString() ?? string.Empty;
 
         /// <summary>
         /// 宏名称
@@ -506,6 +506,7 @@ namespace Ming_AutoClicker.ViewModels
             _screenCaptureService = screenCaptureService ?? throw new ArgumentNullException(nameof(screenCaptureService));
             _imageMatchService = imageMatchService ?? throw new ArgumentNullException(nameof(imageMatchService));
             _macro = macro ?? throw new ArgumentNullException(nameof(macro));
+            _statusMessage = LocalizationService.Current.GetString("StatusReady");
 
             // 初始化命令
             SaveCommand = new RelayCommand(_ => Save());
@@ -536,6 +537,7 @@ namespace Ming_AutoClicker.ViewModels
                 OnPropertyChanged(nameof(HasActions));
             };
             Actions.CollectionChanged += _collectionChangedHandler;
+            LocalizationService.Current.LanguageChanged += OnLanguageChanged;
         }
 
         #region 命令实现
@@ -553,12 +555,12 @@ namespace Ming_AutoClicker.ViewModels
                 }
 
                 // 不在这里保存，由 MainWindow.OnEditorRequestSave 统一处理
-                StatusMessage = "保存成功";
+                StatusMessage = LocalizationService.Current.GetString("EditorSaveSuccess");
                 SaveCompleted?.Invoke(this, EventArgs.Empty);
             }
             catch (Exception ex)
             {
-                StatusMessage = $"保存失败: {ex.Message}";
+                StatusMessage = LocalizationService.Current.Format("StatusSaveFailed", ex.Message);
             }
         }
 
@@ -584,7 +586,7 @@ namespace Ming_AutoClicker.ViewModels
                 // 重置选中动作
                 SelectedAction = null;
             }
-            StatusMessage = "已取消更改";
+            StatusMessage = LocalizationService.Current.GetString("EditorCancelled");
             CancelCompleted?.Invoke(this, EventArgs.Empty);
         }
 
@@ -601,7 +603,7 @@ namespace Ming_AutoClicker.ViewModels
             };
             Actions.Add(action);
             SelectedAction = action;
-            StatusMessage = "已添加找图动作";
+            StatusMessage = LocalizationService.Current.GetString("EditorAddedFind");
         }
 
         private void AddWaitAction()
@@ -613,7 +615,7 @@ namespace Ming_AutoClicker.ViewModels
             };
             Actions.Add(action);
             SelectedAction = action;
-            StatusMessage = "已添加等待动作";
+            StatusMessage = LocalizationService.Current.GetString("EditorAddedWait");
         }
 
         private void AddMouseClickAction()
@@ -627,7 +629,7 @@ namespace Ming_AutoClicker.ViewModels
             };
             Actions.Add(action);
             SelectedAction = action;
-            StatusMessage = "已添加鼠标点击位置动作";
+            StatusMessage = LocalizationService.Current.GetString("EditorAddedClick");
         }
 
         /// <summary>
@@ -653,7 +655,7 @@ namespace Ming_AutoClicker.ViewModels
                 {
                     ClickX = x;
                     ClickY = y;
-                    StatusMessage = $"已拾取坐标: ({x}, {y})";
+                    StatusMessage = LocalizationService.Current.Format("EditorPickedCoordinate", x, y);
                     // 刷新左侧列表显示（因为 MouseClickAction.ToString() 依赖 X/Y 属性）
                     CollectionViewSource.GetDefaultView(Actions).Refresh();
                 };
@@ -661,7 +663,7 @@ namespace Ming_AutoClicker.ViewModels
             }
             catch (Exception ex)
             {
-                StatusMessage = $"坐标拾取失败: {ex.Message}";
+                StatusMessage = LocalizationService.Current.Format("EditorPickFailed", ex.Message);
             }
             finally
             {
@@ -694,7 +696,7 @@ namespace Ming_AutoClicker.ViewModels
                 SelectedAction = null;
             }
 
-            StatusMessage = "已删除动作";
+            StatusMessage = LocalizationService.Current.GetString("EditorRemovedAction");
         }
 
         private bool CanMoveUp() => IsActionSelected && _selectedActionIndex > 0;
@@ -713,7 +715,7 @@ namespace Ming_AutoClicker.ViewModels
             Actions[index - 1].Order = index - 1;
 
             SelectedAction = Actions[index - 1];
-            StatusMessage = "已上移";
+            StatusMessage = LocalizationService.Current.GetString("EditorMovedUp");
         }
 
         private bool CanMoveDown() => IsActionSelected && _selectedActionIndex < Actions.Count - 1;
@@ -732,7 +734,7 @@ namespace Ming_AutoClicker.ViewModels
             Actions[index + 1].Order = index + 1;
 
             SelectedAction = Actions[index + 1];
-            StatusMessage = "已下移";
+            StatusMessage = LocalizationService.Current.GetString("EditorMovedDown");
         }
 
         private async System.Threading.Tasks.Task CaptureScreenshotAsync()
@@ -773,17 +775,18 @@ namespace Ming_AutoClicker.ViewModels
                             if (FindImageAction != null)
                             {
                                 ImagePath = _screenCaptureService.GetRelativePath(filePath);
-                                StatusMessage = $"已截图: {ImagePath} ({r.Width}×{r.Height})";
+                                StatusMessage = LocalizationService.Current.Format(
+                                    "EditorCaptured", ImagePath, r.Width, r.Height);
                             }
                         }
                         catch (Exception ex)
                         {
-                            StatusMessage = $"截图保存失败: {ex.Message}";
+                            StatusMessage = LocalizationService.Current.Format("EditorCaptureSaveFailed", ex.Message);
                         }
                     }
                     else
                     {
-                        StatusMessage = "截图已取消";
+                        StatusMessage = LocalizationService.Current.GetString("EditorCaptureCancelled");
                     }
 
                 };
@@ -792,7 +795,7 @@ namespace Ming_AutoClicker.ViewModels
             }
             catch (Exception ex)
             {
-                StatusMessage = $"截图失败: {ex.Message}";
+                StatusMessage = LocalizationService.Current.Format("EditorCaptureFailed", ex.Message);
             }
             finally
             {
@@ -806,8 +809,8 @@ namespace Ming_AutoClicker.ViewModels
 
             var dialog = new OpenFileDialog
             {
-                Title = "选择用于找图的图片",
-                Filter = "图片文件|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tif;*.tiff|所有文件|*.*",
+                Title = LocalizationService.Current.GetString("OpenImageTitle"),
+                Filter = LocalizationService.Current.GetString("OpenImageFilter"),
                 CheckFileExists = true,
                 Multiselect = false
             };
@@ -818,12 +821,13 @@ namespace Ming_AutoClicker.ViewModels
             {
                 var importedPath = _screenCaptureService.ImportImage(dialog.FileName);
                 ImagePath = _screenCaptureService.GetRelativePath(importedPath);
-                StatusMessage = $"已导入图片: {Path.GetFileName(dialog.FileName)}";
+                StatusMessage = LocalizationService.Current.Format("EditorImported", Path.GetFileName(dialog.FileName));
             }
             catch (Exception ex)
             {
-                ShowMessage($"图片导入失败: {ex.Message}", "错误", MessageBoxImage.Error);
-                StatusMessage = $"图片导入失败: {ex.Message}";
+                var message = LocalizationService.Current.Format("EditorImportFailed", ex.Message);
+                ShowMessage(message, icon: MessageBoxImage.Error);
+                StatusMessage = message;
             }
         }
 
@@ -831,13 +835,13 @@ namespace Ming_AutoClicker.ViewModels
         {
             if (FindImageAction == null || string.IsNullOrEmpty(ImagePath))
             {
-                ShowMessage("请先选择或截取图像");
+                ShowMessage(LocalizationService.Current.GetString("EditorSelectImageFirst"));
                 return;
             }
 
             _isTestingMatch = true;
             CommandManager.InvalidateRequerySuggested();
-            StatusMessage = "正在测试匹配...";
+            StatusMessage = LocalizationService.Current.GetString("EditorTestingMatch");
 
             var mainWindow = Application.Current.MainWindow;
             var previousWindowState = mainWindow?.WindowState ?? WindowState.Normal;
@@ -860,23 +864,28 @@ namespace Ming_AutoClicker.ViewModels
                     matchWindow.Loaded += (_, _) =>
                     {
                         StatusMessage = result.Found
-                            ? $"匹配成功! 相似度: {result.Similarity:P1}，耗时: {result.ElapsedMilliseconds}ms"
-                            : $"未达到阈值，最佳候选: {result.Similarity:P1}，耗时: {result.ElapsedMilliseconds}ms";
+                            ? LocalizationService.Current.Format(
+                                "EditorMatchFoundStatus", result.Similarity, result.ElapsedMilliseconds)
+                            : LocalizationService.Current.Format(
+                                "EditorMatchBelowStatus", result.Similarity, result.ElapsedMilliseconds);
                     };
                     matchWindow.ShowDialog();
                 }
                 else
                 {
                     var detail = string.IsNullOrWhiteSpace(result.ErrorMessage)
-                        ? GetMatchFailureText(result.FailureReason)
+                        ? LocalizationService.Current.GetMatchFailureText(result.FailureReason)
                         : result.ErrorMessage;
-                    ShowMessage($"匹配测试失败\n{detail}", "测试结果", MessageBoxImage.Warning);
-                    StatusMessage = $"匹配测试失败: {detail}";
+                    var message = LocalizationService.Current.Format("EditorMatchFailed", detail);
+                    ShowMessage(message, LocalizationService.Current.GetString("EditorTestResult"), MessageBoxImage.Warning);
+                    StatusMessage = message;
                 }
             }
             catch (Exception ex)
             {
-                ShowMessage($"测试失败: {ex.Message}", "错误", MessageBoxImage.Error);
+                ShowMessage(
+                    LocalizationService.Current.Format("EditorTestFailed", ex.Message),
+                    icon: MessageBoxImage.Error);
             }
             finally
             {
@@ -886,31 +895,27 @@ namespace Ming_AutoClicker.ViewModels
             }
         }
 
-        private static string GetMatchFailureText(MatchFailureReason reason)
-        {
-            return reason switch
-            {
-                MatchFailureReason.InvalidTemplate => "模板图片无效或尺寸不合适",
-                MatchFailureReason.CaptureFailed => "屏幕截图失败",
-                MatchFailureReason.MatchingError => "图像匹配计算失败",
-                MatchFailureReason.Cancelled => "匹配已取消",
-                MatchFailureReason.TimedOut => "等待匹配超时",
-                _ => "屏幕中没有可用的匹配候选"
-            };
-        }
-
         private void ClearImage()
         {
             if (FindImageAction != null)
             {
                 ImagePath = "";
-                StatusMessage = "已清除图像";
+                StatusMessage = LocalizationService.Current.GetString("EditorImageCleared");
             }
         }
 
         private void UpdateActionCommands()
         {
             CommandManager.InvalidateRequerySuggested();
+        }
+
+        private void OnLanguageChanged(object? sender, EventArgs e)
+        {
+            OnUIThread(() =>
+            {
+                StatusMessage = LocalizationService.Current.GetString("StatusReady");
+                CollectionViewSource.GetDefaultView(Actions).Refresh();
+            });
         }
 
         protected override void Dispose(bool disposing)
@@ -923,6 +928,7 @@ namespace Ming_AutoClicker.ViewModels
                     Actions.CollectionChanged -= _collectionChangedHandler;
                     _collectionChangedHandler = null;
                 }
+                LocalizationService.Current.LanguageChanged -= OnLanguageChanged;
             }
             base.Dispose(disposing);
         }
