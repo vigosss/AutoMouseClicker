@@ -112,6 +112,13 @@ A Windows desktop automation tool built with WPF + OpenCV, featuring auto-clicki
 
 ## 📋 更新日志 Changelog
 
+### v0.5.0
+- ⌨️ 支持自定义全局启停热键，默认保留 F8
+- 🔢 支持 F1–F12，以及 Ctrl、Alt、Shift 搭配字母或数字
+- 💾 快捷键配置按 Windows 用户持久化，应用更新后继续保留
+- 🛡️ 新热键冲突或注册失败时保留原热键，启动失败时安全回退
+- 🖱️ 主窗口、连点页和宏页同步显示当前实际生效的快捷键
+
 ### v0.4.0
 - 🚀 重构找图流程：默认 3 个快速尺度，可按步骤启用宽范围自适应缩放
 - 💾 缓存模板、灰度图和缩放结果，模板文件变化后自动失效
