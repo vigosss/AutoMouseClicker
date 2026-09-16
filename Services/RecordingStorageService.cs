@@ -74,7 +74,22 @@ public sealed class RecordingStorageService
     {
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
         var temp = path + $".{Guid.NewGuid():N}.tmp";
-        try { using var fs = new FileStream(temp, FileMode.CreateNew, FileAccess.Write, FileShare.None); using var sw = new StreamWriter(fs); sw.Write(json); sw.Flush(); fs.Flush(true); File.Move(temp, path, true); }
-        catch { try { File.Delete(temp); } catch { } throw; }
+        try
+        {
+            using (var stream = new FileStream(temp, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+            using (var writer = new StreamWriter(stream))
+            {
+                writer.Write(json);
+                writer.Flush();
+                stream.Flush(flushToDisk: true);
+            }
+
+            File.Move(temp, path, overwrite: true);
+        }
+        catch
+        {
+            try { File.Delete(temp); } catch { }
+            throw;
+        }
     }
 }
