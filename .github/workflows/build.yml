@@ -60,13 +60,14 @@ jobs:
     - name: Publish EXE
       run: dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
 
-    - name: Upload Artifact (for PR testing)
-      if: github.event_name == 'pull_request'
+    # main/PR/手动构建提供短期测试包；tag 构建仍只发布 Release 资产。
+    - name: Upload Artifact (for testing)
+      if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
       uses: actions/upload-artifact@v4
       with:
         name: Ming-AutoClicker-Windows
         path: bin/Release/net8.0-windows/win-x64/publish/
-        retention-days: 1
+        retention-days: 3
 
     # ========== 以下仅在 tag 推送时执行（发布 Release） ==========
 
