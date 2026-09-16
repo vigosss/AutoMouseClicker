@@ -55,6 +55,7 @@
                             <Button Content="{DynamicResource MacroEdit}" Style="{StaticResource GhostButton}" Margin="0,0,4,0"
                                     Click="OnEditClick" Tag="{Binding}"
                                     IsEnabled="{Binding DataContext.IsNotExecuting, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                            <Button Content="{DynamicResource MacroItemHotkey}" Style="{StaticResource GhostButton}" Margin="0,0,4,0" Click="OnHotkeyClick"/>
                             <Button Content="{DynamicResource MacroDuplicate}" Style="{StaticResource GhostButton}" Margin="0,0,4,0"
                                     Command="{Binding DataContext.DuplicateMacroCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
                             <Button Content="{DynamicResource MacroDelete}" Style="{StaticResource DangerButton}"

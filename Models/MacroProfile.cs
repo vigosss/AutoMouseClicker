@@ -54,6 +54,8 @@ namespace Ming_AutoClicker.Models
         /// </summary>
         public int LoopIntervalMs { get; set; } = 1000;
 
+        public HotkeyGesture? Hotkey { get; set; }
+
         /// <summary>
         /// 深拷贝宏配置（包括所有动作）
         /// </summary>
@@ -68,7 +70,8 @@ namespace Ming_AutoClicker.Models
                 SortOrder = SortOrder,
                 LoopEnabled = LoopEnabled,
                 LoopCount = LoopCount,
-                LoopIntervalMs = LoopIntervalMs
+                LoopIntervalMs = LoopIntervalMs,
+                Hotkey = Hotkey?.Clone()
             };
 
             foreach (var action in Actions)

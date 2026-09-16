@@ -17,6 +17,7 @@ namespace Ming_AutoClicker
         public static MacroStorageService? StorageService { get; private set; }
         public static ScreenCaptureService? ScreenCaptureService { get; private set; }
         public static ImageMatchService? ImageMatchService { get; private set; }
+        public static RecordingStorageService? RecordingStorageService { get; private set; }
         public static Services.LocalizationService Localization => Services.LocalizationService.Current;
 
         private HotkeyService? _hotkeyService;
@@ -63,6 +64,9 @@ namespace Ming_AutoClicker
                 _macroExecutor = new MacroExecutor(ImageMatchService, ScreenCaptureService);
                 _hotkeyService = new HotkeyService();
                 var autoClickService = new AutoClickService();
+                RecordingStorageService = new RecordingStorageService();
+                var globalHookService = new GlobalHookService();
+                var playbackService = new PlaybackService();
 
                 // 创建主 ViewModel
                 MainViewModel = new MainViewModel(
@@ -73,7 +77,10 @@ namespace Ming_AutoClicker
                     _hotkeyService,
                     appSettingsService,
                     appSettings,
-                    autoClickService);
+                    autoClickService,
+                    RecordingStorageService,
+                    globalHookService,
+                    playbackService);
 
                 // 创建并显示主窗口
                 var mainWindow = new MainWindow

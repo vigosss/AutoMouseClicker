@@ -42,6 +42,7 @@ namespace Ming_AutoClicker
 
             // 设置 AutoClickView 的 DataContext
             AutoClickView.DataContext = _viewModel.AutoClickViewModel;
+            RecordingPage.DataContext = _viewModel.RecordingPageViewModel;
 
             // 监听执行状态变化，更新状态指示灯颜色
             _propertyChangedHandler = (s, args) =>
@@ -63,9 +64,16 @@ namespace Ming_AutoClicker
                 }
             };
             _viewModel.AutoClickViewModel.PropertyChanged += _autoClickPropertyChangedHandler;
+            _viewModel.RecordingPageViewModel.PropertyChanged += (_, args) =>
+            {
+                if (args.PropertyName == nameof(RecordingPageViewModel.State)) Dispatcher.Invoke(UpdateStatusIndicator);
+            };
 
             // 初始化宏列表视图事件
             MacroListView.RequestEdit += OnRequestEdit;
+            MacroListView.RequestHotkey += OnMacroHotkey;
+            _viewModel.RecordingPageViewModel.HotkeyRequested += OnRecordingHotkey;
+            _viewModel.RecordingPageViewModel.OptimizeRequested += OnOptimizeRecording;
 
             // 订阅 ViewModel 的编辑请求事件
             _viewModel.EditRequested += OnRequestEdit;
@@ -88,9 +96,13 @@ namespace Ming_AutoClicker
             {
                 isRunning = _viewModel.AutoClickViewModel.IsRunning;
             }
-            else
+            else if (_viewModel.CurrentTabIndex == 1)
             {
                 isRunning = _viewModel.IsExecuting;
+            }
+            else
+            {
+                isRunning = _viewModel.RecordingPageViewModel.State != RecordingState.Idle;
             }
 
             StatusIndicator.Fill = isRunning
@@ -140,6 +152,7 @@ namespace Ming_AutoClicker
             }
 
             MacroListView.RequestEdit -= OnRequestEdit;
+            MacroListView.RequestHotkey -= OnMacroHotkey;
             if (_viewModel != null)
             {
                 _viewModel.EditRequested -= OnRequestEdit;
@@ -148,6 +161,17 @@ namespace Ming_AutoClicker
 
             _viewModel?.UnregisterHotkey();
             _viewModel?.Dispose();
+        }
+
+        private void OnMacroHotkey(object? sender, MacroProfile macro) => ShowItemHotkey(macro.Hotkey, g => _viewModel!.SetMacroHotkey(macro,g));
+        private void OnRecordingHotkey(RecordingItemViewModel item) => ShowItemHotkey(item.Model.Hotkey, g => _viewModel!.SetRecordingHotkey(item,g));
+        private void OnOptimizeRecording(RecordingItemViewModel item)
+        {
+            var window=new OptimizeWindow(item.Model){Owner=this};if(window.ShowDialog()==true&&window.Result!=null){item.Model.Name=window.Result.Name;item.Model.Actions=window.Result.Actions;_viewModel!.RecordingPageViewModel.Save(item.Model);item.Refresh();}
+        }
+        private void ShowItemHotkey(HotkeyGesture? current, Func<HotkeyGesture?, HotkeyRegistrationResult> save)
+        {
+            var dialog=new ItemHotkeyWindow(current){Owner=this};if(dialog.ShowDialog()!=true)return;var result=save(dialog.Result);if(!result.Success)Dialog.ShowWarning(result.Message,LocalizationService.Current.GetString("ItemHotkeyUnavailableTitle"));
         }
 
         private void OnSettingsRequested(object? sender, EventArgs e)

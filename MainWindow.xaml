@@ -23,12 +23,15 @@
                     Style="{StaticResource ModernTabControl}"
                     SelectedIndex="{Binding CurrentTabIndex, Mode=TwoWay}"
                     Margin="16,12,16,8"
-                    IsEnabled="{Binding AutoClickViewModel.IsNotRunning}">
+                    IsEnabled="{Binding IsNavigationEnabled}">
             <TabItem Style="{StaticResource ModernTabItem}" Header="{DynamicResource MainAutoClickTab}">
                 <views:AutoClickView x:Name="AutoClickView"/>
             </TabItem>
             <TabItem Style="{StaticResource ModernTabItem}" Header="{DynamicResource MainMacroTab}">
                 <views:MacroListView x:Name="MacroListView"/>
+            </TabItem>
+            <TabItem Style="{StaticResource ModernTabItem}" Header="{DynamicResource MainRecordingTab}">
+                <views:RecordingPage x:Name="RecordingPage"/>
             </TabItem>
         </TabControl>
 

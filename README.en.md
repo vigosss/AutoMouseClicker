@@ -118,7 +118,14 @@ Supported hotkeys are `F1`–`F12`, or `Ctrl` / `Alt` / `Shift` combined with a 
 
 ## Changelog
 
-### Unreleased
+### v0.6.0
+
+- Added global mouse and keyboard recording and playback
+- Added pause, playback speed, finite/infinite loops, and loop intervals
+- Added recording management, search, rename, optimization, and JSON import/export
+- Added per-item global hotkeys for macros and recordings with safe task switching
+- Added virtual-desktop coordinate mapping when the display layout changes
+- Improved atomic recording persistence, corrupt-file backup, and input release on stop
 
 - Added complete Simplified Chinese and English interfaces
 - Added system-language detection and instant language switching

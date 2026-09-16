@@ -15,6 +15,7 @@ namespace Ming_AutoClicker.Services
         private bool _disposed;
         private static int _nextHotkeyId = 9000;
         private static readonly object _idLock = new object();
+        private readonly Dictionary<int, (string Target, HotkeyGesture Gesture)> _targets = new();
 
         /// <summary>
         /// 热键触发事件
@@ -201,6 +202,11 @@ namespace Ming_AutoClicker.Services
 
                     return true;
                 }
+                if (_targets.TryGetValue(hotkeyId, out var target))
+                {
+                    OnHotkeyPressed(new HotkeyEventArgs { HotkeyId = hotkeyId, Modifiers = target.Gesture.Modifiers, Key = target.Gesture.VirtualKey, Target = target.Target });
+                    return true;
+                }
             }
 
             return false;
@@ -225,11 +231,32 @@ namespace Ming_AutoClicker.Services
             return HotkeyGestureHelper.Format(CurrentGesture);
         }
 
+        public HotkeyRegistrationResult RegisterTarget(IntPtr windowHandle, string target, HotkeyGesture gesture)
+        {
+            if (!HotkeyGestureHelper.TryValidate(gesture, out var error))
+                return HotkeyRegistrationResult.Failed(HotkeyRegistrationFailure.InvalidGesture, error);
+            if (CurrentGesture?.Equals(gesture) == true || _targets.Values.Any(x => x.Gesture.Equals(gesture)))
+                return HotkeyRegistrationResult.Failed(HotkeyRegistrationFailure.AlreadyRegistered, LocalizationService.Current.GetString("HotkeyInUse"));
+            int id; lock (_idLock) id = _nextHotkeyId++;
+            if (!Win32Api.RegisterHotKey(windowHandle, id, (uint)gesture.Modifiers, gesture.VirtualKey))
+                return HotkeyRegistrationResult.Failed(HotkeyRegistrationFailure.AlreadyRegistered, LocalizationService.Current.GetString("HotkeyInUse"), Marshal.GetLastWin32Error());
+            _windowHandle = windowHandle; _targets[id] = (target, gesture.Clone()); return HotkeyRegistrationResult.Succeeded();
+        }
+
+        public void UnregisterTarget(string target)
+        {
+            foreach (var pair in _targets.Where(x => x.Value.Target == target).ToArray()) { Win32Api.UnregisterHotKey(_windowHandle, pair.Key); _targets.Remove(pair.Key); }
+        }
+
+        public bool IsControlKey(uint virtualKey) => CurrentKey == virtualKey || _targets.Values.Any(x => x.Gesture.VirtualKey == virtualKey);
+
         public void Dispose()
         {
             if (!_disposed)
             {
                 Unregister();
+                foreach (var id in _targets.Keys.ToArray()) Win32Api.UnregisterHotKey(_windowHandle, id);
+                _targets.Clear();
                 _disposed = true;
             }
         }
@@ -254,6 +281,7 @@ namespace Ming_AutoClicker.Services
         /// 虚拟键码
         /// </summary>
         public uint Key { get; set; }
+        public string? Target { get; set; }
 
         /// <summary>
         /// 获取热键描述

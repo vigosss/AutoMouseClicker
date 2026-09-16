@@ -133,7 +133,7 @@ namespace Ming_AutoClicker.Services
         /// <returns>宏配置，如果不存在返回 null</returns>
         public MacroProfile? LoadById(string id)
         {
-            var files = Directory.GetFiles(_dataDirectory, "*.json");
+            var files = GetMacroFiles();
             
             foreach (var file in files)
             {
@@ -163,7 +163,7 @@ namespace Ming_AutoClicker.Services
             if (!Directory.Exists(_dataDirectory))
                 return profiles;
 
-            var files = Directory.GetFiles(_dataDirectory, "*.json");
+            var files = GetMacroFiles();
             
             foreach (var file in files)
             {
@@ -198,7 +198,7 @@ namespace Ming_AutoClicker.Services
         /// <returns>是否删除成功</returns>
         public bool Delete(string id)
         {
-            var files = Directory.GetFiles(_dataDirectory, "*.json");
+            var files = GetMacroFiles();
             
             foreach (var file in files)
             {
@@ -219,6 +219,10 @@ namespace Ming_AutoClicker.Services
 
             return false;
         }
+
+        private string[] GetMacroFiles() => Directory.GetFiles(_dataDirectory, "*.json")
+            .Where(path => !string.Equals(Path.GetFileName(path), "recordings.json", StringComparison.OrdinalIgnoreCase))
+            .ToArray();
 
         /// <summary>
         /// 批量保存宏配置（每个宏单独保存为一个文件）

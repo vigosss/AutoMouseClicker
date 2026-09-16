@@ -4,3 +4,12 @@ CLAUDE.md
 AGENTS.md
 DEVELOPMENT.md
 TODO.md
+
+# Build output
+bin/
+obj/
+
+# Runtime user data and updater workspace
+Data/*.json
+Data/screenshots/
+update/

@@ -11,11 +11,13 @@ namespace Ming_AutoClicker.Views
         /// 请求编辑宏事件
         /// </summary>
         public event EventHandler<MacroProfile>? RequestEdit;
+        public event EventHandler<MacroProfile>? RequestHotkey;
 
         public MacroListView()
         {
             InitializeComponent();
         }
+        private void OnHotkeyClick(object sender, RoutedEventArgs e) { if (sender is FrameworkElement f && f.DataContext is MacroProfile m) RequestHotkey?.Invoke(this,m); }
 
         private void OnEditClick(object sender, RoutedEventArgs e)
         {
