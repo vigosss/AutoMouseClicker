@@ -2,18 +2,18 @@
 
 [简体中文](README.md) | [English](README.en.md)
 
-# 🎯 智点精灵 Ming-AutoClicker
+# 🎯 智点精灵 Ming AutoClicker
 
 ![License](https://img.shields.io/github/license/vigosss/AutoMouseClicker)
 ![Stars](https://img.shields.io/github/stars/vigosss/AutoMouseClicker)
 ![Language](https://img.shields.io/github/languages/top/vigosss/AutoMouseClicker)
 ![.NET](https://img.shields.io/badge/.NET-8.0-blue)
 
-**智能鼠标自动化工具 | Smart Mouse Automation Tool**
+**Windows 自动连点、鼠标键盘录制回放、鼠标宏与图像识别找图点击工具**
 
-一款基于 WPF + OpenCV 的 Windows 桌面自动化工具，支持鼠标连点、宏录制编辑、图像识别找图点击，适用于游戏辅助、重复操作自动化、UI 测试等场景。
+一款基于 WPF + OpenCV 的 Windows 桌面自动化工具，支持自动连点、鼠标键盘录制回放、可视化宏编辑、图像识别找图点击与独立全局热键，适用于重复操作自动化和 UI 测试等场景。
 
-A Windows desktop automation tool built with WPF + OpenCV, featuring auto-clicking, macro editing, image recognition & template matching — ideal for game assistance, repetitive task automation, and UI testing.
+A Windows Auto Clicker, Mouse &amp; Keyboard Macro Recorder, and image-recognition automation tool built with WPF + OpenCV.
 
 </div>
 
@@ -26,6 +26,13 @@ A Windows desktop automation tool built with WPF + OpenCV, featuring auto-clicki
 - 可自定义点击间隔（10ms ~ 60000ms）
 - 实时显示点击次数统计
 - 可配置全局热键一键启停（默认 `F8`）
+
+### ⏺️ 录制回放 Mouse &amp; Keyboard Recorder
+- 录制鼠标移动、点击、滚轮和键盘输入
+- 支持暂停、速度调节、有限/无限循环与循环间隔
+- 支持录制重命名、优化、搜索及 JSON 导入/导出
+- 每条录制可绑定独立全局热键
+- 显示器布局变化时自动映射虚拟桌面坐标
 
 ### 📋 宏编辑器 Macro Editor
 - 可视化宏配置管理（创建、编辑、复制、删除）

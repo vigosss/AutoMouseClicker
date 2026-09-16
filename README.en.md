@@ -2,16 +2,16 @@
 
 [简体中文](README.md) | [English](README.en.md)
 
-# 🎯 Ming AutoClicker
+# 🎯 Ming AutoClicker — Windows Auto Clicker &amp; Macro Recorder
 
 ![License](https://img.shields.io/github/license/vigosss/AutoMouseClicker)
 ![Stars](https://img.shields.io/github/stars/vigosss/AutoMouseClicker)
 ![Language](https://img.shields.io/github/languages/top/vigosss/AutoMouseClicker)
 ![.NET](https://img.shields.io/badge/.NET-8.0-blue)
 
-**Smart mouse automation for Windows**
+**Windows Auto Clicker, Mouse &amp; Keyboard Macro Recorder, and Image Recognition Automation Tool**
 
-Ming AutoClicker is a WPF and OpenCV desktop automation tool with continuous mouse clicking, editable macros, image recognition, coordinate clicks, and global hotkeys. It is useful for repetitive workflows, UI testing, and other desktop automation tasks.
+Ming AutoClicker is a WPF and OpenCV desktop automation tool with continuous clicking, mouse and keyboard recording/playback, editable macros, image recognition, coordinate clicks, and per-item global hotkeys.
 
 </div>
 
@@ -25,6 +25,14 @@ Ming AutoClicker is a WPF and OpenCV desktop automation tool with continuous mou
 - Configurable interval from 10 ms to 60,000 ms
 - Live click counter
 - Configurable global start/stop hotkey (`F8` by default)
+
+### ⏺️ Mouse &amp; Keyboard Recorder
+
+- Records mouse movement, clicks, wheel input, and keyboard actions
+- Pause/resume, playback speed, finite/infinite loops, and loop intervals
+- Rename, optimize, search, import, and export recordings
+- Per-recording global hotkeys
+- Virtual-desktop coordinate mapping when the display layout changes
 
 ### 📋 Macro Editor
 
@@ -56,7 +64,7 @@ Ming AutoClicker is a WPF and OpenCV desktop automation tool with continuous mou
 ## Requirements and Installation
 
 - Windows 10 or later
-- Download the latest ZIP package from [GitHub Releases](https://github.com/vigosss/Ming-AutoClicker/releases)
+- Download the latest ZIP package from [GitHub Releases](https://github.com/vigosss/AutoMouseClicker/releases)
 - Extract the complete archive, then run `Ming-AutoClicker.exe`
 - Global hotkeys or simulated mouse input may require running the application as administrator in some environments
 

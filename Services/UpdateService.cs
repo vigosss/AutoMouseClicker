@@ -18,7 +18,7 @@ namespace Ming_AutoClicker.Services
     public class UpdateService : IDisposable
     {
         private const string GitHubOwner = "vigosss";
-        private const string GitHubRepo = "Ming-AutoClicker";
+        private const string GitHubRepo = "AutoMouseClicker";
         private const string UpdateFolderName = "update";
         private const string UpdaterScriptFileName = "updater.ps1";
 
