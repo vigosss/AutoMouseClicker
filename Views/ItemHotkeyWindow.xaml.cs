@@ -2,12 +2,97 @@ using System.Windows;
 using System.Windows.Input;
 using Ming_AutoClicker.Models;
 using Ming_AutoClicker.Services;
+
 namespace Ming_AutoClicker.Views;
+
 public partial class ItemHotkeyWindow : Window
 {
- private HotkeyGesture? _candidate; public HotkeyGesture? Result {get;private set;} public bool ClearRequested{get;private set;}
- public ItemHotkeyWindow(HotkeyGesture? current){InitializeComponent();_candidate=current?.Clone();Input.Text=HotkeyGestureHelper.Format(_candidate);Loaded+=(_,_)=>Input.Focus();}
- private void OnKeyDown(object s,KeyEventArgs e){e.Handled=true;var key=e.Key==Key.System?e.SystemKey:e.Key;if(key is Key.LeftCtrl or Key.RightCtrl or Key.LeftAlt or Key.RightAlt or Key.LeftShift or Key.RightShift)return;var m=Keyboard.Modifiers;var mods=HotkeyModifierKeys.None;if(m.HasFlag(ModifierKeys.Control))mods|=HotkeyModifierKeys.Control;if(m.HasFlag(ModifierKeys.Alt))mods|=HotkeyModifierKeys.Alt;if(m.HasFlag(ModifierKeys.Shift))mods|=HotkeyModifierKeys.Shift;_candidate=new HotkeyGesture{VirtualKey=(uint)KeyInterop.VirtualKeyFromKey(key),Modifiers=mods};Input.Text=HotkeyGestureHelper.Format(_candidate);Error.Text=HotkeyGestureHelper.TryValidate(_candidate,out var error)?"":error;}
- private void OnClear(object s,RoutedEventArgs e){ClearRequested=true;Result=null;DialogResult=true;} private void OnCancel(object s,RoutedEventArgs e)=>DialogResult=false;
- private void OnConfirm(object s,RoutedEventArgs e){if(!HotkeyGestureHelper.TryValidate(_candidate,out var error)){Error.Text=error;return;}Result=_candidate;DialogResult=true;}
+    private HotkeyGesture? _candidate;
+
+    public HotkeyGesture? Result { get; private set; }
+
+    public ItemHotkeyWindow(HotkeyGesture? current)
+    {
+        InitializeComponent();
+        _candidate = current?.Clone();
+        UpdateCandidateDisplay();
+        Loaded += (_, _) => Input.Focus();
+    }
+
+    private void OnHotkeyPreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        e.Handled = true;
+        var key = e.Key == Key.System ? e.SystemKey : e.Key;
+        if (key is Key.LeftCtrl or Key.RightCtrl or
+            Key.LeftAlt or Key.RightAlt or
+            Key.LeftShift or Key.RightShift or
+            Key.LWin or Key.RWin)
+        {
+            Error.Text = LocalizationService.Current.GetString("HotkeyContinue");
+            return;
+        }
+
+        var modifiers = HotkeyModifierKeys.None;
+        if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control)) modifiers |= HotkeyModifierKeys.Control;
+        if (Keyboard.Modifiers.HasFlag(ModifierKeys.Alt)) modifiers |= HotkeyModifierKeys.Alt;
+        if (Keyboard.Modifiers.HasFlag(ModifierKeys.Shift)) modifiers |= HotkeyModifierKeys.Shift;
+        if (Keyboard.Modifiers.HasFlag(ModifierKeys.Windows)) modifiers |= (HotkeyModifierKeys)8;
+
+        _candidate = new HotkeyGesture
+        {
+            VirtualKey = (uint)KeyInterop.VirtualKeyFromKey(key),
+            Modifiers = modifiers
+        };
+        UpdateCandidateDisplay();
+    }
+
+    private void UpdateCandidateDisplay()
+    {
+        Input.Text = HotkeyGestureHelper.Format(_candidate);
+        var valid = HotkeyGestureHelper.TryValidate(_candidate, out var error);
+        Error.Text = valid ? string.Empty : error;
+        ConfirmButton.IsEnabled = valid;
+    }
+
+    private void OnClear(object sender, RoutedEventArgs e)
+    {
+        Result = null;
+        DialogResult = true;
+    }
+
+    private void OnCancel(object sender, RoutedEventArgs e) => DialogResult = false;
+
+    private void OnConfirm(object sender, RoutedEventArgs e)
+    {
+        if (!HotkeyGestureHelper.TryValidate(_candidate, out var error))
+        {
+            Error.Text = error;
+            Input.Focus();
+            return;
+        }
+
+        Result = _candidate?.Clone();
+        DialogResult = true;
+    }
+
+    private void OnWindowPreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Escape) return;
+        e.Handled = true;
+        DialogResult = false;
+    }
+
+    private void OnInputGotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e) => Input.SelectAll();
+
+    private void OnInputMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (Input.IsKeyboardFocusWithin) return;
+        e.Handled = true;
+        Input.Focus();
+    }
+
+    private void OnTitleBarMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ChangedButton == MouseButton.Left) DragMove();
+    }
 }

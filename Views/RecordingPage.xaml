@@ -9,15 +9,14 @@
   <ListBox Grid.Row="1" ItemsSource="{Binding FilteredRecordings}" SelectedItem="{Binding SelectedRecording}" IsEnabled="{Binding IsIdle}" Style="{StaticResource ModernListBox}">
    <ListBox.ItemContainerStyle><Style TargetType="ListBoxItem" BasedOn="{StaticResource CardListBoxItem}"/></ListBox.ItemContainerStyle>
    <ListBox.ItemTemplate><DataTemplate><Grid Margin="4"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-    <Grid><TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="14"/><TextBox x:Name="RenameBox" Text="{Binding EditName,UpdateSourceTrigger=PropertyChanged}" KeyDown="OnRenameKeyDown" LostKeyboardFocus="OnRenameLostFocus" Visibility="Collapsed"/>
+    <Grid><TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="14"/>
      <Button Content="{DynamicResource RecordingCancelSelection}" HorizontalAlignment="Right" Style="{StaticResource GhostButton}" Command="{Binding CancelSelectCommand}" Visibility="Collapsed" x:Name="CancelSelect"/></Grid>
     <TextBlock Grid.Row="1" Margin="0,7,0,7" Foreground="{StaticResource TextSecondaryBrush}"><Run Text="{DynamicResource RecordingCreatedAt}"/><Run Text="{Binding CreatedAtText, Mode=OneWay}"/><Run Text="{DynamicResource RecordingDuration}"/><Run Text="{Binding DurationText, Mode=OneWay}"/><Run Text="  "/><Run Text="{Binding ActionCountText, Mode=OneWay}"/></TextBlock>
-    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" x:Name="Actions"><Button Content="{Binding HotkeyText}" Style="{StaticResource GhostButton}" Command="{Binding SetHotkeyCommand}"/><Button Content="{DynamicResource RecordingOptimize}" Style="{StaticResource GhostButton}" Command="{Binding OptimizeCommand}"/><Button Content="{DynamicResource RecordingRename}" Style="{StaticResource GhostButton}" Command="{Binding StartRenameCommand}"/><Button Content="{DynamicResource RecordingDelete}" Style="{StaticResource DangerButton}" Command="{Binding DeleteCommand}"/></StackPanel>
+    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" x:Name="Actions"><Button Content="{Binding HotkeyText}" Style="{StaticResource GhostButton}" Command="{Binding SetHotkeyCommand}"/><Button Content="{DynamicResource RecordingOptimize}" Style="{StaticResource GhostButton}" Command="{Binding OptimizeCommand}"/><Button Content="{DynamicResource RecordingRename}" Style="{StaticResource GhostButton}" Command="{Binding RenameCommand}"/><Button Content="{DynamicResource RecordingDelete}" Style="{StaticResource DangerButton}" Command="{Binding DeleteCommand}"/></StackPanel>
     <TextBlock Grid.Row="2" Text="{DynamicResource RecordingSelected}" HorizontalAlignment="Right" Foreground="{StaticResource PrimaryBrush}" Visibility="Collapsed" x:Name="SelectedText"/>
    </Grid>
     <DataTemplate.Triggers>
      <DataTrigger Binding="{Binding IsSelected}" Value="True"><Setter TargetName="Actions" Property="Visibility" Value="Collapsed"/><Setter TargetName="CancelSelect" Property="Visibility" Value="Visible"/><Setter TargetName="SelectedText" Property="Visibility" Value="Visible"/></DataTrigger>
-     <DataTrigger Binding="{Binding IsRenaming}" Value="True"><Setter TargetName="RenameBox" Property="Visibility" Value="Visible"/><Setter TargetName="Actions" Property="Visibility" Value="Collapsed"/></DataTrigger>
     </DataTemplate.Triggers>
    </DataTemplate></ListBox.ItemTemplate>
   </ListBox>

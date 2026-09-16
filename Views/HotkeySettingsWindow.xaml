@@ -66,12 +66,7 @@
                            Margin="0,0,0,12"/>
 
                 <TextBox x:Name="HotkeyInput"
-                         Height="44"
-                         IsReadOnly="True"
-                         Style="{StaticResource ModernTextBox}"
-                         FontSize="16"
-                         FontWeight="SemiBold"
-                         HorizontalContentAlignment="Center"
+                         Style="{StaticResource HotkeyCaptureTextBox}"
                          PreviewKeyDown="OnHotkeyPreviewKeyDown"
                          GotKeyboardFocus="OnInputGotKeyboardFocus"
                          MouseLeftButtonDown="OnInputMouseLeftButtonDown"/>

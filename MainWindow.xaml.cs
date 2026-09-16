@@ -74,6 +74,7 @@ namespace Ming_AutoClicker
             MacroListView.RequestHotkey += OnMacroHotkey;
             _viewModel.RecordingPageViewModel.HotkeyRequested += OnRecordingHotkey;
             _viewModel.RecordingPageViewModel.OptimizeRequested += OnOptimizeRecording;
+            _viewModel.RecordingPageViewModel.RenameRequested += OnRenameRecording;
 
             // 订阅 ViewModel 的编辑请求事件
             _viewModel.EditRequested += OnRequestEdit;
@@ -157,6 +158,9 @@ namespace Ming_AutoClicker
             {
                 _viewModel.EditRequested -= OnRequestEdit;
                 _viewModel.SettingsRequested -= OnSettingsRequested;
+                _viewModel.RecordingPageViewModel.HotkeyRequested -= OnRecordingHotkey;
+                _viewModel.RecordingPageViewModel.OptimizeRequested -= OnOptimizeRecording;
+                _viewModel.RecordingPageViewModel.RenameRequested -= OnRenameRecording;
             }
 
             _viewModel?.UnregisterHotkey();
@@ -165,6 +169,13 @@ namespace Ming_AutoClicker
 
         private void OnMacroHotkey(object? sender, MacroProfile macro) => ShowItemHotkey(macro.Hotkey, g => _viewModel!.SetMacroHotkey(macro,g));
         private void OnRecordingHotkey(RecordingItemViewModel item) => ShowItemHotkey(item.Model.Hotkey, g => _viewModel!.SetRecordingHotkey(item,g));
+        private void OnRenameRecording(RecordingItemViewModel item)
+        {
+            var dialog = new RenameRecordingWindow(item.Name) { Owner = this };
+            if (dialog.ShowDialog() != true) return;
+            if (!_viewModel!.RecordingPageViewModel.TryRename(item, dialog.ResultName, out var error))
+                Dialog.ShowError(error, LocalizationService.Current.GetString("RecordingRenameTitle"));
+        }
         private void OnOptimizeRecording(RecordingItemViewModel item)
         {
             var window=new OptimizeWindow(item.Model){Owner=this};if(window.ShowDialog()==true&&window.Result!=null){item.Model.Name=window.Result.Name;item.Model.Actions=window.Result.Actions;_viewModel!.RecordingPageViewModel.Save(item.Model);item.Refresh();}
