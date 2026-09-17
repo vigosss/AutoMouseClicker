@@ -133,6 +133,14 @@ Supported hotkeys are `F1`–`F12`, or `Ctrl` / `Alt` / `Shift` combined with a 
 
 ## Changelog
 
+### v1.0.0
+
+- Refreshed the application with a consistent dark pixel-art interface across windows, buttons, lists, tables, and scrollbars
+- Streamlined the recording and playback workflow, including compact recording cards, rename, import/export, and per-item hotkeys
+- Improved the recording optimizer with direct editing for delays, coordinates, and keys, plus one-click enabled-state toggles
+- Fixed page color changes during recording or playback, unwanted list scrolling, control alignment, and clipped button content
+- Fixed the per-item hotkey window closing when clearing a hotkey, along with stale registrations and accidental triggers
+
 ### v0.6.0
 
 - Added global mouse and keyboard recording and playback
