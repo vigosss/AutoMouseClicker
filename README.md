@@ -67,17 +67,25 @@ A Windows Auto Clicker, Mouse &amp; Keyboard Macro Recorder, and image-recogniti
 
 ---
 
-## 📸 截图预览 Screenshots
+## 📸 界面介绍 Interface Overview
 
-> 📌 截图将展示主界面、宏编辑器、区域截图工具和匹配结果
+### 主界面
 
-| 鼠标连点 | 宏列表管理 |
+| 鼠标连点 | 宏任务 |
 |:---:|:---:|
-| *Auto Clicker View* | *Macro List View* |
+| ![鼠标连点界面](docs/images/auto-clicker.png) | ![宏任务界面](docs/images/macro-list.png) |
+| 设置点击类型与间隔，通过全局热键随时开始或停止。 | 创建和管理自动化宏，并可为每个宏设置独立热键。 |
 
-| 宏编辑器 | 区域截图工具 |
+| 录制回放 | 应用设置 |
 |:---:|:---:|
-| *Macro Editor View* | *Region Select Window* |
+| ![录制回放界面](docs/images/recording-playback.png) | ![设置界面](docs/images/settings.png) |
+| 录制鼠标和键盘操作，支持优化、变速、循环及独立热键。 | 切换界面语言，并设置全局开始 / 停止热键。 |
+
+### 宏任务编辑
+
+![宏任务编辑界面](docs/images/macro-editor.png)
+
+按顺序组合找图、等待和点击动作；找图步骤支持截图或上传图片，并可调整匹配度及执行参数。
 
 ---
 

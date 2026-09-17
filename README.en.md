@@ -67,6 +67,28 @@ Ming AutoClicker is a WPF and OpenCV desktop automation tool with continuous cli
 
 ---
 
+## Interface Overview
+
+### Main Views
+
+| Auto Clicker | Mouse Macros |
+|:---:|:---:|
+| ![Auto Clicker view](docs/images/auto-clicker.png) | ![Macro list view](docs/images/macro-list.png) |
+| Configure the mouse button and click interval, then start or stop with a global hotkey. | Create and manage automation macros, with an optional hotkey for each macro. |
+
+| Recording and Playback | Settings |
+|:---:|:---:|
+| ![Recording and playback view](docs/images/recording-playback.png) | ![Settings window](docs/images/settings.png) |
+| Record mouse and keyboard input, then optimize, speed up, loop, or assign a hotkey to it. | Change the interface language and configure the global start/stop hotkey. |
+
+### Macro Editor
+
+![Macro editor view](docs/images/macro-editor.png)
+
+Build a macro from Find Image, Wait, and Click actions. Find Image steps support screen capture or local uploads, with configurable matching and execution options.
+
+---
+
 ## Requirements and Installation
 
 - Windows 11 (Windows 10 is best-effort and is not part of the supported test matrix)
