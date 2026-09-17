@@ -75,8 +75,7 @@ namespace Ming_AutoClicker.Services
         }
 
         /// <summary>
-        /// 切换全局热键。始终先注销旧注册，避免新旧热键同时存活；
-        /// 新热键注册失败时立即恢复旧注册。
+        /// 原子切换全局热键。新热键注册失败时，旧热键保持有效。
         /// </summary>
         public HotkeyRegistrationResult TryRegister(IntPtr windowHandle, HotkeyGesture gesture, int hotkeyId = 0)
         {
@@ -115,7 +114,6 @@ namespace Ming_AutoClicker.Services
                             LocalizationService.Current.Format("HotkeyUnregisterError", errorCode),
                             errorCode);
                     }
-
                     _isRegistered = false;
                 }
 
@@ -125,7 +123,6 @@ namespace Ming_AutoClicker.Services
                 {
                     var errorCode = Marshal.GetLastWin32Error();
                     System.Diagnostics.Debug.WriteLine($"热键注册失败，错误码: {errorCode}");
-
                     if (hadPrevious && Win32Api.RegisterHotKey(
                             previousHandle, previousId, (uint)previousModifiers, previousKey))
                     {
@@ -135,7 +132,6 @@ namespace Ming_AutoClicker.Services
                         CurrentKey = previousKey;
                         _isRegistered = true;
                     }
-
                     return errorCode == 1409
                         ? HotkeyRegistrationResult.Failed(
                             HotkeyRegistrationFailure.AlreadyRegistered,

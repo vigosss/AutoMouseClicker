@@ -1,136 +1,62 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-
-    <!-- 现代 TabControl -->
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+                    xmlns:helpers="clr-namespace:Ming_AutoClicker.Helpers">
     <Style x:Key="ModernTabControl" TargetType="TabControl">
-        <Setter Property="Background" Value="Transparent"/>
-        <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="Padding" Value="0"/>
+        <Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="TabControl">
-                    <DockPanel>
-                        <!-- Tab 头部区域 -->
-                        <Border DockPanel.Dock="Top"
-                                Background="Transparent"
-                                Margin="0,0,0,16">
-                            <StackPanel Orientation="Horizontal"
-                                        IsItemsHost="True"/>
+                    <Grid>
+                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                        <Border Grid.Row="0" Background="{StaticResource PanelHeaderBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="2" Margin="0,0,0,12" Padding="4">
+                            <StackPanel Orientation="Horizontal" IsItemsHost="True"/>
                         </Border>
-                        <!-- Tab 内容区域 -->
-                        <Border Background="Transparent"
-                                BorderThickness="0">
-                            <ContentPresenter ContentSource="SelectedContent"/>
-                        </Border>
-                    </DockPanel>
+                        <ContentPresenter Grid.Row="1" ContentSource="SelectedContent"/>
+                    </Grid>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
     </Style>
-
-    <!-- 现代 TabItem -->
     <Style x:Key="ModernTabItem" TargetType="TabItem">
         <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
-        <Setter Property="FontSize" Value="14"/>
-        <Setter Property="FontWeight" Value="Medium"/>
-        <Setter Property="Padding" Value="20,10"/>
-        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="FontFamily" Value="{StaticResource PixelFontFamily}"/><Setter Property="FontSize" Value="12"/>
+        <Setter Property="Padding" Value="18,9"/><Setter Property="Cursor" Value="Hand"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="TabItem">
-                    <Grid>
-                        <Border x:Name="TabBorder"
-                                Background="Transparent"
-                                CornerRadius="8,8,0,0"
-                                Padding="{TemplateBinding Padding}"
-                                SnapsToDevicePixels="True">
-                            <StackPanel Orientation="Horizontal">
-                                <ContentPresenter VerticalAlignment="Center"
-                                                  ContentSource="Header"
-                                                  RecognizesAccessKey="True"/>
-                            </StackPanel>
-                        </Border>
-                        <!-- 底部指示条 -->
-                        <Border x:Name="Indicator"
-                                Height="3"
-                                CornerRadius="1.5"
-                                Background="{StaticResource PrimaryBrush}"
-                                VerticalAlignment="Bottom"
-                                Margin="12,0,12,0"
-                                Visibility="Collapsed"/>
-                    </Grid>
+                    <Border x:Name="Frame" Background="Transparent" BorderBrush="Transparent" BorderThickness="2" Padding="{TemplateBinding Padding}" Margin="0,0,4,0">
+                        <StackPanel Orientation="Horizontal">
+                            <iconPacks:PackIconPixelartIcons x:Name="TabIcon"
+                                                          Kind="{Binding Path=(helpers:PixelIcon.Kind), RelativeSource={RelativeSource TemplatedParent}}"
+                                                          Width="16" Height="16" Margin="0,0,8,0"
+                                                          Foreground="{TemplateBinding Foreground}"/>
+                            <ContentPresenter ContentSource="Header" RecognizesAccessKey="True"/>
+                        </StackPanel>
+                    </Border>
                     <ControlTemplate.Triggers>
-                        <Trigger Property="IsSelected" Value="True">
-                            <Setter TargetName="TabBorder" Property="Background" Value="{StaticResource SurfaceBrush}"/>
-                            <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}"/>
-                            <Setter TargetName="Indicator" Property="Visibility" Value="Visible"/>
-                        </Trigger>
-                        <MultiTrigger>
-                            <MultiTrigger.Conditions>
-                                <Condition Property="IsSelected" Value="False"/>
-                                <Condition Property="IsMouseOver" Value="True"/>
-                            </MultiTrigger.Conditions>
-                            <Setter TargetName="TabBorder" Property="Background" Value="{StaticResource HoverOverlayBrush}"/>
-                            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
-                        </MultiTrigger>
-                        <Trigger Property="IsEnabled" Value="False">
-                            <Setter Property="Foreground" Value="{StaticResource TextDisabledBrush}"/>
-                            <Setter TargetName="TabBorder" Property="Background" Value="Transparent"/>
-                            <Setter Property="Cursor" Value="Arrow"/>
-                        </Trigger>
+                        <Trigger Property="helpers:PixelIcon.Kind" Value="None"><Setter TargetName="TabIcon" Property="Visibility" Value="Collapsed"/></Trigger>
+                        <Trigger Property="IsSelected" Value="True"><Setter TargetName="Frame" Property="Background" Value="{StaticResource CardBrush}"/><Setter TargetName="Frame" Property="BorderBrush" Value="{StaticResource PrimaryBrush}"/><Setter Property="Foreground" Value="{StaticResource PrimaryBrush}"/></Trigger>
+                        <MultiTrigger><MultiTrigger.Conditions><Condition Property="IsSelected" Value="False"/><Condition Property="IsMouseOver" Value="True"/></MultiTrigger.Conditions><Setter TargetName="Frame" Property="Background" Value="{StaticResource HoverOverlayBrush}"/><Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/></MultiTrigger>
+                        <Trigger Property="IsEnabled" Value="False"><Setter Property="Foreground" Value="{StaticResource TextDisabledBrush}"/><Setter Property="Cursor" Value="Arrow"/></Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
     </Style>
-
-    <!-- 现代 RadioButton（用于点击类型选择） -->
     <Style x:Key="ModernRadioButton" TargetType="RadioButton">
-        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
-        <Setter Property="FontSize" Value="13"/>
-        <Setter Property="VerticalContentAlignment" Value="Center"/>
-        <Setter Property="Cursor" Value="Hand"/>
-        <Setter Property="Margin" Value="0,0,16,0"/>
+        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/><Setter Property="FontFamily" Value="{StaticResource PixelFontFamily}"/><Setter Property="FontSize" Value="12"/><Setter Property="Cursor" Value="Hand"/><Setter Property="Margin" Value="0,0,16,0"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="RadioButton">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <Border x:Name="RadioBorder"
-                                Grid.Column="0"
-                                Width="18" Height="18"
-                                CornerRadius="9"
-                                BorderBrush="{StaticResource BorderBrush}"
-                                BorderThickness="1.5"
-                                Background="Transparent"
-                                Margin="0,0,8,0"
-                                VerticalAlignment="Center">
-                            <Ellipse x:Name="RadioMark"
-                                     Width="8" Height="8"
-                                     Fill="{StaticResource PrimaryBrush}"
-                                     HorizontalAlignment="Center"
-                                     VerticalAlignment="Center"
-                                     Visibility="Collapsed"/>
-                        </Border>
-                        <ContentPresenter Grid.Column="1"
-                                          VerticalAlignment="Center"
-                                          RecognizesAccessKey="True"/>
+                    <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                        <Border x:Name="Box" Width="18" Height="18" Background="{StaticResource StatusBarBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="2" Margin="0,0,8,0"><Border x:Name="Mark" Width="8" Height="8" Background="{StaticResource PrimaryBrush}" Visibility="Collapsed"/></Border>
+                        <ContentPresenter Grid.Column="1" VerticalAlignment="Center" RecognizesAccessKey="True"/>
                     </Grid>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsChecked" Value="True">
-                            <Setter TargetName="RadioBorder" Property="BorderBrush" Value="{StaticResource PrimaryBrush}"/>
-                            <Setter TargetName="RadioMark" Property="Visibility" Value="Visible"/>
-                        </Trigger>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="RadioBorder" Property="BorderBrush" Value="{StaticResource PrimaryLightBrush}"/>
-                        </Trigger>
-                    </ControlTemplate.Triggers>
+                    <ControlTemplate.Triggers><Trigger Property="IsChecked" Value="True"><Setter TargetName="Box" Property="BorderBrush" Value="{StaticResource PrimaryBrush}"/><Setter TargetName="Mark" Property="Visibility" Value="Visible"/></Trigger><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Box" Property="BorderBrush" Value="{StaticResource PrimaryLightBrush}"/></Trigger><Trigger Property="IsEnabled" Value="False"><Setter Property="Foreground" Value="{StaticResource TextDisabledBrush}"/></Trigger></ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
     </Style>
-
+    <Style TargetType="RadioButton" BasedOn="{StaticResource ModernRadioButton}"/>
 </ResourceDictionary>

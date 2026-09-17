@@ -7,7 +7,7 @@
 ![License](https://img.shields.io/github/license/vigosss/AutoMouseClicker)
 ![Stars](https://img.shields.io/github/stars/vigosss/AutoMouseClicker)
 ![Language](https://img.shields.io/github/languages/top/vigosss/AutoMouseClicker)
-![.NET](https://img.shields.io/badge/.NET-8.0-blue)
+![.NET](https://img.shields.io/badge/.NET-10.0-512BD4)
 
 **Windows Auto Clicker, Mouse &amp; Keyboard Macro Recorder, and Image Recognition Automation Tool**
 
@@ -59,11 +59,18 @@ Ming AutoClicker is a WPF and OpenCV desktop automation tool with continuous cli
 - Follows the Windows display language on first launch
 - Instant language switching from Settings without restarting
 
+### 👾 Pixel Arcade UI
+
+- Deep-arcade theme with fully customized WPF controls
+- Bundled open-source CJK pixel font
+- Unified window chrome, dialogs, editor panels, and capture overlays
+
 ---
 
 ## Requirements and Installation
 
-- Windows 10 or later
+- Windows 11 (Windows 10 is best-effort and is not part of the supported test matrix)
+- Self-contained .NET 10 build; installing a separate runtime is not required
 - Download the latest ZIP package from [GitHub Releases](https://github.com/vigosss/AutoMouseClicker/releases)
 - Extract the complete archive, then run `Ming-AutoClicker.exe`
 - Global hotkeys or simulated mouse input may require running the application as administrator in some environments

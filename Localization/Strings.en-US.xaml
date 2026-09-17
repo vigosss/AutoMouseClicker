@@ -12,12 +12,12 @@
     <sys:String x:Key="CommonConfirm">Confirm</sys:String>
     <sys:String x:Key="CommonUnknownError">Unknown error</sys:String>
 
-    <sys:String x:Key="MainAutoClickTab">🖱 Auto Clicker</sys:String>
-    <sys:String x:Key="MainMacroTab">📋 Mouse Macros</sys:String>
+    <sys:String x:Key="MainAutoClickTab">Auto Clicker</sys:String>
+    <sys:String x:Key="MainMacroTab">Mouse Macros</sys:String>
     <sys:String x:Key="MainClickCountPrefix">Clicked </sys:String>
     <sys:String x:Key="MainClickCountSuffix"> times</sys:String>
     <sys:String x:Key="MainSettingsTooltip">Open settings</sys:String>
-    <sys:String x:Key="MainSettingsButton">⚙ Settings</sys:String>
+    <sys:String x:Key="MainSettingsButton">Settings</sys:String>
     <sys:String x:Key="EditorWindowTitle">Edit Macro - {0}</sys:String>
 
     <sys:String x:Key="AutoClickType">Click button</sys:String>
@@ -27,12 +27,12 @@
     <sys:String x:Key="AutoClickInterval">Click interval</sys:String>
     <sys:String x:Key="AutoClickMilliseconds">milliseconds (ms)</sys:String>
 
-    <sys:String x:Key="MacroEdit">✏️ Edit</sys:String>
-    <sys:String x:Key="MacroDuplicate">📋 Duplicate</sys:String>
-    <sys:String x:Key="MacroDelete">🗑 Delete</sys:String>
+    <sys:String x:Key="MacroEdit">Edit</sys:String>
+    <sys:String x:Key="MacroDuplicate">Duplicate</sys:String>
+    <sys:String x:Key="MacroDelete">Delete</sys:String>
     <sys:String x:Key="MacroCreate">＋ Create Macro</sys:String>
-    <sys:String x:Key="MacroStart">▶ Start</sys:String>
-    <sys:String x:Key="MacroStop">■ Stop</sys:String>
+    <sys:String x:Key="MacroStart">Start</sys:String>
+    <sys:String x:Key="MacroStop">Stop</sys:String>
     <sys:String x:Key="MacroActionCount">{0} actions</sys:String>
     <sys:String x:Key="MacroActionCountSuffix"> action(s)</sys:String>
 
@@ -42,17 +42,17 @@
     <sys:String x:Key="EditorInfiniteTooltip">0 = infinite loops</sys:String>
     <sys:String x:Key="EditorInfiniteHint">(0 = infinite)</sys:String>
     <sys:String x:Key="EditorLoopInterval">Interval (ms)</sys:String>
-    <sys:String x:Key="EditorAddFindImage">🔍 Find</sys:String>
-    <sys:String x:Key="EditorAddWait">⏱ Wait</sys:String>
-    <sys:String x:Key="EditorAddClick">🎯 Click</sys:String>
+    <sys:String x:Key="EditorAddFindImage">Find</sys:String>
+    <sys:String x:Key="EditorAddWait">Wait</sys:String>
+    <sys:String x:Key="EditorAddClick">Click</sys:String>
     <sys:String x:Key="EditorMoveUp">Move up</sys:String>
     <sys:String x:Key="EditorMoveDown">Move down</sys:String>
     <sys:String x:Key="EditorDeleteAction">Delete</sys:String>
-    <sys:String x:Key="EditorSelectAction">← Select an action to edit its properties</sys:String>
+    <sys:String x:Key="EditorSelectAction">Select an action to edit its properties</sys:String>
     <sys:String x:Key="EditorStepNote">Step note</sys:String>
     <sys:String x:Key="EditorStepNoteTooltip">Describe this step, for example: Open order details</sys:String>
     <sys:String x:Key="EditorStepNoteHint">For example: Open order details, making long macros easier to read</sys:String>
-    <sys:String x:Key="EditorFindSettings">🔍 Find Image</sys:String>
+    <sys:String x:Key="EditorFindSettings">Find Image</sys:String>
     <sys:String x:Key="EditorCapture">Capture</sys:String>
     <sys:String x:Key="EditorUpload">Upload</sys:String>
     <sys:String x:Key="EditorClear">Clear</sys:String>
@@ -67,27 +67,27 @@
     <sys:String x:Key="EditorOffsetY">Y offset</sys:String>
     <sys:String x:Key="EditorWaitUntilFound">Wait until found</sys:String>
     <sys:String x:Key="EditorAdaptiveScale">Adaptive scaling (slower; useful for DPI or window scaling changes)</sys:String>
-    <sys:String x:Key="EditorWaitSettings">⏱ Wait</sys:String>
+    <sys:String x:Key="EditorWaitSettings">Wait</sys:String>
     <sys:String x:Key="EditorWaitSeconds">Wait time (seconds)</sys:String>
     <sys:String x:Key="EditorWaitHint">Decimals are supported; for example, 0.5 is half a second</sys:String>
-    <sys:String x:Key="EditorClickSettings">🎯 Mouse Position Click</sys:String>
+    <sys:String x:Key="EditorClickSettings">Mouse Position Click</sys:String>
     <sys:String x:Key="EditorCoordinateX">X coordinate</sys:String>
     <sys:String x:Key="EditorCoordinateY">Y coordinate</sys:String>
     <sys:String x:Key="EditorPickCoordinate">Crosshair picker</sys:String>
-    <sys:String x:Key="EditorPickCoordinateButton">🎯 Hold and drag to the target position</sys:String>
-    <sys:String x:Key="EditorSave">💾 Save</sys:String>
+    <sys:String x:Key="EditorPickCoordinateButton">Hold and drag to the target position</sys:String>
+    <sys:String x:Key="EditorSave">Save</sys:String>
 
     <sys:String x:Key="RegionTitle">Region Capture</sys:String>
     <sys:String x:Key="RegionInstruction">Hold the left mouse button and drag to select a region. Press ESC to cancel.</sys:String>
-    <sys:String x:Key="RegionRedo">🔄 Select Again</sys:String>
-    <sys:String x:Key="RegionCancel">✕ Cancel</sys:String>
-    <sys:String x:Key="RegionConfirm">✓ Confirm Region</sys:String>
+    <sys:String x:Key="RegionRedo">Select Again</sys:String>
+    <sys:String x:Key="RegionCancel">Cancel</sys:String>
+    <sys:String x:Key="RegionConfirm">Confirm Region</sys:String>
     <sys:String x:Key="CoordinateTitle">Pick Coordinates</sys:String>
     <sys:String x:Key="CoordinateRelease">  Release to confirm</sys:String>
     <sys:String x:Key="CoordinateInstruction">Hold and drag to the target position, release to confirm, or press ESC to cancel.</sys:String>
 
     <sys:String x:Key="MatchTitle">Match Result</sys:String>
-    <sys:String x:Key="MatchSuccess">✓ Match Found</sys:String>
+    <sys:String x:Key="MatchSuccess">Match Found</sys:String>
     <sys:String x:Key="MatchBelowThreshold">! Best Candidate Below Threshold</sys:String>
     <sys:String x:Key="MatchPosition">Position</sys:String>
     <sys:String x:Key="MatchSimilarity">Similarity</sys:String>
@@ -115,7 +115,7 @@
     <sys:String x:Key="SettingsResetHotkey">Reset to F8</sys:String>
 
     <sys:String x:Key="UpdateTitle">Update</sys:String>
-    <sys:String x:Key="UpdateFound">🔄 Update Available</sys:String>
+    <sys:String x:Key="UpdateFound">Update Available</sys:String>
     <sys:String x:Key="UpdateRequired">(You must update to continue)</sys:String>
     <sys:String x:Key="UpdateCurrentVersion">Current version: </sys:String>
     <sys:String x:Key="UpdateLatestVersion">Latest version: </sys:String>
@@ -286,18 +286,21 @@
     <sys:String x:Key="ShortcutUnsupported">This system does not support WScript.Shell.</sys:String>
     <sys:String x:Key="ShortcutDescription">Ming AutoClicker - mouse automation tool</sys:String>
     <sys:String x:Key="EditorMiddleClick">Middle click</sys:String>
-    <sys:String x:Key="MainRecordingTab">⏺ Record &amp; Playback</sys:String>
+    <sys:String x:Key="MainRecordingTab">Record &amp; Playback</sys:String>
     <sys:String x:Key="RecordingSearch">Search recordings</sys:String><sys:String x:Key="RecordingImport">Import</sys:String><sys:String x:Key="RecordingExport">Export</sys:String><sys:String x:Key="RecordingHelp">Help</sys:String>
-    <sys:String x:Key="RecordingCancelSelection">Clear selection</sys:String><sys:String x:Key="RecordingCreatedAt">Recorded: </sys:String><sys:String x:Key="RecordingDuration">  Duration: </sys:String><sys:String x:Key="RecordingSelected">Selected ✓</sys:String>
+    <sys:String x:Key="RecordingCancelSelection">Clear selection</sys:String><sys:String x:Key="RecordingCreatedAt">Recorded: </sys:String><sys:String x:Key="RecordingDuration">  Duration: </sys:String><sys:String x:Key="RecordingSelected">Selected</sys:String>
     <sys:String x:Key="RecordingOptimize">Optimize</sys:String><sys:String x:Key="RecordingRename">Rename</sys:String><sys:String x:Key="RecordingDelete">Delete</sys:String><sys:String x:Key="RecordingSetHotkey">Set hotkey</sys:String><sys:String x:Key="RecordingStepCount">{0} steps</sys:String>
-    <sys:String x:Key="RecordingStart">● Start recording</sys:String><sys:String x:Key="RecordingPauseResume">Pause / Resume</sys:String><sys:String x:Key="RecordingStop">Stop recording</sys:String><sys:String x:Key="RecordingActions">Actions </sys:String>
-    <sys:String x:Key="PlaybackSpeed">Speed</sys:String><sys:String x:Key="PlaybackLoop">Loops</sys:String><sys:String x:Key="PlaybackInfinite">Infinite</sys:String><sys:String x:Key="PlaybackInterval">Interval (ms)</sys:String><sys:String x:Key="PlaybackStart">▶ Start playback</sys:String><sys:String x:Key="PlaybackStop">Stop playback</sys:String><sys:String x:Key="PlaybackStep">Step </sys:String>
+    <sys:String x:Key="RecordingStart">Start recording</sys:String><sys:String x:Key="RecordingPauseResume">Pause / Resume</sys:String><sys:String x:Key="RecordingStop">Stop recording</sys:String><sys:String x:Key="RecordingActions">Actions </sys:String>
+    <sys:String x:Key="PlaybackSpeed">Speed</sys:String><sys:String x:Key="PlaybackLoop">Loops</sys:String><sys:String x:Key="PlaybackInfinite">Infinite</sys:String><sys:String x:Key="PlaybackInterval">Interval (ms)</sys:String><sys:String x:Key="PlaybackStart">Start playback</sys:String><sys:String x:Key="PlaybackStop">Stop playback</sys:String><sys:String x:Key="PlaybackStep">Step </sys:String>
     <sys:String x:Key="RecordingStatusRecording">Recording</sys:String><sys:String x:Key="RecordingStatusPlaying">Playing</sys:String><sys:String x:Key="RecordingDefaultName">Mouse recording-{0}</sys:String><sys:String x:Key="RecordingDeletePrompt">Delete “{0}”?</sys:String>
     <sys:String x:Key="RecordingHelpTitle">Recording &amp; Playback Help</sys:String><sys:String x:Key="RecordingHelpText">With no selection, the global hotkey starts recording. With a selection, it starts playback. Standard privileges cannot control elevated windows.</sys:String>
     <sys:String x:Key="RecordingLargeTitle">Large recording</sys:String><sys:String x:Key="RecordingLargeMessage">This recording contains more than 10,000 actions. Optimization is recommended.</sys:String><sys:String x:Key="RecordingDisplayChangedTitle">Display layout changed</sys:String><sys:String x:Key="RecordingDisplayChangedMessage">The current display layout differs from the recorded layout. Map coordinates proportionally and continue?</sys:String>
     <sys:String x:Key="PlaybackErrorTitle">Playback error</sys:String><sys:String x:Key="PlaybackError">Playback failed: {0}</sys:String><sys:String x:Key="RecordingImportErrorTitle">Import failed</sys:String><sys:String x:Key="AutomationSwitchFailed">The current task could not stop safely. Switching was cancelled.</sys:String>
-    <sys:String x:Key="ItemHotkeyTitle">Set item hotkey</sys:String><sys:String x:Key="ItemHotkeyHint">Click the field, then press a shortcut</sys:String><sys:String x:Key="ItemHotkeyClear">Clear</sys:String><sys:String x:Key="ItemHotkeyUnavailableTitle">Hotkey unavailable</sys:String><sys:String x:Key="MacroItemHotkey">⌨ Hotkey</sys:String>
+    <sys:String x:Key="ItemHotkeyTitle">Set item hotkey</sys:String><sys:String x:Key="ItemHotkeyHint">Click the field, then press a shortcut</sys:String><sys:String x:Key="ItemHotkeyClear">Clear</sys:String><sys:String x:Key="ItemHotkeyUnavailableTitle">Hotkey unavailable</sys:String><sys:String x:Key="MacroItemHotkey">Hotkey</sys:String>
     <sys:String x:Key="ItemHotkeyStartupConflict">One or more item hotkeys could not be registered. Open the item hotkey settings to resolve conflicts.</sys:String>
     <sys:String x:Key="RecordingRenameTitle">Rename recording</sys:String><sys:String x:Key="RecordingRenameHint">Enter a new recording name</sys:String><sys:String x:Key="RecordingRenameEmpty">Recording name cannot be empty.</sys:String><sys:String x:Key="RecordingRenameSaveFailed">Could not save the new name: {0}</sys:String>
-    <sys:String x:Key="OptimizeTitle">✨ Recording Optimization</sys:String><sys:String x:Key="OptimizeName">Recording name</sys:String><sys:String x:Key="OptimizeEnabled">Enabled</sys:String><sys:String x:Key="OptimizeType">Type</sys:String><sys:String x:Key="OptimizeDelay">Delay before (ms)</sys:String><sys:String x:Key="OptimizeInput">Coordinates / key</sys:String><sys:String x:Key="OptimizeRemoveWait">Remove selected delays</sys:String><sys:String x:Key="OptimizeDisableMoves">Disable selected moves</sys:String><sys:String x:Key="OptimizeMergeMoves">Merge identical moves</sys:String><sys:String x:Key="OptimizeSave">Save to recording</sys:String><sys:String x:Key="OptimizeSummary">Current: {0} steps / {1}</sys:String>
+    <sys:String x:Key="OptimizeTitle">Recording Optimization</sys:String><sys:String x:Key="OptimizeName">Recording name</sys:String><sys:String x:Key="OptimizeEnabled">Enabled</sys:String><sys:String x:Key="OptimizeType">Type</sys:String><sys:String x:Key="OptimizeDelay">Delay before (ms)</sys:String><sys:String x:Key="OptimizeInput">Coordinates / key</sys:String><sys:String x:Key="OptimizeRemoveWait">Remove selected delays</sys:String><sys:String x:Key="OptimizeDisableMoves">Disable selected moves</sys:String><sys:String x:Key="OptimizeMergeMoves">Merge identical moves</sys:String><sys:String x:Key="OptimizeSave">Save to recording</sys:String><sys:String x:Key="OptimizeSummary">Current: {0} steps / {1}</sys:String>
+    <sys:String x:Key="TrayShow">Show main window</sys:String>
+    <sys:String x:Key="TrayExit">Exit</sys:String>
+    <sys:String x:Key="TrayMinimized">The app is still running. Right-click the tray icon to exit.</sys:String>
 </ResourceDictionary>

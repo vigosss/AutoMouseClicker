@@ -29,6 +29,7 @@ namespace Ming_AutoClicker.ViewModels
         private int _selectedActionIndex = -1;
         private string _statusMessage = string.Empty;
         private bool _isTestingMatch;
+        private bool _isCapturingScreenshot;
         private NotifyCollectionChangedEventHandler? _collectionChangedHandler;
 
         /// <summary>
@@ -517,7 +518,9 @@ namespace Ming_AutoClicker.ViewModels
             RemoveActionCommand = new RelayCommand(_ => RemoveAction(), _ => CanRemoveAction());
             MoveUpCommand = new RelayCommand(_ => MoveUp(), _ => CanMoveUp());
             MoveDownCommand = new RelayCommand(_ => MoveDown(), _ => CanMoveDown());
-            CaptureScreenshotCommand = new RelayCommand(_ => _ = CaptureScreenshotAsync());
+            CaptureScreenshotCommand = new RelayCommand(
+                _ => _ = CaptureScreenshotAsync(),
+                _ => FindImageAction != null && !_isCapturingScreenshot);
             ImportImageCommand = new RelayCommand(_ => ImportImage(), _ => FindImageAction != null);
             TestMatchCommand = new RelayCommand(_ => _ = TestMatchAsync(), _ => FindImageAction != null && !_isTestingMatch);
             ClearImageCommand = new RelayCommand(_ => ClearImage(), _ => IsActionSelected);
@@ -739,6 +742,10 @@ namespace Ming_AutoClicker.ViewModels
 
         private async System.Threading.Tasks.Task CaptureScreenshotAsync()
         {
+            if (_isCapturingScreenshot || FindImageAction == null) return;
+            _isCapturingScreenshot = true;
+            CommandManager.InvalidateRequerySuggested();
+
             var mainWindow = Application.Current.MainWindow;
             var previousWindowState = mainWindow?.WindowState ?? WindowState.Normal;
             try
@@ -800,6 +807,8 @@ namespace Ming_AutoClicker.ViewModels
             finally
             {
                 if (mainWindow != null) mainWindow.WindowState = previousWindowState;
+                _isCapturingScreenshot = false;
+                CommandManager.InvalidateRequerySuggested();
             }
         }
 

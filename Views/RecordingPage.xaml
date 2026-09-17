@@ -1,29 +1,45 @@
-<UserControl x:Class="Ming_AutoClicker.Views.RecordingPage" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+<UserControl x:Class="Ming_AutoClicker.Views.RecordingPage" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks" xmlns:helpers="clr-namespace:Ming_AutoClicker.Helpers">
  <Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-  <Grid Margin="0,0,0,10"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-   <TextBox Text="{Binding SearchText,UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBox}" ToolTip="{DynamicResource RecordingSearch}" Margin="0,0,8,0"/>
-   <Button Grid.Column="1" Content="{DynamicResource RecordingImport}" Style="{StaticResource SmallButton}" Command="{Binding ImportCommand}" Margin="0,0,6,0"/>
-   <Button Grid.Column="2" Content="{DynamicResource RecordingExport}" Style="{StaticResource SmallButton}" Command="{Binding ExportCommand}" Margin="0,0,6,0"/>
-   <Button Grid.Column="3" Content="{DynamicResource RecordingHelp}" Style="{StaticResource SmallButton}" Command="{Binding HelpCommand}"/>
-  </Grid>
-  <ListBox Grid.Row="1" ItemsSource="{Binding FilteredRecordings}" SelectedItem="{Binding SelectedRecording}" IsEnabled="{Binding IsIdle}" Style="{StaticResource ModernListBox}">
-   <ListBox.ItemContainerStyle><Style TargetType="ListBoxItem" BasedOn="{StaticResource CardListBoxItem}"/></ListBox.ItemContainerStyle>
-   <ListBox.ItemTemplate><DataTemplate><Grid Margin="4"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-    <Grid><TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="14"/>
-     <Button Content="{DynamicResource RecordingCancelSelection}" HorizontalAlignment="Right" Style="{StaticResource GhostButton}" Command="{Binding CancelSelectCommand}" Visibility="Collapsed" x:Name="CancelSelect"/></Grid>
-    <TextBlock Grid.Row="1" Margin="0,7,0,7" Foreground="{StaticResource TextSecondaryBrush}"><Run Text="{DynamicResource RecordingCreatedAt}"/><Run Text="{Binding CreatedAtText, Mode=OneWay}"/><Run Text="{DynamicResource RecordingDuration}"/><Run Text="{Binding DurationText, Mode=OneWay}"/><Run Text="  "/><Run Text="{Binding ActionCountText, Mode=OneWay}"/></TextBlock>
-    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" x:Name="Actions"><Button Content="{Binding HotkeyText}" Style="{StaticResource GhostButton}" Command="{Binding SetHotkeyCommand}"/><Button Content="{DynamicResource RecordingOptimize}" Style="{StaticResource GhostButton}" Command="{Binding OptimizeCommand}"/><Button Content="{DynamicResource RecordingRename}" Style="{StaticResource GhostButton}" Command="{Binding RenameCommand}"/><Button Content="{DynamicResource RecordingDelete}" Style="{StaticResource DangerButton}" Command="{Binding DeleteCommand}"/></StackPanel>
-    <TextBlock Grid.Row="2" Text="{DynamicResource RecordingSelected}" HorizontalAlignment="Right" Foreground="{StaticResource PrimaryBrush}" Visibility="Collapsed" x:Name="SelectedText"/>
-   </Grid>
-    <DataTemplate.Triggers>
-     <DataTrigger Binding="{Binding IsSelected}" Value="True"><Setter TargetName="Actions" Property="Visibility" Value="Collapsed"/><Setter TargetName="CancelSelect" Property="Visibility" Value="Visible"/><Setter TargetName="SelectedText" Property="Visibility" Value="Visible"/></DataTrigger>
-    </DataTemplate.Triggers>
-   </DataTemplate></ListBox.ItemTemplate>
+  <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,10">
+   <Button Content="{DynamicResource RecordingImport}" Style="{StaticResource SmallButton}" Command="{Binding ImportCommand}" Margin="0,0,6,0" helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.Download}"/>
+   <Button Content="{DynamicResource RecordingExport}" Style="{StaticResource SmallButton}" Command="{Binding ExportCommand}" Margin="0,0,6,0" helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.Upload}"/>
+   <Button Content="{DynamicResource RecordingHelp}" Style="{StaticResource SmallButton}" Command="{Binding HelpCommand}" helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.InfoBox}"/>
+  </StackPanel>
+  <ListBox Grid.Row="1" ItemsSource="{Binding Recordings}" SelectedItem="{Binding SelectedRecording}" IsHitTestVisible="{Binding IsIdle}" Style="{StaticResource ModernListBox}">
+   <ListBox.ItemContainerStyle><Style TargetType="ListBoxItem" BasedOn="{StaticResource CardListBoxItem}"><EventSetter Event="RequestBringIntoView" Handler="OnItemRequestBringIntoView"/></Style></ListBox.ItemContainerStyle>
+   <ListBox.ItemTemplate>
+    <DataTemplate>
+     <Grid Height="52">
+      <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+      <StackPanel Grid.Column="0" VerticalAlignment="Center">
+       <TextBlock Text="{Binding Name}" FontWeight="Medium" FontSize="14" Foreground="{StaticResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
+       <TextBlock Style="{StaticResource CaptionText}" Margin="0,4,0,0">
+        <Run Text="{DynamicResource RecordingCreatedAt}"/><Run Text="{Binding CreatedAtText,Mode=OneWay}"/>
+        <Run Text="{DynamicResource RecordingDuration}"/><Run Text="{Binding DurationText,Mode=OneWay}"/>
+        <Run Text="  "/><Run Text="{Binding ActionCountText,Mode=OneWay}"/>
+       </TextBlock>
+      </StackPanel>
+      <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,0,0">
+       <StackPanel.Style>
+        <Style TargetType="StackPanel">
+         <Setter Property="Visibility" Value="Collapsed"/>
+         <Style.Triggers><DataTrigger Binding="{Binding IsSelected}" Value="True"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers>
+        </Style>
+       </StackPanel.Style>
+       <Button Content="{Binding HotkeyText}" Style="{StaticResource GhostButton}" Command="{Binding SetHotkeyCommand}" Margin="0,0,4,0" helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.Keyboard}"/>
+       <Button Content="{DynamicResource RecordingOptimize}" Style="{StaticResource GhostButton}" Command="{Binding OptimizeCommand}" Margin="0,0,4,0" helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.Sliders2}"/>
+       <Button Content="{DynamicResource RecordingRename}" Style="{StaticResource GhostButton}" Command="{Binding RenameCommand}" Margin="0,0,4,0" helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.Edit}"/>
+       <Button Content="{DynamicResource RecordingDelete}" Style="{StaticResource DangerButton}" Command="{Binding DeleteCommand}" Margin="0,0,4,0" helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.Trash}"/>
+       <Button Content="{DynamicResource RecordingCancelSelection}" Style="{StaticResource GhostButton}" Command="{Binding CancelSelectCommand}" helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.Close}"/>
+      </StackPanel>
+     </Grid>
+    </DataTemplate>
+   </ListBox.ItemTemplate>
   </ListBox>
-  <Border Grid.Row="2" Margin="0,12,0,0" Padding="12" Background="{StaticResource SurfaceBrush}" CornerRadius="8"><Grid>
-   <StackPanel x:Name="RecordPanel"><StackPanel.Style><Style TargetType="StackPanel"><Style.Triggers><DataTrigger Binding="{Binding HasSelection}" Value="True"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers></Style></StackPanel.Style><Button Content="{DynamicResource RecordingStart}" Style="{StaticResource DangerButton}" Height="42" Command="{Binding StartRecordingCommand}"/><StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,8,0,0"><Button Content="{DynamicResource RecordingPauseResume}" Style="{StaticResource SmallButton}" Command="{Binding PauseRecordingCommand}"/><Button Content="{DynamicResource RecordingStop}" Style="{StaticResource DangerButton}" Margin="8,0,0,0" Command="{Binding StopRecordingCommand}"/><TextBlock Margin="12,6,0,0"><Run Text="{DynamicResource RecordingActions}"/><Run Text="{Binding ActionCount, Mode=OneWay}"/><Run Text="  "/><Run Text="{Binding ElapsedTime, Mode=OneWay}"/></TextBlock></StackPanel></StackPanel>
+  <Border Grid.Row="2" Margin="0,12,3,3" Padding="12" Background="{StaticResource CardBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="2"><Grid>
+   <StackPanel x:Name="RecordPanel"><StackPanel.Style><Style TargetType="StackPanel"><Style.Triggers><DataTrigger Binding="{Binding HasSelection}" Value="True"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers></Style></StackPanel.Style><Button Content="{DynamicResource RecordingStart}" Style="{StaticResource DangerButton}" Height="42" Command="{Binding StartRecordingCommand}" helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.RadioOn}"/><StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,8,0,0"><Button Content="{DynamicResource RecordingPauseResume}" Style="{StaticResource SmallButton}" Command="{Binding PauseRecordingCommand}" helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.Pause}"/><Button Content="{DynamicResource RecordingStop}" Style="{StaticResource DangerButton}" Margin="8,0,0,0" Command="{Binding StopRecordingCommand}" helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.DebugStop}"/><TextBlock Margin="12,6,0,0"><Run Text="{DynamicResource RecordingActions}"/><Run Text="{Binding ActionCount,Mode=OneWay}"/><Run Text="  "/><Run Text="{Binding ElapsedTime,Mode=OneWay}"/></TextBlock></StackPanel></StackPanel>
    <StackPanel x:Name="PlayPanel"><StackPanel.Style><Style TargetType="StackPanel"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers><DataTrigger Binding="{Binding HasSelection}" Value="True"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style></StackPanel.Style><StackPanel Orientation="Horizontal"><TextBlock Text="{DynamicResource PlaybackSpeed}" VerticalAlignment="Center"/><Slider Minimum="0.5" Maximum="5" Value="{Binding SpeedFactor}" Width="150" Margin="8,0"/><TextBlock Text="{Binding SpeedFactor,StringFormat={}{0:F1}x}" VerticalAlignment="Center"/><TextBlock Text="{DynamicResource PlaybackLoop}" Margin="20,0,6,0" VerticalAlignment="Center"/><TextBox Text="{Binding LoopCount}" Width="45"/><CheckBox Content="{DynamicResource PlaybackInfinite}" IsChecked="{Binding IsInfiniteLoop}" Margin="8,0"/><TextBlock Text="{DynamicResource PlaybackInterval}" VerticalAlignment="Center"/><TextBox Text="{Binding LoopInterval}" Width="60"/></StackPanel>
-    <Button Content="{DynamicResource PlaybackStart}" Style="{StaticResource SuccessButton}" Height="40" Margin="0,8,0,0" Command="{Binding StartPlaybackCommand}"/><StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,8,0,0"><Button Content="{DynamicResource RecordingPauseResume}" Style="{StaticResource SmallButton}" Command="{Binding PausePlaybackCommand}"/><Button Content="{DynamicResource PlaybackStop}" Style="{StaticResource DangerButton}" Margin="8,0" Command="{Binding StopPlaybackCommand}"/><TextBlock Margin="8,6,0,0"><Run Text="{DynamicResource PlaybackStep}"/><Run Text="{Binding ActionCount, Mode=OneWay}"/><Run Text="  "/><Run Text="{Binding ElapsedTime, Mode=OneWay}"/></TextBlock></StackPanel>
+    <Button Content="{DynamicResource PlaybackStart}" Style="{StaticResource SuccessButton}" Height="40" Margin="0,8,0,0" Command="{Binding StartPlaybackCommand}" helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.Play}"/><StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,8,0,0"><Button Content="{DynamicResource RecordingPauseResume}" Style="{StaticResource SmallButton}" Command="{Binding PausePlaybackCommand}" helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.Pause}"/><Button Content="{DynamicResource PlaybackStop}" Style="{StaticResource DangerButton}" Margin="8,0" Command="{Binding StopPlaybackCommand}" helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.DebugStop}"/><TextBlock Margin="8,6,0,0"><Run Text="{DynamicResource PlaybackStep}"/><Run Text="{Binding ActionCount,Mode=OneWay}"/><Run Text="  "/><Run Text="{Binding ElapsedTime,Mode=OneWay}"/></TextBlock></StackPanel>
    </StackPanel>
   </Grid></Border>
  </Grid>

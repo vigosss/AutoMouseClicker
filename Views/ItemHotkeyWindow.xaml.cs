@@ -2,13 +2,10 @@ using System.Windows;
 using System.Windows.Input;
 using Ming_AutoClicker.Models;
 using Ming_AutoClicker.Services;
-
 namespace Ming_AutoClicker.Views;
-
 public partial class ItemHotkeyWindow : Window
 {
     private HotkeyGesture? _candidate;
-
     public HotkeyGesture? Result { get; private set; }
 
     public ItemHotkeyWindow(HotkeyGesture? current)
@@ -23,10 +20,8 @@ public partial class ItemHotkeyWindow : Window
     {
         e.Handled = true;
         var key = e.Key == Key.System ? e.SystemKey : e.Key;
-        if (key is Key.LeftCtrl or Key.RightCtrl or
-            Key.LeftAlt or Key.RightAlt or
-            Key.LeftShift or Key.RightShift or
-            Key.LWin or Key.RWin)
+        if (key is Key.LeftCtrl or Key.RightCtrl or Key.LeftAlt or Key.RightAlt or
+            Key.LeftShift or Key.RightShift or Key.LWin or Key.RWin)
         {
             Error.Text = LocalizationService.Current.GetString("HotkeyContinue");
             return;
@@ -37,18 +32,19 @@ public partial class ItemHotkeyWindow : Window
         if (Keyboard.Modifiers.HasFlag(ModifierKeys.Alt)) modifiers |= HotkeyModifierKeys.Alt;
         if (Keyboard.Modifiers.HasFlag(ModifierKeys.Shift)) modifiers |= HotkeyModifierKeys.Shift;
         if (Keyboard.Modifiers.HasFlag(ModifierKeys.Windows)) modifiers |= (HotkeyModifierKeys)8;
-
-        _candidate = new HotkeyGesture
-        {
-            VirtualKey = (uint)KeyInterop.VirtualKeyFromKey(key),
-            Modifiers = modifiers
-        };
+        _candidate = new HotkeyGesture { VirtualKey = (uint)KeyInterop.VirtualKeyFromKey(key), Modifiers = modifiers };
         UpdateCandidateDisplay();
     }
 
     private void UpdateCandidateDisplay()
     {
         Input.Text = HotkeyGestureHelper.Format(_candidate);
+        if (_candidate == null)
+        {
+            Error.Text = string.Empty;
+            ConfirmButton.IsEnabled = true;
+            return;
+        }
         var valid = HotkeyGestureHelper.TryValidate(_candidate, out var error);
         Error.Text = valid ? string.Empty : error;
         ConfirmButton.IsEnabled = valid;
@@ -56,21 +52,21 @@ public partial class ItemHotkeyWindow : Window
 
     private void OnClear(object sender, RoutedEventArgs e)
     {
-        Result = null;
-        DialogResult = true;
+        _candidate = null;
+        UpdateCandidateDisplay();
+        Input.Focus();
     }
 
     private void OnCancel(object sender, RoutedEventArgs e) => DialogResult = false;
 
     private void OnConfirm(object sender, RoutedEventArgs e)
     {
-        if (!HotkeyGestureHelper.TryValidate(_candidate, out var error))
+        if (_candidate != null && !HotkeyGestureHelper.TryValidate(_candidate, out var error))
         {
             Error.Text = error;
             Input.Focus();
             return;
         }
-
         Result = _candidate?.Clone();
         DialogResult = true;
     }
@@ -89,10 +85,5 @@ public partial class ItemHotkeyWindow : Window
         if (Input.IsKeyboardFocusWithin) return;
         e.Handled = true;
         Input.Focus();
-    }
-
-    private void OnTitleBarMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-    {
-        if (e.ChangedButton == MouseButton.Left) DragMove();
     }
 }

@@ -1,133 +1,36 @@
 <Window x:Class="Ming_AutoClicker.Views.RegionSelectWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="{DynamicResource RegionTitle}"
-        WindowStyle="None"
-        Topmost="True"
-        ResizeMode="NoResize"
-        WindowState="Normal"
-        WindowStartupLocation="Manual"
-        Background="Black"
-        ShowInTaskbar="False"
-        Focusable="True"
-        Cursor="Cross">
-
+        xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+        xmlns:helpers="clr-namespace:Ming_AutoClicker.Helpers"
+        Title="{DynamicResource RegionTitle}" WindowStyle="None" Topmost="True"
+        ResizeMode="NoResize" WindowState="Normal" Background="Black"
+        ShowInTaskbar="False" Focusable="True" Cursor="Cross">
     <Canvas x:Name="MainCanvas">
-        <!-- 屏幕截图背景 -->
         <Image x:Name="BackgroundImage" Stretch="Fill"/>
-
-        <!-- 半透明遮罩 -->
-        <Path x:Name="OverlayPath" Fill="#99000000"/>
-
-        <!-- 选区边框 -->
-        <Rectangle x:Name="SelectionRect"
-                   Stroke="#FF409CFF"
-                   StrokeThickness="2"
-                   Visibility="Collapsed"/>
-
-        <!-- 8 个调整手柄 -->
-        <Ellipse x:Name="HandleTL" Width="10" Height="10" Fill="White" Stroke="#FF409CFF" StrokeThickness="1.5" Visibility="Collapsed"/>
-        <Ellipse x:Name="HandleT"  Width="10" Height="10" Fill="White" Stroke="#FF409CFF" StrokeThickness="1.5" Visibility="Collapsed"/>
-        <Ellipse x:Name="HandleTR" Width="10" Height="10" Fill="White" Stroke="#FF409CFF" StrokeThickness="1.5" Visibility="Collapsed"/>
-        <Ellipse x:Name="HandleL"  Width="10" Height="10" Fill="White" Stroke="#FF409CFF" StrokeThickness="1.5" Visibility="Collapsed"/>
-        <Ellipse x:Name="HandleR"  Width="10" Height="10" Fill="White" Stroke="#FF409CFF" StrokeThickness="1.5" Visibility="Collapsed"/>
-        <Ellipse x:Name="HandleBL" Width="10" Height="10" Fill="White" Stroke="#FF409CFF" StrokeThickness="1.5" Visibility="Collapsed"/>
-        <Ellipse x:Name="HandleB"  Width="10" Height="10" Fill="White" Stroke="#FF409CFF" StrokeThickness="1.5" Visibility="Collapsed"/>
-        <Ellipse x:Name="HandleBR" Width="10" Height="10" Fill="White" Stroke="#FF409CFF" StrokeThickness="1.5" Visibility="Collapsed"/>
-
-        <!-- 尺寸信息 -->
-        <Border x:Name="InfoPanel"
-                Background="#CC000000"
-                CornerRadius="3"
-                Padding="8,4"
-                Visibility="Collapsed">
-            <TextBlock x:Name="SizeText" Foreground="White" FontSize="12" FontFamily="Consolas"/>
+        <Path x:Name="OverlayPath" Fill="#A0080C18"/>
+        <Rectangle x:Name="SelectionRect" Stroke="{StaticResource PrimaryBrush}" StrokeThickness="2" Visibility="Collapsed"/>
+        <Ellipse x:Name="HandleTL" Width="10" Height="10" Fill="{StaticResource BackgroundBrush}" Stroke="{StaticResource PrimaryBrush}" StrokeThickness="2" Visibility="Collapsed"/>
+        <Ellipse x:Name="HandleT" Width="10" Height="10" Fill="{StaticResource BackgroundBrush}" Stroke="{StaticResource PrimaryBrush}" StrokeThickness="2" Visibility="Collapsed"/>
+        <Ellipse x:Name="HandleTR" Width="10" Height="10" Fill="{StaticResource BackgroundBrush}" Stroke="{StaticResource PrimaryBrush}" StrokeThickness="2" Visibility="Collapsed"/>
+        <Ellipse x:Name="HandleL" Width="10" Height="10" Fill="{StaticResource BackgroundBrush}" Stroke="{StaticResource PrimaryBrush}" StrokeThickness="2" Visibility="Collapsed"/>
+        <Ellipse x:Name="HandleR" Width="10" Height="10" Fill="{StaticResource BackgroundBrush}" Stroke="{StaticResource PrimaryBrush}" StrokeThickness="2" Visibility="Collapsed"/>
+        <Ellipse x:Name="HandleBL" Width="10" Height="10" Fill="{StaticResource BackgroundBrush}" Stroke="{StaticResource PrimaryBrush}" StrokeThickness="2" Visibility="Collapsed"/>
+        <Ellipse x:Name="HandleB" Width="10" Height="10" Fill="{StaticResource BackgroundBrush}" Stroke="{StaticResource PrimaryBrush}" StrokeThickness="2" Visibility="Collapsed"/>
+        <Ellipse x:Name="HandleBR" Width="10" Height="10" Fill="{StaticResource BackgroundBrush}" Stroke="{StaticResource PrimaryBrush}" StrokeThickness="2" Visibility="Collapsed"/>
+        <Border x:Name="InfoPanel" Background="#F20A1020" BorderBrush="{StaticResource PrimaryBrush}"
+                BorderThickness="2" Padding="9,5" Visibility="Collapsed">
+            <TextBlock x:Name="SizeText" Foreground="{StaticResource PrimaryBrush}" FontSize="12" FontFamily="{StaticResource PixelMonoFontFamily}"/>
         </Border>
-
-        <!-- 提示文字 -->
-        <TextBlock x:Name="TipText"
-                   Text="{DynamicResource RegionInstruction}"
-                   Foreground="White"
-                   FontSize="16"
-                   Opacity="0.8"/>
-
-        <!-- 底部工具栏（调整模式下显示） -->
-        <Border x:Name="Toolbar"
-                Background="#E0000000"
-                CornerRadius="8"
-                Padding="16,10"
-                Visibility="Collapsed">
+        <TextBlock x:Name="TipText" Text="{DynamicResource RegionInstruction}"
+                   Foreground="{StaticResource TextPrimaryBrush}" Background="#DD0A1020"
+                   Padding="12,8" FontSize="14"/>
+        <Border x:Name="Toolbar" Background="#F20A1020" BorderBrush="{StaticResource PrimaryBrush}"
+                BorderThickness="2" Padding="12,9" Visibility="Collapsed">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                <Button x:Name="BtnRedo" Content="{DynamicResource RegionRedo}"
-                        Background="Transparent" Foreground="White" 
-                        BorderThickness="1" BorderBrush="#55FFFFFF"
-                        Padding="14,6" FontSize="13" Cursor="Hand"
-                        Margin="0,0,10,0"
-                        Click="BtnRedo_Click">
-                    <Button.Template>
-                        <ControlTemplate TargetType="Button">
-                            <Border x:Name="Bd" Background="{TemplateBinding Background}" 
-                                    BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
-                                    CornerRadius="6" Padding="{TemplateBinding Padding}">
-                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Border>
-                            <ControlTemplate.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="Bd" Property="Background" Value="#30FFFFFF"/>
-                                </Trigger>
-                                <Trigger Property="IsPressed" Value="True">
-                                    <Setter TargetName="Bd" Property="Background" Value="#50FFFFFF"/>
-                                </Trigger>
-                            </ControlTemplate.Triggers>
-                        </ControlTemplate>
-                    </Button.Template>
-                </Button>
-                <Button x:Name="BtnCancel" Content="{DynamicResource RegionCancel}"
-                        Background="Transparent" Foreground="#FF6B6B" 
-                        BorderThickness="1" BorderBrush="#55FF6B6B"
-                        Padding="14,6" FontSize="13" Cursor="Hand"
-                        Margin="0,0,10,0"
-                        Click="BtnCancel_Click">
-                    <Button.Template>
-                        <ControlTemplate TargetType="Button">
-                            <Border x:Name="Bd" Background="{TemplateBinding Background}" 
-                                    BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
-                                    CornerRadius="6" Padding="{TemplateBinding Padding}">
-                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Border>
-                            <ControlTemplate.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="Bd" Property="Background" Value="#20FF6B6B"/>
-                                </Trigger>
-                                <Trigger Property="IsPressed" Value="True">
-                                    <Setter TargetName="Bd" Property="Background" Value="#40FF6B6B"/>
-                                </Trigger>
-                            </ControlTemplate.Triggers>
-                        </ControlTemplate>
-                    </Button.Template>
-                </Button>
-                <Button x:Name="BtnConfirm" Content="{DynamicResource RegionConfirm}"
-                        Background="#FF409CFF" Foreground="White" 
-                        BorderThickness="0"
-                        Padding="14,6" FontSize="13" Cursor="Hand" FontWeight="Medium"
-                        Click="BtnConfirm_Click">
-                    <Button.Template>
-                        <ControlTemplate TargetType="Button">
-                            <Border x:Name="Bd" Background="{TemplateBinding Background}" 
-                                    BorderThickness="0" CornerRadius="6" Padding="{TemplateBinding Padding}">
-                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Border>
-                            <ControlTemplate.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="Bd" Property="Background" Value="#6BA5E7"/>
-                                </Trigger>
-                                <Trigger Property="IsPressed" Value="True">
-                                    <Setter TargetName="Bd" Property="Background" Value="#3A7BC8"/>
-                                </Trigger>
-                            </ControlTemplate.Triggers>
-                        </ControlTemplate>
-                    </Button.Template>
-                </Button>
+                <Button x:Name="BtnRedo" Content="{DynamicResource RegionRedo}" Style="{StaticResource BaseButton}" Margin="0,0,10,0" Click="BtnRedo_Click" helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.Reload}"/>
+                <Button x:Name="BtnCancel" Content="{DynamicResource RegionCancel}" Style="{StaticResource DangerButton}" Margin="0,0,10,0" Click="BtnCancel_Click" helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.Close}"/>
+                <Button x:Name="BtnConfirm" Content="{DynamicResource RegionConfirm}" Style="{StaticResource PrimaryButton}" Click="BtnConfirm_Click" helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.Check}"/>
             </StackPanel>
         </Border>
     </Canvas>

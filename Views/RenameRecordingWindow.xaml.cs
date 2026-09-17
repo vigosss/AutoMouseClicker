@@ -12,11 +12,7 @@ public partial class RenameRecordingWindow : Window
     {
         InitializeComponent();
         NameInput.Text = currentName;
-        Loaded += (_, _) =>
-        {
-            NameInput.Focus();
-            NameInput.SelectAll();
-        };
+        Loaded += (_, _) => { NameInput.Focus(); NameInput.SelectAll(); };
     }
 
     private void OnConfirm(object sender, RoutedEventArgs e)
@@ -29,7 +25,6 @@ public partial class RenameRecordingWindow : Window
             NameInput.SelectAll();
             return;
         }
-
         ResultName = name;
         DialogResult = true;
     }
@@ -38,20 +33,7 @@ public partial class RenameRecordingWindow : Window
 
     private void OnWindowPreviewKeyDown(object sender, KeyEventArgs e)
     {
-        if (e.Key == Key.Enter)
-        {
-            e.Handled = true;
-            OnConfirm(sender, e);
-        }
-        else if (e.Key == Key.Escape)
-        {
-            e.Handled = true;
-            DialogResult = false;
-        }
-    }
-
-    private void OnTitleBarMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-    {
-        if (e.ChangedButton == MouseButton.Left) DragMove();
+        if (e.Key == Key.Enter) { e.Handled = true; OnConfirm(sender, e); }
+        else if (e.Key == Key.Escape) { e.Handled = true; DialogResult = false; }
     }
 }

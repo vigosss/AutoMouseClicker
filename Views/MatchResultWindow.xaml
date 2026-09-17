@@ -38,10 +38,9 @@
 
         <!-- 左上角信息面板 -->
         <Border x:Name="InfoPanel"
-                Background="#E01A1A2E"
+                Background="#F20A1020"
                 BorderBrush="#FF52D4A0"
                 BorderThickness="1"
-                CornerRadius="8"
                 Padding="16,12"
                 Visibility="Collapsed">
             <StackPanel>
@@ -105,8 +104,9 @@
 
         <!-- 底部提示 -->
         <Border x:Name="BottomTip"
-                Background="#CC000000"
-                CornerRadius="20"
+                Background="#E60A1020"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="2"
                 Padding="20,8"
                 Visibility="Collapsed">
             <TextBlock x:Name="BottomTipText"

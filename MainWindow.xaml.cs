@@ -18,6 +18,11 @@ namespace Ming_AutoClicker
         private PropertyChangedEventHandler? _propertyChangedHandler;
         private PropertyChangedEventHandler? _autoClickPropertyChangedHandler;
         private HwndSource? _hwndSource;
+        private System.Windows.Forms.NotifyIcon? _trayIcon;
+        private System.Windows.Forms.ContextMenuStrip? _trayMenu;
+        private System.Drawing.Icon? _trayDrawingIcon;
+        private bool _allowExit;
+        private bool _viewInitialized;
 
         public MainWindow()
         {
@@ -32,11 +37,17 @@ namespace Ming_AutoClicker
 
             Loaded += OnLoaded;
             SourceInitialized += OnSourceInitialized;
+            Closing += OnClosing;
             Closed += OnClosed;
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
+            InitializeTrayIcon();
+            if (_viewInitialized)
+                return;
+            _viewInitialized = true;
+
             _viewModel = DataContext as MainViewModel;
             if (_viewModel == null) return;
 
@@ -165,6 +176,79 @@ namespace Ming_AutoClicker
 
             _viewModel?.UnregisterHotkey();
             _viewModel?.Dispose();
+
+            if (_trayIcon != null)
+            {
+                _trayIcon.Visible = false;
+                _trayIcon.Dispose();
+                _trayIcon = null;
+            }
+            _trayMenu?.Dispose();
+            _trayMenu = null;
+            _trayDrawingIcon?.Dispose();
+            _trayDrawingIcon = null;
+        }
+
+        private void InitializeTrayIcon()
+        {
+            if (_trayIcon != null)
+                return;
+
+            _trayDrawingIcon = System.Drawing.Icon.ExtractAssociatedIcon(Environment.ProcessPath!);
+            _trayMenu = new System.Windows.Forms.ContextMenuStrip();
+
+            var showItem = new System.Windows.Forms.ToolStripMenuItem(
+                LocalizationService.Current.GetString("TrayShow"));
+            showItem.Click += (_, _) => Dispatcher.Invoke(RestoreFromTray);
+
+            var exitItem = new System.Windows.Forms.ToolStripMenuItem(
+                LocalizationService.Current.GetString("TrayExit"));
+            exitItem.Click += (_, _) => Dispatcher.Invoke(ExitFromTray);
+
+            _trayMenu.Items.Add(showItem);
+            _trayMenu.Items.Add(new System.Windows.Forms.ToolStripSeparator());
+            _trayMenu.Items.Add(exitItem);
+
+            _trayIcon = new System.Windows.Forms.NotifyIcon
+            {
+                Icon = _trayDrawingIcon ?? System.Drawing.SystemIcons.Application,
+                Text = LocalizationService.Current.GetString("AppTitle"),
+                ContextMenuStrip = _trayMenu,
+                Visible = true
+            };
+            _trayIcon.DoubleClick += (_, _) => Dispatcher.Invoke(RestoreFromTray);
+        }
+
+        private void OnClosing(object? sender, CancelEventArgs e)
+        {
+            if (_allowExit)
+                return;
+
+            e.Cancel = true;
+            ShowInTaskbar = false;
+            Hide();
+            _trayIcon?.ShowBalloonTip(
+                1800,
+                LocalizationService.Current.GetString("AppTitle"),
+                LocalizationService.Current.GetString("TrayMinimized"),
+                System.Windows.Forms.ToolTipIcon.Info);
+        }
+
+        private void RestoreFromTray()
+        {
+            ShowInTaskbar = true;
+            Show();
+            WindowState = WindowState.Normal;
+            Activate();
+        }
+
+        private void ExitFromTray()
+        {
+            _allowExit = true;
+            if (_trayIcon != null)
+                _trayIcon.Visible = false;
+            Close();
+            Application.Current.Shutdown();
         }
 
         private void OnMacroHotkey(object? sender, MacroProfile macro) => ShowItemHotkey(macro.Hotkey, g => _viewModel!.SetMacroHotkey(macro,g));
@@ -187,17 +271,23 @@ namespace Ming_AutoClicker
 
         private void OnSettingsRequested(object? sender, EventArgs e)
         {
-            if (_viewModel == null || !_viewModel.CanConfigureSettings)
+            var viewModel = DataContext as MainViewModel ?? _viewModel;
+            if (viewModel == null)
                 return;
 
             var dialog = new HotkeySettingsWindow(
-                _viewModel.ConfiguredHotkey,
-                _viewModel.ConfiguredLanguage,
-                _viewModel.TryUpdateSettings)
+                viewModel.ConfiguredHotkey,
+                viewModel.ConfiguredLanguage,
+                viewModel.TryUpdateSettings)
             {
                 Owner = this
             };
             dialog.ShowDialog();
+        }
+
+        private void OnSettingsButtonClick(object sender, RoutedEventArgs e)
+        {
+            OnSettingsRequested(sender, EventArgs.Empty);
         }
 
         /// <summary>
@@ -221,6 +311,7 @@ namespace Ming_AutoClicker
             var editorWindow = new Window
             {
                 Title = LocalizationService.Current.Format("EditorWindowTitle", macro.Name),
+                Style = FindResource("PixelWindow") as Style,
                 Width = 800,
                 Height = 600,
                 MinWidth = 700,

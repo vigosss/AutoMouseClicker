@@ -7,7 +7,7 @@
 ![License](https://img.shields.io/github/license/vigosss/AutoMouseClicker)
 ![Stars](https://img.shields.io/github/stars/vigosss/AutoMouseClicker)
 ![Language](https://img.shields.io/github/languages/top/vigosss/AutoMouseClicker)
-![.NET](https://img.shields.io/badge/.NET-8.0-blue)
+![.NET](https://img.shields.io/badge/.NET-10.0-512BD4)
 
 **Windows 自动连点、鼠标键盘录制回放、鼠标宏与图像识别找图点击工具**
 
@@ -58,9 +58,9 @@ A Windows Auto Clicker, Mouse &amp; Keyboard Macro Recorder, and image-recogniti
 - 8 个调整手柄精调选区
 - 实时显示选区尺寸信息
 
-### 🎨 现代化界面 Modern UI
-- WPF 自定义主题（卡片式设计语言）
-- 统一的色彩系统和排版规范
+### 👾 像素街机界面 Pixel Arcade UI
+- 深色街机像素主题与全套 WPF 自定义控件
+- 内置开源中文像素字体，统一普通窗口、弹窗和截图覆盖层
 - 响应式布局，窗口可自由缩放
 - 底部状态栏实时反馈运行状态
 - 支持简体中文和 English，可跟随系统语言或在设置中即时切换
@@ -78,6 +78,15 @@ A Windows Auto Clicker, Mouse &amp; Keyboard Macro Recorder, and image-recogniti
 | 宏编辑器 | 区域截图工具 |
 |:---:|:---:|
 | *Macro Editor View* | *Region Select Window* |
+
+---
+
+## 🧰 环境与安装 Requirements
+
+- 正式支持 Windows 11；Windows 10 可尝试运行，但不属于正式测试矩阵
+- 发布包为 .NET 10 自包含应用，无需另行安装 .NET Runtime
+- 从 [GitHub Releases](https://github.com/vigosss/AutoMouseClicker/releases) 下载并完整解压 ZIP 后运行 `Ming-AutoClicker.exe`
+- 某些环境中的全局快捷键或模拟输入可能需要管理员权限
 
 ---
 

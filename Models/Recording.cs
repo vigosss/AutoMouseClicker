@@ -30,6 +30,43 @@ public sealed class RecordedAction
     public string? KeyName { get; set; }
     public bool IsEnabled { get; set; } = true;
 
+    [JsonIgnore]
+    public string InputText
+    {
+        get => Type is RecordedActionType.KeyDown or RecordedActionType.KeyUp
+            ? KeyName ?? $"VK {VirtualKey}"
+            : $"{X}, {Y}";
+        set
+        {
+            if (Type is RecordedActionType.KeyDown or RecordedActionType.KeyUp)
+            {
+                var text = value?.Trim();
+                if (string.IsNullOrEmpty(text)) return;
+
+                System.Windows.Input.Key key;
+                if (text.Length == 1 && char.IsDigit(text[0]))
+                    key = System.Windows.Input.Key.D0 + (text[0] - '0');
+                else if (!Enum.TryParse(text, true, out key) || key == System.Windows.Input.Key.None)
+                    return;
+
+                VirtualKey = (uint)System.Windows.Input.KeyInterop.VirtualKeyFromKey(key);
+                ScanCode = 0;
+                IsExtendedKey = false;
+                KeyName = key.ToString();
+                return;
+            }
+
+            var parts = (value ?? string.Empty)
+                .Replace('，', ',')
+                .Split(new[] { ',', ' ', ';', '；', '/', '|' }, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length >= 2 && int.TryParse(parts[0], out var x) && int.TryParse(parts[1], out var y))
+            {
+                X = x;
+                Y = y;
+            }
+        }
+    }
+
     public RecordedAction Clone() => (RecordedAction)MemberwiseClone();
 }
 
