@@ -1,0 +1,27 @@
+<Window x:Class="Ming_AutoClicker.Views.RenameRecordingWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+        xmlns:helpers="clr-namespace:Ming_AutoClicker.Helpers"
+        Title="{DynamicResource RecordingRenameTitle}" Style="{StaticResource PixelWindow}"
+        Width="420" SizeToContent="Height" WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize" ShowInTaskbar="False" PreviewKeyDown="OnWindowPreviewKeyDown">
+    <Grid Margin="24">
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <StackPanel>
+            <TextBlock Text="{DynamicResource RecordingRenameHint}" Style="{StaticResource LabelText}" Margin="0,0,0,10"/>
+            <TextBox x:Name="NameInput" Height="40" Style="{StaticResource ModernTextBox}"/>
+            <TextBlock x:Name="ValidationText" MinHeight="18" Margin="0,8,0,0" FontSize="12"
+                       Foreground="{StaticResource DangerBrush}" TextWrapping="Wrap"/>
+        </StackPanel>
+        <Border Grid.Row="1" Height="2" Background="{StaticResource BorderBrush}" Margin="0,18,0,14"/>
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="{DynamicResource CommonCancel}" Style="{StaticResource GhostButton}"
+                    helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.Close}"
+                    MinWidth="90" Margin="0,0,8,0" Click="OnCancel"/>
+            <Button Content="{DynamicResource CommonConfirm}" Style="{StaticResource PrimaryButton}"
+                    helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.Check}"
+                    MinWidth="90" Click="OnConfirm"/>
+        </StackPanel>
+    </Grid>
+</Window>

@@ -1,7 +1,74 @@
-<Window x:Class="Ming_AutoClicker.Views.OptimizeWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="{DynamicResource OptimizeTitle}" Width="760" Height="560" WindowStartupLocation="CenterOwner">
+<Window x:Class="Ming_AutoClicker.Views.OptimizeWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks" xmlns:helpers="clr-namespace:Ming_AutoClicker.Helpers" Title="{DynamicResource OptimizeTitle}" Style="{StaticResource PixelWindow}" Width="760" Height="560" WindowStartupLocation="CenterOwner">
+ <Window.Resources>
+  <Style x:Key="GridCheckBox" TargetType="CheckBox">
+   <Setter Property="Cursor" Value="Hand"/>
+   <Setter Property="HorizontalContentAlignment" Value="Center"/>
+   <Setter Property="VerticalContentAlignment" Value="Center"/>
+   <Setter Property="Template">
+    <Setter.Value>
+     <ControlTemplate TargetType="CheckBox">
+      <Grid Width="24" Height="24">
+       <Border x:Name="Box" Width="18" Height="18"
+               HorizontalAlignment="Center" VerticalAlignment="Center"
+               Background="{StaticResource StatusBarBrush}"
+               BorderBrush="{StaticResource BorderBrush}" BorderThickness="2">
+        <Border x:Name="Mark" Width="8" Height="8" Background="{StaticResource PrimaryBrush}" Visibility="Collapsed"/>
+       </Border>
+      </Grid>
+      <ControlTemplate.Triggers>
+       <Trigger Property="IsChecked" Value="True"><Setter TargetName="Box" Property="BorderBrush" Value="{StaticResource PrimaryBrush}"/><Setter TargetName="Mark" Property="Visibility" Value="Visible"/></Trigger>
+       <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Box" Property="BorderBrush" Value="{StaticResource PrimaryLightBrush}"/></Trigger>
+       <Trigger Property="IsEnabled" Value="False"><Setter TargetName="Box" Property="Opacity" Value="0.45"/></Trigger>
+      </ControlTemplate.Triggers>
+     </ControlTemplate>
+    </Setter.Value>
+   </Setter>
+  </Style>
+  <Style x:Key="CenteredCheckBoxCell" TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}">
+   <Setter Property="Padding" Value="0"/>
+   <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+   <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+  </Style>
+  <Style x:Key="OptimizeTextCell" TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}">
+   <Setter Property="Padding" Value="8,0"/>
+   <Setter Property="VerticalContentAlignment" Value="Center"/>
+  </Style>
+  <Style x:Key="OptimizeCellText" TargetType="TextBlock">
+   <Setter Property="VerticalAlignment" Value="Center"/>
+   <Setter Property="Margin" Value="0,1,0,0"/>
+  </Style>
+  <Style x:Key="OptimizeCellEditor" TargetType="TextBox" BasedOn="{StaticResource ModernTextBox}">
+   <Setter Property="Height" Value="30"/>
+   <Setter Property="MinHeight" Value="0"/>
+   <Setter Property="Margin" Value="0,4"/>
+   <Setter Property="Padding" Value="6,0"/>
+   <Setter Property="VerticalAlignment" Value="Center"/>
+   <Setter Property="VerticalContentAlignment" Value="Center"/>
+  </Style>
+ </Window.Resources>
  <Grid Margin="16"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
   <StackPanel Orientation="Horizontal"><TextBlock Text="{DynamicResource OptimizeName}" VerticalAlignment="Center"/><TextBox x:Name="NameBox" Width="250" Margin="8,0"/><TextBlock x:Name="Summary" VerticalAlignment="Center"/></StackPanel>
-  <DataGrid x:Name="Grid" Grid.Row="1" Margin="0,12" AutoGenerateColumns="False" CanUserAddRows="False"><DataGrid.Columns><DataGridCheckBoxColumn Header="{DynamicResource OptimizeEnabled}" Binding="{Binding IsEnabled}"/><DataGridTextColumn Header="{DynamicResource OptimizeType}" Binding="{Binding Type}" IsReadOnly="True"/><DataGridTextColumn Header="{DynamicResource OptimizeDelay}" Binding="{Binding DelayBeforeMs}"/><DataGridTextColumn Header="{DynamicResource OptimizeInput}" Binding="{Binding KeyName}" IsReadOnly="True"/></DataGrid.Columns></DataGrid>
-  <Grid Grid.Row="2"><StackPanel Orientation="Horizontal"><Button Content="{DynamicResource OptimizeRemoveWait}" Style="{StaticResource SmallButton}" Click="RemoveWait"/><Button Content="{DynamicResource OptimizeDisableMoves}" Style="{StaticResource SmallButton}" Margin="6,0" Click="RemoveMoves"/><Button Content="{DynamicResource OptimizeMergeMoves}" Style="{StaticResource SmallButton}" Click="MergeMoves"/></StackPanel><StackPanel Orientation="Horizontal" HorizontalAlignment="Right"><Button Content="{DynamicResource CommonCancel}" Style="{StaticResource GhostButton}" Click="Cancel"/><Button Content="{DynamicResource OptimizeSave}" Style="{StaticResource PrimaryButton}" Click="Save" Margin="8,0,0,0"/></StackPanel></Grid>
+  <DataGrid x:Name="Grid" Grid.Row="1" Margin="0,12" RowHeight="38"
+            AutoGenerateColumns="False" CanUserAddRows="False"
+            CellStyle="{StaticResource OptimizeTextCell}">
+   <DataGrid.Columns>
+    <DataGridTemplateColumn Header="{DynamicResource OptimizeEnabled}" Width="72" CellStyle="{StaticResource CenteredCheckBoxCell}">
+     <DataGridTemplateColumn.CellTemplate>
+      <DataTemplate>
+       <CheckBox Style="{StaticResource GridCheckBox}"
+                 IsChecked="{Binding IsEnabled,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"
+                 HorizontalAlignment="Center" VerticalAlignment="Center" Click="OnEnabledClick"/>
+      </DataTemplate>
+     </DataGridTemplateColumn.CellTemplate>
+    </DataGridTemplateColumn>
+    <DataGridTextColumn Header="{DynamicResource OptimizeType}" Binding="{Binding Type}" IsReadOnly="True" Width="130"
+                        ElementStyle="{StaticResource OptimizeCellText}"/>
+    <DataGridTextColumn Header="{DynamicResource OptimizeDelay}" Binding="{Binding DelayBeforeMs}"
+                        ElementStyle="{StaticResource OptimizeCellText}" EditingElementStyle="{StaticResource OptimizeCellEditor}"/>
+    <DataGridTextColumn Header="{DynamicResource OptimizeInput}" Binding="{Binding InputText,Mode=TwoWay,UpdateSourceTrigger=LostFocus}"
+                        ElementStyle="{StaticResource OptimizeCellText}" EditingElementStyle="{StaticResource OptimizeCellEditor}"/>
+   </DataGrid.Columns>
+  </DataGrid>
+  <Grid Grid.Row="2"><StackPanel Orientation="Horizontal"><Button Content="{DynamicResource OptimizeRemoveWait}" helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.Clock}" Style="{StaticResource SmallButton}" Click="RemoveWait"/><Button Content="{DynamicResource OptimizeDisableMoves}" helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.Mouse}" Style="{StaticResource SmallButton}" Margin="6,0" Click="RemoveMoves"/><Button Content="{DynamicResource OptimizeMergeMoves}" helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.Collapse}" Style="{StaticResource SmallButton}" Click="MergeMoves"/></StackPanel><StackPanel Orientation="Horizontal" HorizontalAlignment="Right"><Button Content="{DynamicResource CommonCancel}" helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.Close}" Style="{StaticResource GhostButton}" Click="Cancel"/><Button Content="{DynamicResource OptimizeSave}" helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.Save}" Style="{StaticResource PrimaryButton}" Click="Save" Margin="8,0,0,0"/></StackPanel></Grid>
  </Grid>
 </Window>

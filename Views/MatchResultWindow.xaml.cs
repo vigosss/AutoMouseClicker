@@ -86,8 +86,8 @@ namespace Ming_AutoClicker.Views
         private void DrawMatchHighlight()
         {
             var accent = _matchResult.Found
-                ? Color.FromRgb(82, 212, 160)
-                : Color.FromRgb(255, 174, 66);
+                ? Color.FromRgb(80, 242, 139)
+                : Color.FromRgb(255, 209, 102);
             var accentBrush = new SolidColorBrush(accent);
             MatchBorder.Stroke = accentBrush;
             CrossH.Stroke = accentBrush;
@@ -159,8 +159,8 @@ namespace Ming_AutoClicker.Views
             TxtSecondBest.Text = $"{_matchResult.SecondBestSimilarity:P1}";
 
             var accent = _matchResult.Found
-                ? Color.FromRgb(82, 212, 160)
-                : Color.FromRgb(255, 174, 66);
+                ? Color.FromRgb(80, 242, 139)
+                : Color.FromRgb(255, 209, 102);
             var accentBrush = new SolidColorBrush(accent);
             StatusDot.Fill = accentBrush;
             StatusTitle.Foreground = accentBrush;

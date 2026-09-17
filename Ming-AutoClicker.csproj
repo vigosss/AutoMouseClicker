@@ -2,8 +2,11 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework>net10.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <!-- WPF owns DPI awareness through app.manifest; WinForms is used only for NotifyIcon. -->
+    <NoWarn>$(NoWarn);WFO0003</NoWarn>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>MingAutoClicker</RootNamespace>
@@ -14,16 +17,28 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Keep WinForms available only for NotifyIcon without importing its UI types globally. -->
+    <Using Remove="System.Drawing" />
+    <Using Remove="System.Windows.Forms" />
     <Resource Include="Assets\favicon.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Resource>
+    <Resource Include="Assets\Fonts\fusion-pixel-12px-proportional-zh_hans.ttf" />
+    <None Update="Assets\Fonts\OFL.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </None>
+    <None Update="Assets\Fonts\LICENSES\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </None>
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Emgu.CV" Version="4.8.1.5350" />
-    <PackageReference Include="Emgu.CV.Bitmap" Version="4.8.1.5350" />
-    <PackageReference Include="Emgu.CV.runtime.windows" Version="4.8.1.5350" />
-    <PackageReference Include="System.Drawing.Common" Version="8.0.0" />
+    <PackageReference Include="Emgu.CV" Version="4.13.0.5924" />
+    <PackageReference Include="Emgu.CV.Bitmap" Version="4.13.0.5924" />
+    <PackageReference Include="Emgu.CV.runtime.windows" Version="4.13.0.5924" />
+    <PackageReference Include="MahApps.Metro.IconPacks.PixelartIcons" Version="6.2.1" />
   </ItemGroup>
 
 </Project>

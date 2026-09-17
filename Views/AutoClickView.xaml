@@ -9,15 +9,13 @@
 
         <!-- 设置区域 -->
         <Border Grid.Row="0"
-                Background="{StaticResource SurfaceBrush}"
-                CornerRadius="8"
+                Background="{StaticResource CardBrush}"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="2"
                 Padding="24"
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Top"
                 IsEnabled="{Binding IsNotRunning}">
-            <Border.Effect>
-                <DropShadowEffect BlurRadius="6" ShadowDepth="1" Opacity="0.06" Color="#000000"/>
-            </Border.Effect>
             <StackPanel>
                 <!-- 点击类型 -->
                 <TextBlock Text="{DynamicResource AutoClickType}" Style="{StaticResource SectionTitleText}" Margin="0,0,0,12"/>
@@ -64,13 +62,15 @@
                 <Border Background="{StaticResource BorderBrush}" Height="1" Margin="0,0,0,24"/>
 
                 <!-- 快捷键提示 -->
-                <Border Background="{StaticResource BorderLightBrush}"
-                        CornerRadius="6"
+                <Border Background="{StaticResource StatusBarBrush}"
+                        BorderBrush="{StaticResource BorderBrush}"
+                        BorderThickness="2"
                         Padding="16,10"
                         HorizontalAlignment="Left">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <Border Background="{StaticResource SurfaceBrush}"
-                                CornerRadius="4"
+                                BorderBrush="{StaticResource PrimaryDarkBrush}"
+                                BorderThickness="2"
                                 Padding="8,4"
                                 Margin="0,0,8,0">
                             <TextBlock Text="{Binding DataContext.ActiveHotkeyDescription, RelativeSource={RelativeSource AncestorType=Window}}"

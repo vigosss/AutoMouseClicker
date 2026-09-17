@@ -16,25 +16,26 @@
         <Image x:Name="BackgroundImage" Stretch="Fill"/>
 
         <!-- 半透明遮罩 -->
-        <Path x:Name="OverlayPath" Fill="#99000000"/>
+        <Path x:Name="OverlayPath" Fill="#99080C18"/>
 
         <!-- 十字准星竖线 -->
-        <Line x:Name="CrossV" Stroke="#FFFF4444" StrokeThickness="1" Opacity="0.8"
+        <Line x:Name="CrossV" Stroke="{StaticResource PrimaryBrush}" StrokeThickness="1" Opacity="0.9"
               X1="0" Y1="0" X2="0" Y2="0"/>
         <!-- 十字准星横线 -->
-        <Line x:Name="CrossH" Stroke="#FFFF4444" StrokeThickness="1" Opacity="0.8"
+        <Line x:Name="CrossH" Stroke="{StaticResource PrimaryBrush}" StrokeThickness="1" Opacity="0.9"
               X1="0" Y1="0" X2="0" Y2="0"/>
 
         <!-- 坐标信息面板 -->
         <Border x:Name="InfoPanel"
-                Background="#E0000000"
-                CornerRadius="6"
+                Background="#F20A1020"
+                BorderBrush="{StaticResource PrimaryBrush}"
+                BorderThickness="2"
                 Padding="12,6"
                 Visibility="Collapsed">
             <StackPanel Orientation="Horizontal">
-                <TextBlock x:Name="CoordText" Foreground="White" FontSize="14" FontFamily="Consolas"
+                <TextBlock x:Name="CoordText" Foreground="{StaticResource PrimaryBrush}" FontSize="14" FontFamily="{StaticResource PixelMonoFontFamily}"
                            VerticalAlignment="Center"/>
-                <TextBlock Text="{DynamicResource CoordinateRelease}" Foreground="#AAAAAA" FontSize="12"
+                <TextBlock Text="{DynamicResource CoordinateRelease}" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12"
                            VerticalAlignment="Center" Margin="8,0,0,0"/>
             </StackPanel>
         </Border>
@@ -42,7 +43,7 @@
         <!-- 提示文字 -->
         <TextBlock x:Name="TipText"
                    Text="{DynamicResource CoordinateInstruction}"
-                   Foreground="White"
+                   Foreground="{StaticResource TextPrimaryBrush}"
                    FontSize="16"
                    Opacity="0.8"
                    HorizontalAlignment="Center"

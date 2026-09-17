@@ -2,6 +2,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using MahApps.Metro.IconPacks;
+using Ming_AutoClicker.Helpers;
 using Ming_AutoClicker.Services;
 
 namespace Ming_AutoClicker.Views
@@ -86,19 +88,19 @@ namespace Ming_AutoClicker.Views
             {
                 case DialogType.Info:
                     TitleBar.Background = InfoBrush;
-                    IconText.Text = "💡";
+                    IconGlyph.Kind = PackIconPixelartIconsKind.LightbulbOn;
                     break;
                 case DialogType.Warning:
                     TitleBar.Background = WarningBrush;
-                    IconText.Text = "⚠️";
+                    IconGlyph.Kind = PackIconPixelartIconsKind.Alert;
                     break;
                 case DialogType.Error:
                     TitleBar.Background = ErrorBrush;
-                    IconText.Text = "❌";
+                    IconGlyph.Kind = PackIconPixelartIconsKind.CloseBox;
                     break;
                 case DialogType.Question:
                     TitleBar.Background = InfoBrush;
-                    IconText.Text = "❓";
+                    IconGlyph.Kind = PackIconPixelartIconsKind.Message;
                     break;
             }
         }
@@ -140,6 +142,9 @@ namespace Ming_AutoClicker.Views
                 FontSize = 13,
                 FontWeight = FontWeights.Medium
             };
+            PixelIcon.SetKind(
+                button,
+                isAffirmative ? PackIconPixelartIconsKind.Check : PackIconPixelartIconsKind.Close);
 
             if (marginLeft > 0)
             {

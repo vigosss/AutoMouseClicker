@@ -98,12 +98,40 @@ namespace Ming_AutoClicker.Services
 
             try
             {
+                var hadPrevious = _isRegistered;
+                var previousHandle = _windowHandle;
+                var previousId = CurrentHotkeyId;
+                var previousModifiers = CurrentModifiers;
+                var previousKey = CurrentKey;
+
+                if (hadPrevious)
+                {
+                    if (!Win32Api.UnregisterHotKey(previousHandle, previousId))
+                    {
+                        var errorCode = Marshal.GetLastWin32Error();
+                        return HotkeyRegistrationResult.Failed(
+                            HotkeyRegistrationFailure.SystemError,
+                            LocalizationService.Current.Format("HotkeyUnregisterError", errorCode),
+                            errorCode);
+                    }
+                    _isRegistered = false;
+                }
+
                 var registered = Win32Api.RegisterHotKey(
                     windowHandle, hotkeyId, (uint)gesture.Modifiers, gesture.VirtualKey);
                 if (!registered)
                 {
                     var errorCode = Marshal.GetLastWin32Error();
                     System.Diagnostics.Debug.WriteLine($"热键注册失败，错误码: {errorCode}");
+                    if (hadPrevious && Win32Api.RegisterHotKey(
+                            previousHandle, previousId, (uint)previousModifiers, previousKey))
+                    {
+                        _windowHandle = previousHandle;
+                        CurrentHotkeyId = previousId;
+                        CurrentModifiers = previousModifiers;
+                        CurrentKey = previousKey;
+                        _isRegistered = true;
+                    }
                     return errorCode == 1409
                         ? HotkeyRegistrationResult.Failed(
                             HotkeyRegistrationFailure.AlreadyRegistered,
@@ -113,17 +141,6 @@ namespace Ming_AutoClicker.Services
                             HotkeyRegistrationFailure.SystemError,
                             LocalizationService.Current.Format("HotkeyRegisterSystemError", errorCode),
                             errorCode);
-                }
-
-                // 新组合成功后才注销旧组合，确保切换失败时仍可停止正在进行的操作。
-                if (_isRegistered && !Win32Api.UnregisterHotKey(_windowHandle, CurrentHotkeyId))
-                {
-                    var errorCode = Marshal.GetLastWin32Error();
-                    Win32Api.UnregisterHotKey(windowHandle, hotkeyId);
-                    return HotkeyRegistrationResult.Failed(
-                        HotkeyRegistrationFailure.SystemError,
-                        LocalizationService.Current.Format("HotkeyUnregisterError", errorCode),
-                        errorCode);
                 }
 
                 _windowHandle = windowHandle;
@@ -190,7 +207,8 @@ namespace Ming_AutoClicker.Services
             {
                 var hotkeyId = wParam.ToInt32();
                 
-                if (hotkeyId == CurrentHotkeyId)
+                if (_isRegistered && hotkeyId == CurrentHotkeyId &&
+                    MessageMatchesGesture(lParam, CurrentModifiers, CurrentKey))
                 {
                     // 触发热键事件
                     OnHotkeyPressed(new HotkeyEventArgs
@@ -202,7 +220,8 @@ namespace Ming_AutoClicker.Services
 
                     return true;
                 }
-                if (_targets.TryGetValue(hotkeyId, out var target))
+                if (_targets.TryGetValue(hotkeyId, out var target) &&
+                    MessageMatchesGesture(lParam, target.Gesture.Modifiers, target.Gesture.VirtualKey))
                 {
                     OnHotkeyPressed(new HotkeyEventArgs { HotkeyId = hotkeyId, Modifiers = target.Gesture.Modifiers, Key = target.Gesture.VirtualKey, Target = target.Target });
                     return true;
@@ -210,6 +229,17 @@ namespace Ming_AutoClicker.Services
             }
 
             return false;
+        }
+
+        private static bool MessageMatchesGesture(
+            IntPtr lParam,
+            HotkeyModifierKeys modifiers,
+            uint virtualKey)
+        {
+            var value = unchecked((ulong)lParam.ToInt64());
+            var messageModifiers = (uint)(value & 0xFFFF);
+            var messageVirtualKey = (uint)((value >> 16) & 0xFFFF);
+            return messageModifiers == (uint)modifiers && messageVirtualKey == virtualKey;
         }
 
         /// <summary>

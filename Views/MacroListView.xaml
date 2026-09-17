@@ -1,7 +1,9 @@
 <UserControl x:Class="Ming_AutoClicker.Views.MacroListView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:models="clr-namespace:Ming_AutoClicker.Models">
+             xmlns:models="clr-namespace:Ming_AutoClicker.Models"
+             xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+             xmlns:helpers="clr-namespace:Ming_AutoClicker.Helpers">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
@@ -53,12 +55,16 @@
                                 </Style>
                             </StackPanel.Style>
                             <Button Content="{DynamicResource MacroEdit}" Style="{StaticResource GhostButton}" Margin="0,0,4,0"
+                                    helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.Edit}"
                                     Click="OnEditClick" Tag="{Binding}"
                                     IsEnabled="{Binding DataContext.IsNotExecuting, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
-                            <Button Content="{DynamicResource MacroItemHotkey}" Style="{StaticResource GhostButton}" Margin="0,0,4,0" Click="OnHotkeyClick"/>
+                            <Button Content="{DynamicResource MacroItemHotkey}" Style="{StaticResource GhostButton}" Margin="0,0,4,0" Click="OnHotkeyClick"
+                                    helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.Keyboard}"/>
                             <Button Content="{DynamicResource MacroDuplicate}" Style="{StaticResource GhostButton}" Margin="0,0,4,0"
+                                    helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.Copy}"
                                     Command="{Binding DataContext.DuplicateMacroCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
                             <Button Content="{DynamicResource MacroDelete}" Style="{StaticResource DangerButton}"
+                                    helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.Trash}"
                                     Command="{Binding DataContext.DeleteMacroCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
                         </StackPanel>
                     </Grid>
@@ -69,7 +75,9 @@
         <!-- 创建新宏按钮 -->
         <Button Grid.Row="1"
                 Content="{DynamicResource MacroCreate}"
+                helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.AddBox}"
                 Style="{StaticResource PrimaryButton}"
+                Foreground="#000000"
                 Height="38"
                 Margin="0,12,0,0"
                 Command="{Binding CreateMacroCommand}"/>
@@ -89,12 +97,15 @@
 
             <Button Grid.Column="1"
                     Content="{DynamicResource MacroStart}"
+                    helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.Play}"
                     Style="{StaticResource SuccessButton}"
+                    Foreground="#000000"
                     Width="80" Height="36" FontSize="13"
                     Margin="0,0,8,0"
                     Command="{Binding StartMacroCommand}"/>
             <Button Grid.Column="2"
                     Content="{DynamicResource MacroStop}"
+                    helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.DebugStop}"
                     Style="{StaticResource DangerButton}"
                     Width="80" Height="36" FontSize="13"
                     Command="{Binding StopMacroCommand}"/>

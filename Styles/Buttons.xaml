@@ -1,186 +1,110 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-
-    <!-- 基础按钮样式（圆角、扁平） -->
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+                    xmlns:helpers="clr-namespace:Ming_AutoClicker.Helpers">
     <Style x:Key="BaseButton" TargetType="Button">
-        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Background" Value="{StaticResource SurfaceBrush}"/>
         <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
-        <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
-        <Setter Property="Padding" Value="12,6"/>
-        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="BorderThickness" Value="2"/>
+        <Setter Property="Padding" Value="14,7"/>
+        <Setter Property="MinHeight" Value="38"/>
+        <Setter Property="FontFamily" Value="{StaticResource PixelFontFamily}"/>
+        <Setter Property="FontSize" Value="12"/>
         <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="RootBorder"
-                            Background="{TemplateBinding Background}"
-                            BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="{TemplateBinding BorderThickness}"
-                            CornerRadius="6"
-                            Padding="{TemplateBinding Padding}"
-                            SnapsToDevicePixels="True">
-                        <ContentPresenter HorizontalAlignment="Center"
-                                          VerticalAlignment="Center"
-                                          RecognizesAccessKey="True"/>
-                    </Border>
+                    <Grid SnapsToDevicePixels="True">
+                        <Border x:Name="Shadow" Background="{StaticResource PixelShadowBrush}" Margin="3,3,0,0"/>
+                        <Border x:Name="Frame" Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}" Margin="0,0,3,3"
+                                Padding="{TemplateBinding Padding}">
+                            <Grid>
+                                <Border x:Name="Overlay" Background="Transparent"/>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                            TextElement.Foreground="{Binding Foreground, RelativeSource={RelativeSource TemplatedParent}}">
+                                    <iconPacks:PackIconPixelartIcons x:Name="ButtonIcon"
+                                                                  Kind="{Binding Path=(helpers:PixelIcon.Kind), RelativeSource={RelativeSource TemplatedParent}}"
+                                                                  Width="15" Height="15" Margin="0,0,7,0"
+                                                                  Foreground="{Binding Foreground, RelativeSource={RelativeSource TemplatedParent}}"
+                                                                  SnapsToDevicePixels="True"/>
+                                    <TextBlock x:Name="ButtonContent" VerticalAlignment="Center"
+                                               Text="{Binding Content, RelativeSource={RelativeSource TemplatedParent}}"
+                                               Foreground="{Binding Foreground, RelativeSource={RelativeSource TemplatedParent}}"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </Grid>
                     <ControlTemplate.Triggers>
+                        <Trigger Property="helpers:PixelIcon.Kind" Value="None">
+                            <Setter TargetName="ButtonIcon" Property="Visibility" Value="Collapsed"/>
+                        </Trigger>
+                        <Trigger Property="Content" Value="{x:Null}">
+                            <Setter TargetName="ButtonIcon" Property="Margin" Value="0"/>
+                            <Setter TargetName="ButtonContent" Property="Visibility" Value="Collapsed"/>
+                        </Trigger>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="RootBorder" Property="Background" Value="{StaticResource HoverOverlayBrush}"/>
+                            <Setter TargetName="Frame" Property="BorderBrush" Value="{StaticResource PrimaryBrush}"/>
+                            <Setter TargetName="Overlay" Property="Background" Value="#183F625F"/>
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Frame" Property="BorderBrush" Value="{StaticResource PrimaryLightBrush}"/>
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
-                            <Setter TargetName="RootBorder" Property="Background" Value="{StaticResource PressedOverlayBrush}"/>
+                            <Setter TargetName="Frame" Property="Margin" Value="2,2,1,1"/>
+                            <Setter TargetName="Shadow" Property="Visibility" Value="Collapsed"/>
+                            <Setter TargetName="Overlay" Property="Background" Value="#22000000"/>
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
-                            <Setter Property="Opacity" Value="0.45"/>
+                            <Setter TargetName="Frame" Property="Opacity" Value="0.55"/>
+                            <Setter TargetName="Shadow" Property="Opacity" Value="0.2"/>
+                            <Setter Property="Cursor" Value="Arrow"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
     </Style>
-
-    <!-- 主色按钮（蓝色实心） -->
     <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource BaseButton}">
         <Setter Property="Background" Value="{StaticResource PrimaryBrush}"/>
-        <Setter Property="Foreground" Value="{StaticResource TextOnPrimaryBrush}"/>
-        <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="Button">
-                    <Border x:Name="RootBorder"
-                            Background="{TemplateBinding Background}"
-                            BorderThickness="0"
-                            CornerRadius="6"
-                            Padding="{TemplateBinding Padding}"
-                            SnapsToDevicePixels="True">
-                        <ContentPresenter HorizontalAlignment="Center"
-                                          VerticalAlignment="Center"
-                                          RecognizesAccessKey="True"/>
-                    </Border>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="RootBorder" Property="Background" Value="{StaticResource PrimaryLightBrush}"/>
-                        </Trigger>
-                        <Trigger Property="IsPressed" Value="True">
-                            <Setter TargetName="RootBorder" Property="Background" Value="{StaticResource PrimaryDarkBrush}"/>
-                        </Trigger>
-                        <Trigger Property="IsEnabled" Value="False">
-                            <Setter Property="Opacity" Value="0.45"/>
-                        </Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
+        <Setter Property="Foreground" Value="#000000"/>
+        <Setter Property="BorderBrush" Value="{StaticResource PrimaryLightBrush}"/>
     </Style>
-
-    <!-- 成功按钮（绿色） -->
     <Style x:Key="SuccessButton" TargetType="Button" BasedOn="{StaticResource BaseButton}">
         <Setter Property="Background" Value="{StaticResource SuccessBrush}"/>
-        <Setter Property="Foreground" Value="{StaticResource TextOnPrimaryBrush}"/>
-        <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="Button">
-                    <Border x:Name="RootBorder"
-                            Background="{TemplateBinding Background}"
-                            BorderThickness="0"
-                            CornerRadius="6"
-                            Padding="{TemplateBinding Padding}"
-                            SnapsToDevicePixels="True">
-                        <ContentPresenter HorizontalAlignment="Center"
-                                          VerticalAlignment="Center"
-                                          RecognizesAccessKey="True"/>
-                    </Border>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="RootBorder" Property="Opacity" Value="0.85"/>
-                        </Trigger>
-                        <Trigger Property="IsPressed" Value="True">
-                            <Setter TargetName="RootBorder" Property="Opacity" Value="0.7"/>
-                        </Trigger>
-                        <Trigger Property="IsEnabled" Value="False">
-                            <Setter Property="Opacity" Value="0.45"/>
-                        </Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
+        <Setter Property="Foreground" Value="#000000"/>
+        <Setter Property="BorderBrush" Value="#A8C9B2"/>
     </Style>
-
-    <!-- 危险按钮（红色） -->
     <Style x:Key="DangerButton" TargetType="Button" BasedOn="{StaticResource BaseButton}">
-        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Background" Value="#311429"/>
         <Setter Property="Foreground" Value="{StaticResource DangerBrush}"/>
         <Setter Property="BorderBrush" Value="{StaticResource DangerBrush}"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="Button">
-                    <Border x:Name="RootBorder"
-                            Background="{TemplateBinding Background}"
-                            BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="{TemplateBinding BorderThickness}"
-                            CornerRadius="6"
-                            Padding="{TemplateBinding Padding}"
-                            SnapsToDevicePixels="True">
-                        <ContentPresenter HorizontalAlignment="Center"
-                                          VerticalAlignment="Center"
-                                          RecognizesAccessKey="True"/>
-                    </Border>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="RootBorder" Property="Background" Value="#10E74C3C"/>
-                        </Trigger>
-                        <Trigger Property="IsPressed" Value="True">
-                            <Setter TargetName="RootBorder" Property="Background" Value="#18E74C3C"/>
-                        </Trigger>
-                        <Trigger Property="IsEnabled" Value="False">
-                            <Setter Property="Opacity" Value="0.45"/>
-                        </Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
     </Style>
-
-    <!-- 幽灵按钮（无边框透明） -->
     <Style x:Key="GhostButton" TargetType="Button" BasedOn="{StaticResource BaseButton}">
-        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Background" Value="{StaticResource StatusBarBrush}"/>
         <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="Button">
-                    <Border x:Name="RootBorder"
-                            Background="Transparent"
-                            BorderThickness="0"
-                            CornerRadius="6"
-                            Padding="{TemplateBinding Padding}"
-                            SnapsToDevicePixels="True">
-                        <ContentPresenter HorizontalAlignment="Center"
-                                          VerticalAlignment="Center"
-                                          RecognizesAccessKey="True"/>
-                    </Border>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="RootBorder" Property="Background" Value="{StaticResource HoverOverlayBrush}"/>
-                            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
-                        </Trigger>
-                        <Trigger Property="IsPressed" Value="True">
-                            <Setter TargetName="RootBorder" Property="Background" Value="{StaticResource PressedOverlayBrush}"/>
-                        </Trigger>
-                        <Trigger Property="IsEnabled" Value="False">
-                            <Setter Property="Opacity" Value="0.45"/>
-                        </Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderLightBrush}"/>
     </Style>
-
-    <!-- 小型图标按钮 -->
     <Style x:Key="SmallButton" TargetType="Button" BasedOn="{StaticResource BaseButton}">
-        <Setter Property="Padding" Value="8,4"/>
-        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Padding" Value="9,4"/>
+        <Setter Property="MinHeight" Value="34"/>
+        <Setter Property="FontSize" Value="11"/>
     </Style>
-
+    <Style x:Key="IconButton" TargetType="Button" BasedOn="{StaticResource SmallButton}">
+        <Setter Property="Width" Value="38"/>
+        <Setter Property="Height" Value="38"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="Content" Value="{x:Null}"/>
+    </Style>
+    <Style x:Key="WindowCaptionButton" TargetType="Button" BasedOn="{StaticResource GhostButton}">
+        <Setter Property="Width" Value="42"/>
+        <Setter Property="Height" Value="30"/>
+        <Setter Property="MinHeight" Value="0"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="Margin" Value="0"/>
+        <Setter Property="Content" Value="{x:Null}"/>
+    </Style>
 </ResourceDictionary>

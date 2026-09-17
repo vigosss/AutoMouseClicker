@@ -11,6 +11,7 @@ public partial class OptimizeWindow : Window
  private void RemoveWait(object s,RoutedEventArgs e){foreach(var a in Selected())a.DelayBeforeMs=0;Grid.Items.Refresh();UpdateSummary();}
  private void RemoveMoves(object s,RoutedEventArgs e){foreach(var a in Selected().Where(x=>x.Type==RecordedActionType.MouseMove))a.IsEnabled=false;Grid.Items.Refresh();UpdateSummary();}
  private void MergeMoves(object s,RoutedEventArgs e){RecordedAction? previous=null;foreach(var a in Actions.Where(x=>x.Type==RecordedActionType.MouseMove&&x.IsEnabled)){if(previous!=null&&previous.X==a.X&&previous.Y==a.Y)previous.IsEnabled=false;previous=a;}Grid.Items.Refresh();UpdateSummary();}
+ private void OnEnabledClick(object s,RoutedEventArgs e)=>UpdateSummary();
  private void UpdateSummary(){Summary.Text=LocalizationService.Current.Format("OptimizeSummary",Actions.Count(x=>x.IsEnabled),TimeSpan.FromMilliseconds(Actions.Sum(x=>x.DelayBeforeMs)).ToString(@"mm\:ss"));}
  private void Save(object s,RoutedEventArgs e){if(string.IsNullOrWhiteSpace(NameBox.Text))return;_copy.Name=NameBox.Text.Trim();_copy.Actions=Actions.Select(x=>x.Clone()).ToList();Result=_copy;DialogResult=true;}
  private void Cancel(object s,RoutedEventArgs e)=>DialogResult=false;

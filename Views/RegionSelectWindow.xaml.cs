@@ -227,8 +227,8 @@ namespace Ming_AutoClicker.Views
 
                 if (rect.Width < 5 || rect.Height < 5)
                 {
-                    // 选区太小，视为取消
-                    CancelSelection();
+                    // 单击或轻微拖动不应退出截图；保持在绘制状态等待重新选择。
+                    EnterDrawingState();
                     return;
                 }
 
