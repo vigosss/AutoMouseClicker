@@ -7,7 +7,8 @@ using System.Windows.Threading;
 using Ming_AutoClicker.Models;
 using Ming_AutoClicker.Services;
 using Ming_AutoClicker.ViewModels;
-using Ming_AutoClicker.Views;
+using Ming_AutoClicker.Views.Shared;
+using Ming_AutoClicker.Views.Updates;
 
 namespace Ming_AutoClicker
 {

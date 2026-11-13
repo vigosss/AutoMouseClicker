@@ -1,19 +1,31 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Style x:Key="PixelScrollTrackButton" TargetType="RepeatButton">
+        <Setter Property="OverridesDefaultStyle" Value="True"/>
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="Template">
+            <Setter.Value><ControlTemplate TargetType="RepeatButton"><Border Background="Transparent"/></ControlTemplate></Setter.Value>
+        </Setter>
+    </Style>
     <ControlTemplate x:Key="VerticalPixelScrollBar" TargetType="ScrollBar">
         <Grid Background="{TemplateBinding Background}">
             <Track x:Name="PART_Track" Orientation="Vertical" IsDirectionReversed="True">
                 <Track.DecreaseRepeatButton>
                     <RepeatButton Command="{x:Static ScrollBar.PageUpCommand}"
                                   CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}"
-                                  Background="Transparent" BorderThickness="0" Focusable="False"/>
+                                  Style="{StaticResource PixelScrollTrackButton}"/>
                 </Track.DecreaseRepeatButton>
                 <Track.Thumb>
                     <Thumb MinHeight="28">
                         <Thumb.Template>
                             <ControlTemplate TargetType="Thumb">
                                 <Border x:Name="Grip" Background="{StaticResource BorderBrush}"
-                                        BorderBrush="{StaticResource BorderLightBrush}" BorderThickness="2" Margin="2"/>
+                                        BorderBrush="{StaticResource TextSecondaryBrush}" BorderThickness="2" Margin="2">
+                                    <StackPanel VerticalAlignment="Center" Margin="2,0">
+                                        <Border Height="2" Background="{StaticResource StatusBarBrush}"/>
+                                        <Border Height="2" Background="{StaticResource StatusBarBrush}" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                </Border>
                                 <ControlTemplate.Triggers>
                                     <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Grip" Property="Background" Value="{StaticResource PrimaryDarkBrush}"/></Trigger>
                                     <Trigger Property="IsDragging" Value="True"><Setter TargetName="Grip" Property="Background" Value="{StaticResource PrimaryBrush}"/></Trigger>
@@ -25,7 +37,7 @@
                 <Track.IncreaseRepeatButton>
                     <RepeatButton Command="{x:Static ScrollBar.PageDownCommand}"
                                   CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}"
-                                  Background="Transparent" BorderThickness="0" Focusable="False"/>
+                                  Style="{StaticResource PixelScrollTrackButton}"/>
                 </Track.IncreaseRepeatButton>
             </Track>
         </Grid>
@@ -37,14 +49,19 @@
                 <Track.DecreaseRepeatButton>
                     <RepeatButton Command="{x:Static ScrollBar.PageLeftCommand}"
                                   CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}"
-                                  Background="Transparent" BorderThickness="0" Focusable="False"/>
+                                  Style="{StaticResource PixelScrollTrackButton}"/>
                 </Track.DecreaseRepeatButton>
                 <Track.Thumb>
                     <Thumb MinWidth="28">
                         <Thumb.Template>
                             <ControlTemplate TargetType="Thumb">
                                 <Border x:Name="Grip" Background="{StaticResource BorderBrush}"
-                                        BorderBrush="{StaticResource BorderLightBrush}" BorderThickness="2" Margin="2"/>
+                                        BorderBrush="{StaticResource TextSecondaryBrush}" BorderThickness="2" Margin="2">
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,2">
+                                        <Border Width="2" Background="{StaticResource StatusBarBrush}"/>
+                                        <Border Width="2" Background="{StaticResource StatusBarBrush}" Margin="2,0,0,0"/>
+                                    </StackPanel>
+                                </Border>
                                 <ControlTemplate.Triggers>
                                     <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Grip" Property="Background" Value="{StaticResource PrimaryDarkBrush}"/></Trigger>
                                     <Trigger Property="IsDragging" Value="True"><Setter TargetName="Grip" Property="Background" Value="{StaticResource PrimaryBrush}"/></Trigger>
@@ -56,21 +73,23 @@
                 <Track.IncreaseRepeatButton>
                     <RepeatButton Command="{x:Static ScrollBar.PageRightCommand}"
                                   CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}"
-                                  Background="Transparent" BorderThickness="0" Focusable="False"/>
+                                  Style="{StaticResource PixelScrollTrackButton}"/>
                 </Track.IncreaseRepeatButton>
             </Track>
         </Grid>
     </ControlTemplate>
 
     <Style TargetType="ScrollBar">
-        <Setter Property="Width" Value="14"/>
+        <Setter Property="Width" Value="16"/>
         <Setter Property="Height" Value="Auto"/>
         <Setter Property="Background" Value="{StaticResource StatusBarBrush}"/>
+        <Setter Property="UseLayoutRounding" Value="True"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
         <Setter Property="Template" Value="{StaticResource VerticalPixelScrollBar}"/>
         <Style.Triggers>
             <Trigger Property="Orientation" Value="Horizontal">
                 <Setter Property="Width" Value="Auto"/>
-                <Setter Property="Height" Value="14"/>
+                <Setter Property="Height" Value="16"/>
                 <Setter Property="Template" Value="{StaticResource HorizontalPixelScrollBar}"/>
             </Trigger>
         </Style.Triggers>

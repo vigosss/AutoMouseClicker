@@ -2,7 +2,7 @@ using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
-using Ming_AutoClicker.Views;
+using Ming_AutoClicker.Views.Shared;
 
 namespace Ming_AutoClicker.ViewModels
 {

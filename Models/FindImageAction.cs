@@ -29,7 +29,7 @@ namespace Ming_AutoClicker.Models
             set
             {
                 // 钳位到合法范围，避免反序列化时抛异常
-                _matchThreshold = Math.Max(0.0, Math.Min(1.0, value));
+                _matchThreshold = double.IsFinite(value) ? Math.Clamp(value, 0.0, 1.0) : 0.8;
             }
         }
 
@@ -42,6 +42,30 @@ namespace Ming_AutoClicker.Models
         /// 是否启用宽范围自适应缩放匹配
         /// </summary>
         public bool AdaptiveScale { get; set; } = false;
+
+        /// <summary>Null preserves legacy WaitUntilFound semantics; zero means one bounded search.</summary>
+        public int? TimeoutMs { get; set; }
+        public ImageClickPoint? ClickPoint { get; set; }
+        public List<ImageRelativeRegion> IgnoredRegions { get; set; } = new();
+        public double? CaptureDpi { get; set; }
+        public List<ImageTemplateVariant> AlternateTemplates { get; set; } = new();
+        public ImageSearchScope SearchScope { get; set; } = new();
+        public ImageSelectionMode SelectionMode { get; set; }
+        /// <summary>One based, ordered by screen Y then X after spatial deduplication.</summary>
+        public int MatchIndex { get; set; } = 1;
+
+        public IEnumerable<ImageTemplateVariant> GetTemplates()
+        {
+            yield return new ImageTemplateVariant
+            {
+                ImagePath = ImagePath, ClickPoint = ClickPoint,
+                IgnoredRegions = IgnoredRegions, CaptureDpi = CaptureDpi
+            };
+            foreach (var template in AlternateTemplates) yield return template;
+        }
+
+        public int GetTimeoutMs(int legacyTimeoutMs = 30000) =>
+            TimeoutMs ?? (WaitUntilFound ? legacyTimeoutMs : 0);
 
         /// <summary>
         /// 找到后的操作类型
@@ -64,7 +88,7 @@ namespace Ming_AutoClicker.Models
         public override string GetDescription()
         {
             var fileName = Path.GetFileName(ImagePath);
-            var waitText = WaitUntilFound
+            var waitText = GetTimeoutMs() > 0
                 ? LocalizationService.Current.GetString("ActionWaitingSuffix")
                 : string.Empty;
             var operation = Operation switch
@@ -91,6 +115,14 @@ namespace Ming_AutoClicker.Models
                 MatchThreshold = MatchThreshold,
                 WaitUntilFound = WaitUntilFound,
                 AdaptiveScale = AdaptiveScale,
+                TimeoutMs = TimeoutMs,
+                ClickPoint = ClickPoint?.Clone(),
+                IgnoredRegions = IgnoredRegions.Select(r => r.Clone()).ToList(),
+                CaptureDpi = CaptureDpi,
+                AlternateTemplates = AlternateTemplates.Select(t => t.Clone()).ToList(),
+                SearchScope = SearchScope.Clone(),
+                SelectionMode = SelectionMode,
+                MatchIndex = MatchIndex,
                 Operation = Operation,
                 OffsetX = OffsetX,
                 OffsetY = OffsetY

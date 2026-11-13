@@ -6,61 +6,78 @@
         <Setter Property="Background" Value="{StaticResource SurfaceBrush}"/>
         <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
         <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
-        <Setter Property="BorderThickness" Value="2"/>
-        <Setter Property="Padding" Value="14,7"/>
-        <Setter Property="MinHeight" Value="38"/>
+        <Setter Property="BorderThickness" Value="{StaticResource PixelStroke}"/>
+        <Setter Property="Padding" Value="12,4"/>
+        <Setter Property="MinHeight" Value="40"/>
         <Setter Property="FontFamily" Value="{StaticResource PixelFontFamily}"/>
-        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="FontSize" Value="{StaticResource PixelBodySize}"/>
+        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="TextOptions.TextFormattingMode" Value="Display"/>
+        <Setter Property="TextOptions.TextRenderingMode" Value="Aliased"/>
+        <Setter Property="UseLayoutRounding" Value="True"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="SnapsToDevicePixels" Value="True"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
                     <Grid SnapsToDevicePixels="True">
-                        <Border x:Name="Shadow" Background="{StaticResource PixelShadowBrush}" Margin="3,3,0,0"/>
-                        <Border x:Name="Frame" Background="{TemplateBinding Background}"
+                        <helpers:PixelBorder x:Name="Shadow" Background="{StaticResource PixelShadowBrush}" Margin="2,2,0,0"/>
+                        <helpers:PixelBorder x:Name="Frame" Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}" Margin="0,0,3,3"
-                                Padding="{TemplateBinding Padding}">
+                                BorderThickness="{TemplateBinding BorderThickness}" Margin="0,0,2,2">
                             <Grid>
                                 <Border x:Name="Overlay" Background="Transparent"/>
+                                <Border BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="2,2,0,0" IsHitTestVisible="False"/>
+                                <Border BorderBrush="{StaticResource PixelShadowBrush}" BorderThickness="0,0,2,2" IsHitTestVisible="False"/>
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                            Margin="{TemplateBinding Padding}"
                                             TextElement.Foreground="{Binding Foreground, RelativeSource={RelativeSource TemplatedParent}}">
                                     <iconPacks:PackIconPixelartIcons x:Name="ButtonIcon"
                                                                   Kind="{Binding Path=(helpers:PixelIcon.Kind), RelativeSource={RelativeSource TemplatedParent}}"
-                                                                  Width="15" Height="15" Margin="0,0,7,0"
+                                                                  Width="24" Height="24" Margin="0,0,8,0"
                                                                   Foreground="{Binding Foreground, RelativeSource={RelativeSource TemplatedParent}}"
-                                                                  SnapsToDevicePixels="True"/>
+                                                                  SnapsToDevicePixels="True" Visibility="Collapsed"/>
+                                    <Path x:Name="GeometryIcon" Width="24" Height="24" Margin="0,0,8,0"
+                                          Data="{Binding Path=(helpers:PixelIcon.Geometry), RelativeSource={RelativeSource TemplatedParent}}"
+                                          Fill="{Binding Foreground, RelativeSource={RelativeSource TemplatedParent}}"
+                                          Stretch="None" SnapsToDevicePixels="True" RenderOptions.EdgeMode="Aliased"/>
                                     <TextBlock x:Name="ButtonContent" VerticalAlignment="Center"
                                                Text="{Binding Content, RelativeSource={RelativeSource TemplatedParent}}"
                                                Foreground="{Binding Foreground, RelativeSource={RelativeSource TemplatedParent}}"/>
                                 </StackPanel>
                             </Grid>
-                        </Border>
+                        </helpers:PixelBorder>
                     </Grid>
                     <ControlTemplate.Triggers>
+                        <Trigger Property="helpers:PixelIcon.Geometry" Value="{x:Null}">
+                            <Setter TargetName="ButtonIcon" Property="Visibility" Value="Visible"/>
+                            <Setter TargetName="GeometryIcon" Property="Visibility" Value="Collapsed"/>
+                        </Trigger>
                         <Trigger Property="helpers:PixelIcon.Kind" Value="None">
                             <Setter TargetName="ButtonIcon" Property="Visibility" Value="Collapsed"/>
                         </Trigger>
                         <Trigger Property="Content" Value="{x:Null}">
                             <Setter TargetName="ButtonIcon" Property="Margin" Value="0"/>
+                            <Setter TargetName="GeometryIcon" Property="Margin" Value="0"/>
                             <Setter TargetName="ButtonContent" Property="Visibility" Value="Collapsed"/>
                         </Trigger>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Frame" Property="BorderBrush" Value="{StaticResource PrimaryBrush}"/>
-                            <Setter TargetName="Overlay" Property="Background" Value="#183F625F"/>
+                            <Setter TargetName="Frame" Property="BorderBrush" Value="{StaticResource PrimaryLightBrush}"/>
                         </Trigger>
                         <Trigger Property="IsKeyboardFocused" Value="True">
                             <Setter TargetName="Frame" Property="BorderBrush" Value="{StaticResource PrimaryLightBrush}"/>
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
-                            <Setter TargetName="Frame" Property="Margin" Value="2,2,1,1"/>
+                            <Setter TargetName="Frame" Property="Margin" Value="2,2,0,0"/>
                             <Setter TargetName="Shadow" Property="Visibility" Value="Collapsed"/>
-                            <Setter TargetName="Overlay" Property="Background" Value="#22000000"/>
+                            <Setter TargetName="Overlay" Property="Background" Value="{StaticResource PressedOverlayBrush}"/>
+                            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
-                            <Setter TargetName="Frame" Property="Opacity" Value="0.55"/>
-                            <Setter TargetName="Shadow" Property="Opacity" Value="0.2"/>
+                            <Setter Property="Foreground" Value="{StaticResource TextDisabledBrush}"/>
+                            <Setter TargetName="Frame" Property="Background" Value="{StaticResource SurfaceBrush}"/>
+                            <Setter TargetName="Frame" Property="BorderBrush" Value="{StaticResource BorderLightBrush}"/>
+                            <Setter TargetName="Shadow" Property="Visibility" Value="Collapsed"/>
                             <Setter Property="Cursor" Value="Arrow"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
@@ -89,19 +106,19 @@
         <Setter Property="BorderBrush" Value="{StaticResource BorderLightBrush}"/>
     </Style>
     <Style x:Key="SmallButton" TargetType="Button" BasedOn="{StaticResource BaseButton}">
-        <Setter Property="Padding" Value="9,4"/>
-        <Setter Property="MinHeight" Value="34"/>
-        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="Padding" Value="8,2"/>
+        <Setter Property="MinHeight" Value="36"/>
+        <Setter Property="FontSize" Value="{StaticResource PixelBodySize}"/>
     </Style>
     <Style x:Key="IconButton" TargetType="Button" BasedOn="{StaticResource SmallButton}">
-        <Setter Property="Width" Value="38"/>
-        <Setter Property="Height" Value="38"/>
+        <Setter Property="Width" Value="40"/>
+        <Setter Property="Height" Value="40"/>
         <Setter Property="Padding" Value="0"/>
         <Setter Property="Content" Value="{x:Null}"/>
     </Style>
     <Style x:Key="WindowCaptionButton" TargetType="Button" BasedOn="{StaticResource GhostButton}">
-        <Setter Property="Width" Value="42"/>
-        <Setter Property="Height" Value="30"/>
+        <Setter Property="Width" Value="40"/>
+        <Setter Property="Height" Value="32"/>
         <Setter Property="MinHeight" Value="0"/>
         <Setter Property="Padding" Value="0"/>
         <Setter Property="Margin" Value="0"/>

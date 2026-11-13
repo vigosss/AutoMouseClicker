@@ -56,6 +56,7 @@ namespace Ming_AutoClicker.Services
     {
         private readonly ImageMatchService _imageMatchService;
         private readonly ScreenCaptureService _screenCaptureService;
+        private readonly MacroInputService _inputService;
         
         private Task? _executionTask;
         private CancellationTokenSource? _cancellationTokenSource;
@@ -120,10 +121,12 @@ namespace Ming_AutoClicker.Services
         /// </summary>
         public int FindImageIntervalMs { get; set; } = 200;
 
-        public MacroExecutor(ImageMatchService imageMatchService, ScreenCaptureService screenCaptureService)
+        public MacroExecutor(ImageMatchService imageMatchService, ScreenCaptureService screenCaptureService,
+            MacroInputService? inputService = null)
         {
             _imageMatchService = imageMatchService ?? throw new ArgumentNullException(nameof(imageMatchService));
             _screenCaptureService = screenCaptureService ?? throw new ArgumentNullException(nameof(screenCaptureService));
+            _inputService = inputService ?? new MacroInputService();
         }
 
         /// <summary>
@@ -168,6 +171,21 @@ namespace Ming_AutoClicker.Services
                 return false;
             }
 
+            for (var i = 0; i < profile.Actions.Count; i++)
+            {
+                if (!MacroActionValidator.TryValidate(profile.Actions[i], out var validationError))
+                {
+                    OnExecutionCompleted(new MacroExecutionEventArgs
+                    {
+                        Action = profile.Actions[i],
+                        ActionIndex = i,
+                        Success = false,
+                        Message = LocalizationService.Current.Format("ExecutorInvalidAction", i + 1, validationError)
+                    });
+                    return false;
+                }
+            }
+
             lock (_lockObject)
             {
                 if (_executionTask != null && !_executionTask.IsCompleted)
@@ -184,7 +202,8 @@ namespace Ming_AutoClicker.Services
                 CompletedLoopCount = 0;
 
                 SetState(MacroExecutionState.Running);
-                _executionTask = Task.Run(() => ExecuteAsync(cancellationToken), cancellationToken);
+                // Always enter ExecuteAsync so an immediate stop still publishes completion.
+                _executionTask = Task.Run(() => ExecuteAsync(cancellationToken));
                 return true;
             }
         }
@@ -391,6 +410,14 @@ namespace Ming_AutoClicker.Services
                     case MouseClickAction mouseClickAction:
                         return await ExecuteMouseClickActionAsync(mouseClickAction, cancellationToken);
 
+                    case MouseScrollAction mouseScrollAction:
+                        await _inputService.ScrollAsync(mouseScrollAction, cancellationToken);
+                        return (true, mouseScrollAction.GetDescription(), null);
+
+                    case KeyPressAction keyPressAction:
+                        await _inputService.PressKeyAsync(keyPressAction, cancellationToken);
+                        return (true, keyPressAction.GetDescription(), null);
+
                     default:
                         return (false, LocalizationService.Current.Format("ActionUnknownType", action.Type), null);
                 }
@@ -415,30 +442,10 @@ namespace Ming_AutoClicker.Services
                 return (false, LocalizationService.Current.GetString("ExecutorEmptyImagePath"), null);
             }
 
-            MatchResult? matchResult = null;
-
-            // 如果需要等待直到找到
-            if (action.WaitUntilFound)
-            {
-                matchResult = await _imageMatchService.WaitForImageAsync(
-                    action.ImagePath,
-                    action.MatchThreshold,
-                    FindImageTimeoutMs,
-                    FindImageIntervalMs,
-                    cancellationToken,
-                    action.AdaptiveScale);
-
-                // 检查是否被取消
-                cancellationToken.ThrowIfCancellationRequested();
-            }
-            else
-            {
-                // 单次查找
-                matchResult = _imageMatchService.FindImage(
-                    action.ImagePath,
-                    action.MatchThreshold,
-                    action.AdaptiveScale);
-            }
+            action = action.Clone();
+            var matchResult = await _imageMatchService.WaitForImageAsync(
+                action, cancellationToken, FindImageTimeoutMs, FindImageIntervalMs,
+                verifyBeforeReturn: true);
 
             // FindImage 是同步 CPU 操作，停止请求可能发生在匹配过程中。
             // 匹配返回后必须再次检查，绝不能在已停止的情况下继续点击。
@@ -453,8 +460,8 @@ namespace Ming_AutoClicker.Services
             }
 
             // 执行操作
-            var clickX = matchResult.X + action.OffsetX;
-            var clickY = matchResult.Y + action.OffsetY;
+            var clickX = matchResult.ClickX;
+            var clickY = matchResult.ClickY;
 
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -462,19 +469,13 @@ namespace Ming_AutoClicker.Services
             {
                 case "click":
                     cancellationToken.ThrowIfCancellationRequested();
-                    if (!Win32Api.LeftClick(clickX, clickY))
-                    {
-                        return (false, LocalizationService.Current.Format("ExecutorMoveFailed", clickX, clickY), matchResult);
-                    }
+                    await _inputService.ClickAsync(clickX, clickY, false, cancellationToken);
                     await Task.Delay(50, cancellationToken); // 短暂延迟确保点击生效
                     return (true, LocalizationService.Current.Format("ExecutorClicked", clickX, clickY), matchResult);
 
                 case "rightclick":
                     cancellationToken.ThrowIfCancellationRequested();
-                    if (!Win32Api.RightClick(clickX, clickY))
-                    {
-                        return (false, LocalizationService.Current.Format("ExecutorRightMoveFailed", clickX, clickY), matchResult);
-                    }
+                    await _inputService.ClickAsync(clickX, clickY, true, cancellationToken);
                     await Task.Delay(50, cancellationToken);
                     return (true, LocalizationService.Current.Format("ExecutorRightClicked", clickX, clickY), matchResult);
 
@@ -511,19 +512,13 @@ namespace Ming_AutoClicker.Services
             {
                 case "click":
                     cancellationToken.ThrowIfCancellationRequested();
-                    if (!Win32Api.LeftClick(x, y))
-                    {
-                        return (false, LocalizationService.Current.Format("ExecutorMoveFailed", x, y), null);
-                    }
+                    await _inputService.ClickAsync(x, y, false, cancellationToken);
                     await Task.Delay(50, cancellationToken);
                     return (true, LocalizationService.Current.Format("ExecutorClicked", x, y), null);
 
                 case "rightclick":
                     cancellationToken.ThrowIfCancellationRequested();
-                    if (!Win32Api.RightClick(x, y))
-                    {
-                        return (false, LocalizationService.Current.Format("ExecutorRightMoveFailed", x, y), null);
-                    }
+                    await _inputService.ClickAsync(x, y, true, cancellationToken);
                     await Task.Delay(50, cancellationToken);
                     return (true, LocalizationService.Current.Format("ExecutorRightClicked", x, y), null);
 

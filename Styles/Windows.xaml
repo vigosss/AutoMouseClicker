@@ -9,11 +9,15 @@
         <Setter Property="Background" Value="{StaticResource BackgroundBrush}"/>
         <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
         <Setter Property="FontFamily" Value="{StaticResource PixelFontFamily}"/>
+        <Setter Property="FontSize" Value="{StaticResource PixelBodySize}"/>
+        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="TextOptions.TextFormattingMode" Value="Display"/>
+        <Setter Property="TextOptions.TextRenderingMode" Value="Aliased"/>
         <Setter Property="UseLayoutRounding" Value="True"/>
         <Setter Property="SnapsToDevicePixels" Value="True"/>
         <Setter Property="shell:WindowChrome.WindowChrome">
             <Setter.Value>
-                <shell:WindowChrome CaptionHeight="38" ResizeBorderThickness="6"
+                <shell:WindowChrome CaptionHeight="40" ResizeBorderThickness="6"
                                     GlassFrameThickness="0" CornerRadius="0"
                                     UseAeroCaptionButtons="False"/>
             </Setter.Value>
@@ -21,11 +25,11 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Window">
-                    <Border BorderBrush="{StaticResource PrimaryDarkBrush}" BorderThickness="2"
+                    <helpers:PixelBorder BorderBrush="{StaticResource PrimaryBrush}" BorderThickness="2"
                             Background="{TemplateBinding Background}">
                         <Grid>
                             <Grid.RowDefinitions>
-                                <RowDefinition Height="38"/>
+                                <RowDefinition Height="40"/>
                                 <RowDefinition Height="*"/>
                             </Grid.RowDefinitions>
                             <Border Grid.Row="0" Background="{StaticResource PanelHeaderBrush}"
@@ -36,14 +40,15 @@
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
-                                    <Border Width="8" Height="8" Margin="13,0,10,0"
+                                    <Border Width="8" Height="8" Margin="12,0,12,0"
                                             Background="{StaticResource PrimaryBrush}" VerticalAlignment="Center"/>
                                     <TextBlock Grid.Column="1" Text="{TemplateBinding Title}"
-                                               Foreground="{StaticResource TextPrimaryBrush}" FontSize="12"
-                                               VerticalAlignment="Center"/>
-                                    <StackPanel Grid.Column="2" Orientation="Horizontal"
+                                               Foreground="{StaticResource TextPrimaryBrush}" FontSize="{StaticResource PixelBodySize}"
+                                               VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,4,0"
                                                 shell:WindowChrome.IsHitTestVisibleInChrome="True">
                                         <Button helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.Minus}"
+                                                helpers:PixelIcon.Geometry="{StaticResource PixelCaptionMinimizeGlyph}"
                                                 ToolTip="最小化"
                                                 Command="{x:Static helpers:WindowCommands.Minimize}"
                                                 CommandParameter="{Binding RelativeSource={RelativeSource TemplatedParent}}">
@@ -75,6 +80,7 @@
                                             </Button.Style>
                                         </Button>
                                         <Button helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.Close}" Style="{StaticResource WindowCaptionButton}"
+                                                helpers:PixelIcon.Geometry="{StaticResource PixelCaptionCloseGlyph}"
                                                 ToolTip="关闭"
                                                 Foreground="{StaticResource DangerBrush}"
                                                 Command="{x:Static helpers:WindowCommands.Close}"
@@ -86,7 +92,7 @@
                                 <ContentPresenter/>
                             </AdornerDecorator>
                         </Grid>
-                    </Border>
+                    </helpers:PixelBorder>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>

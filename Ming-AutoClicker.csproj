@@ -12,7 +12,10 @@
     <RootNamespace>MingAutoClicker</RootNamespace>
     <ApplicationIcon>Assets\favicon.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
+    <Authors>M-ing</Authors>
+    <Copyright>Copyright (c) 2026 M-ing</Copyright>
+    <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
     <!-- 发布时通过 -r win-x64 指定 RuntimeIdentifier，避免开发时锁定平台 -->
   </PropertyGroup>
 
@@ -26,6 +29,7 @@
     <!-- Keep WinForms available only for NotifyIcon without importing its UI types globally. -->
     <Using Remove="System.Drawing" />
     <Using Remove="System.Windows.Forms" />
+    <Compile Remove="Tests\**\*.cs" />
     <Resource Include="Assets\favicon.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Resource>
@@ -33,10 +37,17 @@
     <None Update="Assets\Fonts\OFL.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </None>
     <None Update="Assets\Fonts\LICENSES\**\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </None>
+    <None Update="LICENSE;THIRD_PARTY_NOTICES.md;SOURCE_INFORMATION.md;licenses\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </None>
   </ItemGroup>
 
@@ -46,5 +57,13 @@
     <PackageReference Include="Emgu.CV.runtime.windows" Version="4.13.0.5924" />
     <PackageReference Include="MahApps.Metro.IconPacks.PixelartIcons" Version="6.2.1" />
   </ItemGroup>
+
+  <Target Name="WritePublishMetadata" AfterTargets="Publish">
+    <PropertyGroup>
+      <_PublishReusedBuild>false</_PublishReusedBuild>
+      <_PublishReusedBuild Condition="'$(NoBuild)' == 'true'">true</_PublishReusedBuild>
+    </PropertyGroup>
+    <Exec WorkingDirectory="$(MSBuildProjectDirectory)" Command="powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File &quot;$(MSBuildProjectDirectory)\scripts\Write-PublishMetadata.ps1&quot; -ProjectDirectory &quot;$(MSBuildProjectDirectory)&quot; -OutputFile &quot;$(PublishDir)BUILD_INFO.json&quot; -DependencyManifest &quot;$(ProjectDepsFilePath)&quot; -Version &quot;$(Version)&quot; -TargetFramework &quot;$(TargetFramework)&quot; -RuntimeIdentifier &quot;$(RuntimeIdentifier)&quot; -SelfContained &quot;$(SelfContained)&quot; -NoBuild &quot;$(_PublishReusedBuild)&quot;" />
+  </Target>
 
 </Project>

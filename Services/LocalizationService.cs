@@ -23,7 +23,7 @@ namespace Ming_AutoClicker.Services
 
         private readonly ResourceDictionary _englishFallback = new()
         {
-            Source = new Uri(EnglishDictionary, UriKind.Relative)
+            Source = ResourceUri(EnglishDictionary)
         };
 
         private LocalizationService()
@@ -56,13 +56,13 @@ namespace Ming_AutoClicker.Services
             // 英文资源始终作为兜底；中文资源放在后面覆盖同名 key。
             dictionaries.Insert(0, new ResourceDictionary
             {
-                Source = new Uri(EnglishDictionary, UriKind.Relative)
+                Source = ResourceUri(EnglishDictionary)
             });
             if (effectiveLanguage == AppLanguage.SimplifiedChinese)
             {
                 dictionaries.Insert(1, new ResourceDictionary
                 {
-                    Source = new Uri(ChineseDictionary, UriKind.Relative)
+                    Source = ResourceUri(ChineseDictionary)
                 });
             }
 
@@ -96,6 +96,10 @@ namespace Ming_AutoClicker.Services
                 MatchFailureReason.MatchingError => "MatchCalculationFailed",
                 MatchFailureReason.Cancelled => "MatchCancelled",
                 MatchFailureReason.TimedOut => "MatchTimedOut",
+                MatchFailureReason.Ambiguous => "MatchAmbiguous",
+                MatchFailureReason.ScopeUnavailable => "MatchScopeUnavailable",
+                MatchFailureReason.UninformativeTemplate => "MatchTemplateUninformative",
+                MatchFailureReason.TargetChanged => "MatchTargetChanged",
                 _ => "MatchNoCandidate"
             });
         }
@@ -107,6 +111,9 @@ namespace Ming_AutoClicker.Services
 
             return SystemLanguage;
         }
+
+        private static Uri ResourceUri(string path) => new(
+            $"/{typeof(LocalizationService).Assembly.GetName().Name};component/{path}", UriKind.Relative);
 
         private static bool IsLocalizationDictionary(Uri? source)
         {

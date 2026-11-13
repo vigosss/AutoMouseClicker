@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 私密安全报告 / Private security report
+    url: https://github.com/vigosss/AutoMouseClicker/blob/main/.github/SECURITY.md
+    about: 请通过安全政策中的邮箱报告漏洞，不要公开可利用细节。 / Use the email in the security policy; keep exploitable details private.

@@ -16,11 +16,9 @@ public sealed class RecordingStorageService
         Converters = { new JsonStringEnumConverter() }
     };
 
-    public RecordingStorageService()
+    public RecordingStorageService(string? path = null)
     {
-        var dir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data");
-        Directory.CreateDirectory(dir);
-        _path = Path.Combine(dir, "recordings.json");
+        _path = path ?? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", "recordings.json");
     }
 
     public List<Recording> LoadAll()

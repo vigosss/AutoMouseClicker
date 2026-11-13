@@ -9,9 +9,9 @@
                 <ControlTemplate TargetType="TabControl">
                     <Grid>
                         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-                        <Border Grid.Row="0" Background="{StaticResource PanelHeaderBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="2" Margin="0,0,0,12" Padding="4">
+                        <helpers:PixelBorder Grid.Row="0" Background="{StaticResource PanelHeaderBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="2" Margin="0,0,0,12" Padding="4">
                             <StackPanel Orientation="Horizontal" IsItemsHost="True"/>
-                        </Border>
+                        </helpers:PixelBorder>
                         <ContentPresenter Grid.Row="1" ContentSource="SelectedContent"/>
                     </Grid>
                 </ControlTemplate>
@@ -20,24 +20,31 @@
     </Style>
     <Style x:Key="ModernTabItem" TargetType="TabItem">
         <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
-        <Setter Property="FontFamily" Value="{StaticResource PixelFontFamily}"/><Setter Property="FontSize" Value="12"/>
-        <Setter Property="Padding" Value="18,9"/><Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="FontFamily" Value="{StaticResource PixelFontFamily}"/><Setter Property="FontSize" Value="{StaticResource PixelBodySize}"/>
+        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="TextOptions.TextFormattingMode" Value="Display"/>
+        <Setter Property="TextOptions.TextRenderingMode" Value="Aliased"/>
+        <Setter Property="UseLayoutRounding" Value="True"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Padding" Value="16,4"/><Setter Property="Cursor" Value="Hand"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="TabItem">
-                    <Border x:Name="Frame" Background="Transparent" BorderBrush="Transparent" BorderThickness="2" Padding="{TemplateBinding Padding}" Margin="0,0,4,0">
+                    <helpers:PixelBorder x:Name="Frame" Background="Transparent" BorderBrush="Transparent" BorderThickness="2" Padding="{TemplateBinding Padding}" Margin="0,0,4,0">
                         <StackPanel Orientation="Horizontal">
                             <iconPacks:PackIconPixelartIcons x:Name="TabIcon"
                                                           Kind="{Binding Path=(helpers:PixelIcon.Kind), RelativeSource={RelativeSource TemplatedParent}}"
-                                                          Width="16" Height="16" Margin="0,0,8,0"
+                                                          Width="{StaticResource PixelIconSize}" Height="{StaticResource PixelIconSize}" Margin="0,0,8,0"
                                                           Foreground="{TemplateBinding Foreground}"/>
-                            <ContentPresenter ContentSource="Header" RecognizesAccessKey="True"/>
+                            <ContentPresenter ContentSource="Header" RecognizesAccessKey="True" VerticalAlignment="Center"/>
                         </StackPanel>
-                    </Border>
+                    </helpers:PixelBorder>
                     <ControlTemplate.Triggers>
                         <Trigger Property="helpers:PixelIcon.Kind" Value="None"><Setter TargetName="TabIcon" Property="Visibility" Value="Collapsed"/></Trigger>
                         <Trigger Property="IsSelected" Value="True"><Setter TargetName="Frame" Property="Background" Value="{StaticResource CardBrush}"/><Setter TargetName="Frame" Property="BorderBrush" Value="{StaticResource PrimaryBrush}"/><Setter Property="Foreground" Value="{StaticResource PrimaryBrush}"/></Trigger>
                         <MultiTrigger><MultiTrigger.Conditions><Condition Property="IsSelected" Value="False"/><Condition Property="IsMouseOver" Value="True"/></MultiTrigger.Conditions><Setter TargetName="Frame" Property="Background" Value="{StaticResource HoverOverlayBrush}"/><Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/></MultiTrigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Frame" Property="BorderBrush" Value="{StaticResource PrimaryLightBrush}"/><Setter Property="Foreground" Value="{StaticResource PrimaryLightBrush}"/></Trigger>
                         <Trigger Property="IsEnabled" Value="False"><Setter Property="Foreground" Value="{StaticResource TextDisabledBrush}"/><Setter Property="Cursor" Value="Arrow"/></Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -45,15 +52,26 @@
         </Setter>
     </Style>
     <Style x:Key="ModernRadioButton" TargetType="RadioButton">
-        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/><Setter Property="FontFamily" Value="{StaticResource PixelFontFamily}"/><Setter Property="FontSize" Value="12"/><Setter Property="Cursor" Value="Hand"/><Setter Property="Margin" Value="0,0,16,0"/>
+        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/><Setter Property="FontFamily" Value="{StaticResource PixelFontFamily}"/><Setter Property="FontSize" Value="{StaticResource PixelBodySize}"/><Setter Property="Cursor" Value="Hand"/><Setter Property="Margin" Value="0,0,16,0"/>
+        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="TextOptions.TextFormattingMode" Value="Display"/>
+        <Setter Property="TextOptions.TextRenderingMode" Value="Aliased"/>
+        <Setter Property="UseLayoutRounding" Value="True"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="RadioButton">
                     <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                        <Border x:Name="Box" Width="18" Height="18" Background="{StaticResource StatusBarBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="2" Margin="0,0,8,0"><Border x:Name="Mark" Width="8" Height="8" Background="{StaticResource PrimaryBrush}" Visibility="Collapsed"/></Border>
+                        <Border x:Name="Box" Width="20" Height="20" Background="{StaticResource StatusBarBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="2" Margin="0,0,8,0"><Border x:Name="Mark" Width="8" Height="8" Background="{StaticResource PrimaryBrush}" Visibility="Collapsed"/></Border>
                         <ContentPresenter Grid.Column="1" VerticalAlignment="Center" RecognizesAccessKey="True"/>
                     </Grid>
-                    <ControlTemplate.Triggers><Trigger Property="IsChecked" Value="True"><Setter TargetName="Box" Property="BorderBrush" Value="{StaticResource PrimaryBrush}"/><Setter TargetName="Mark" Property="Visibility" Value="Visible"/></Trigger><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Box" Property="BorderBrush" Value="{StaticResource PrimaryLightBrush}"/></Trigger><Trigger Property="IsEnabled" Value="False"><Setter Property="Foreground" Value="{StaticResource TextDisabledBrush}"/></Trigger></ControlTemplate.Triggers>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True"><Setter TargetName="Box" Property="BorderBrush" Value="{StaticResource PrimaryBrush}"/><Setter TargetName="Mark" Property="Visibility" Value="Visible"/></Trigger>
+                        <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Box" Property="BorderBrush" Value="{StaticResource PrimaryLightBrush}"/></Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Box" Property="BorderBrush" Value="{StaticResource PrimaryLightBrush}"/><Setter Property="Foreground" Value="{StaticResource PrimaryLightBrush}"/></Trigger>
+                        <Trigger Property="IsEnabled" Value="False"><Setter Property="Foreground" Value="{StaticResource TextDisabledBrush}"/><Setter TargetName="Box" Property="Opacity" Value="0.45"/></Trigger>
+                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>

@@ -1,0 +1,229 @@
+<UserControl x:Class="Ming_AutoClicker.Views.Recordings.RecordingPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+             xmlns:helpers="clr-namespace:Ming_AutoClicker.Helpers"
+             xmlns:viewModels="clr-namespace:Ming_AutoClicker.ViewModels">
+    <UserControl.Resources>
+        <PathGeometry x:Key="RecordGlyph" Figures="M 8,4 H 16 V 6 H 18 V 8 H 20 V 16 H 18 V 18 H 16 V 20 H 8 V 18 H 6 V 16 H 4 V 8 H 6 V 6 H 8 Z"/>
+        <RectangleGeometry x:Key="StopGlyph" Rect="4,4,16,16"/>
+        <Style x:Key="RecordingNumberInput" TargetType="TextBox" BasedOn="{StaticResource CompactNumberTextBox}">
+            <Style.Triggers>
+                <Trigger Property="Validation.HasError" Value="True">
+                    <Setter Property="BorderBrush" Value="{StaticResource DangerBrush}"/>
+                    <Setter Property="ToolTip" Value="{Binding RelativeSource={RelativeSource Self}, Path=(Validation.Errors)[0].ErrorContent}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="RecordingMenuItem" TargetType="MenuItem">
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+            <Setter Property="Padding" Value="12,8"/>
+            <Setter Property="FontFamily" Value="{StaticResource PixelFontFamily}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="TextOptions.TextFormattingMode" Value="Display"/>
+            <Setter Property="TextOptions.TextRenderingMode" Value="Aliased"/>
+            <Setter Property="HeaderTemplate">
+                <Setter.Value>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding}" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=MenuItem}}"/>
+                    </DataTemplate>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="MenuItem">
+                        <Border x:Name="Frame" Background="Transparent" Padding="{TemplateBinding Padding}">
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="32"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                <ContentPresenter ContentSource="Icon" VerticalAlignment="Center"/>
+                                <ContentPresenter Grid.Column="1" ContentSource="Header" VerticalAlignment="Center" RecognizesAccessKey="True"/>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True"><Setter TargetName="Frame" Property="Background" Value="{StaticResource HoverOverlayBrush}"/></Trigger>
+                            <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.45"/></Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+    <Grid>
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,12">
+            <Button Content="{DynamicResource RecordingImport}" Style="{StaticResource SmallButton}" Command="{Binding ImportCommand}" Margin="0,0,8,0" helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.Download}"/>
+            <Button Content="{DynamicResource RecordingExport}" Style="{StaticResource SmallButton}" Command="{Binding ExportCommand}" Margin="0,0,8,0" helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.Upload}"/>
+            <Button Content="{DynamicResource RecordingHelp}" Style="{StaticResource SmallButton}" Command="{Binding HelpCommand}" Margin="0,0,8,0" helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.InfoBox}"/>
+            <Button x:Name="ClearSelectionButton" Content="{DynamicResource RecordingCancelSelection}" Style="{StaticResource SmallButton}" Command="{Binding ClearSelectionCommand}" helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.Close}"/>
+        </StackPanel>
+        <ListBox x:Name="RecordingsList" Grid.Row="1" ItemsSource="{Binding Recordings}" SelectedItem="{Binding SelectedRecording}" IsEnabled="{Binding IsIdle}" Style="{StaticResource ModernListBox}"
+                 ScrollViewer.CanContentScroll="True" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling">
+            <ListBox.Template>
+                <ControlTemplate TargetType="ListBox">
+                    <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
+                        <ScrollViewer x:Name="PART_ScrollViewer" Background="Transparent" Focusable="False" Padding="{TemplateBinding Padding}"
+                                      CanContentScroll="{TemplateBinding ScrollViewer.CanContentScroll}"
+                                      HorizontalScrollBarVisibility="{TemplateBinding ScrollViewer.HorizontalScrollBarVisibility}"
+                                      VerticalScrollBarVisibility="{TemplateBinding ScrollViewer.VerticalScrollBarVisibility}">
+                            <ItemsPresenter SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                        </ScrollViewer>
+                    </Border>
+                </ControlTemplate>
+            </ListBox.Template>
+            <ListBox.ItemContainerStyle>
+                <Style TargetType="ListBoxItem" BasedOn="{StaticResource CardListBoxItem}"><EventSetter Event="RequestBringIntoView" Handler="OnItemRequestBringIntoView"/></Style>
+            </ListBox.ItemContainerStyle>
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <Grid Height="52">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                            <TextBlock Text="{Binding Name}" ToolTip="{Binding Name}" FontSize="12" Foreground="{StaticResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Style="{StaticResource CaptionText}" Margin="0,4,0,0" TextTrimming="CharacterEllipsis">
+                                <Run Text="{DynamicResource RecordingCreatedAt}"/><Run Text="&#xA0;"/><Run Text="{Binding CreatedAtText,Mode=OneWay}"/>
+                                <Run Text="&#xA0;·&#xA0;"/><Run Text="{DynamicResource RecordingDuration}"/><Run Text="&#xA0;"/><Run Text="{Binding DurationText,Mode=OneWay}"/>
+                                <Run Text="&#xA0;·&#xA0;"/><Run Text="{Binding ActionCountText,Mode=OneWay}"/>
+                            </TextBlock>
+                        </StackPanel>
+                        <Button Grid.Column="1" Content="{DynamicResource RecordingMore}" Style="{StaticResource SmallButton}" VerticalAlignment="Center" Click="OnMoreClick" ToolTip="{DynamicResource RecordingMore}">
+                            <Button.ContextMenu>
+                                <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}"
+                                             Background="{StaticResource SurfaceBrush}" Foreground="{StaticResource TextPrimaryBrush}"
+                                             BorderBrush="{StaticResource BorderBrush}" BorderThickness="2" Padding="4"
+                                             FontFamily="{StaticResource PixelFontFamily}" FontSize="12" MinWidth="190"
+                                             ItemContainerStyle="{StaticResource RecordingMenuItem}">
+                                    <ContextMenu.Template>
+                                        <ControlTemplate TargetType="ContextMenu">
+                                            <helpers:PixelBorder x:Name="RecordingMenuFrame" Background="{TemplateBinding Background}"
+                                                    BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
+                                                    Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                                                <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Cycle"/>
+                                            </helpers:PixelBorder>
+                                        </ControlTemplate>
+                                    </ContextMenu.Template>
+                                    <MenuItem Header="{Binding HotkeyText}" Command="{Binding SetHotkeyCommand}"><MenuItem.Icon><iconPacks:PackIconPixelartIcons Kind="Keyboard" Width="24" Height="24" Foreground="{DynamicResource TextPrimaryBrush}"/></MenuItem.Icon></MenuItem>
+                                    <MenuItem Header="{DynamicResource RecordingOptimize}" Command="{Binding OptimizeCommand}"><MenuItem.Icon><iconPacks:PackIconPixelartIcons Kind="Checklist" Width="24" Height="24" Foreground="{DynamicResource TextPrimaryBrush}"/></MenuItem.Icon></MenuItem>
+                                    <MenuItem Header="{DynamicResource RecordingRename}" Command="{Binding RenameCommand}"><MenuItem.Icon><iconPacks:PackIconPixelartIcons Kind="Edit" Width="24" Height="24" Foreground="{DynamicResource TextPrimaryBrush}"/></MenuItem.Icon></MenuItem>
+                                    <MenuItem Header="{DynamicResource RecordingDelete}" Command="{Binding DeleteCommand}" Foreground="{StaticResource DangerBrush}"><MenuItem.Icon><iconPacks:PackIconPixelartIcons Kind="Trash" Width="24" Height="24" Foreground="{DynamicResource DangerBrush}"/></MenuItem.Icon></MenuItem>
+                                </ContextMenu>
+                            </Button.ContextMenu>
+                        </Button>
+                    </Grid>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+        <helpers:PixelBorder x:Name="RecordingFooter" Grid.Row="2" Height="108" Margin="0,12,0,0" Padding="12" Background="{StaticResource CardBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="2">
+            <Grid>
+                <Grid.RowDefinitions><RowDefinition Height="40"/><RowDefinition Height="8"/><RowDefinition Height="32"/></Grid.RowDefinitions>
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <Button x:Name="StartButton" Content="{Binding StartButtonText}" Command="{Binding PrimaryActionCommand}">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
+                                <Setter Property="helpers:PixelIcon.Geometry" Value="{StaticResource RecordGlyph}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasSelection}" Value="True">
+                                        <Setter Property="Background" Value="{StaticResource SuccessBrush}"/>
+                                        <Setter Property="BorderBrush" Value="#A8C9B2"/>
+                                        <Setter Property="helpers:PixelIcon.Geometry" Value="{x:Null}"/>
+                                        <Setter Property="helpers:PixelIcon.Kind" Value="{x:Static iconPacks:PackIconPixelartIconsKind.Play}"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsPlaying}" Value="True">
+                                        <Setter Property="Background" Value="#311429"/>
+                                        <Setter Property="Foreground" Value="{StaticResource DangerBrush}"/>
+                                        <Setter Property="BorderBrush" Value="{StaticResource DangerBrush}"/>
+                                        <Setter Property="helpers:PixelIcon.Geometry" Value="{StaticResource StopGlyph}"/>
+                                        <Setter Property="helpers:PixelIcon.Kind" Value="{x:Static iconPacks:PackIconPixelartIconsKind.None}"/>
+                                        <Setter Property="ToolTip" Value="{Binding StopButtonTooltip}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                    <StackPanel x:Name="RecordingControlsPanel" Grid.Column="1" Orientation="Horizontal" Margin="8,0,0,0">
+                        <StackPanel.Style>
+                            <Style TargetType="StackPanel"><Style.Triggers><DataTrigger Binding="{Binding HasSelection}" Value="True"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers></Style>
+                        </StackPanel.Style>
+                        <Button x:Name="PauseButton" Content="{Binding PauseButtonText}" Command="{Binding PauseCommand}" MinWidth="76" Margin="0,0,8,0"
+                                ToolTip="{Binding PauseButtonTooltip}" ToolTipService.ShowOnDisabled="True">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource SmallButton}">
+                                    <Setter Property="helpers:PixelIcon.Kind" Value="{x:Static iconPacks:PackIconPixelartIconsKind.Pause}"/>
+                                    <Style.Triggers><DataTrigger Binding="{Binding IsPaused}" Value="True"><Setter Property="helpers:PixelIcon.Kind" Value="{x:Static iconPacks:PackIconPixelartIconsKind.Play}"/></DataTrigger></Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                        <Button x:Name="StopButton" Content="{DynamicResource RecordingStopShort}" Command="{Binding StopCommand}" Padding="8,2" MinHeight="36" FontSize="12" Style="{StaticResource DangerButton}" helpers:PixelIcon.Geometry="{StaticResource StopGlyph}"
+                                ToolTip="{Binding StopButtonTooltip}" ToolTipService.ShowOnDisabled="True"/>
+                    </StackPanel>
+                </Grid>
+                <Grid Grid.Row="2">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" MinWidth="148"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <Grid x:Name="StatusPanel" Margin="0,0,8,0" VerticalAlignment="Center">
+                        <Grid.ToolTip>
+                            <StackPanel MaxWidth="380">
+                                <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap"/>
+                                <TextBlock Text="{Binding ErrorMessage}" TextWrapping="Wrap" Foreground="{StaticResource DangerBrush}" Margin="0,8,0,0">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding ErrorMessage}" Value="{x:Null}"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger>
+                                                <DataTrigger Binding="{Binding ErrorMessage}" Value=""><Setter Property="Visibility" Value="Collapsed"/></DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <TextBlock Text="{DynamicResource RecordingElapsedHelp}" TextWrapping="Wrap" Margin="0,8,0,0"/>
+                            </StackPanel>
+                        </Grid.ToolTip>
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                        <Rectangle Width="8" Height="8" Fill="{StaticResource DangerBrush}" Margin="0,4,8,0" VerticalAlignment="Top">
+                            <Rectangle.Style><Style TargetType="Rectangle"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers><DataTrigger Binding="{Binding IsRecording}" Value="True"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style></Rectangle.Style>
+                        </Rectangle>
+                        <StackPanel Grid.Column="1">
+                            <TextBlock x:Name="CompactStatusTextBlock" Text="{Binding CompactStatusText}" Height="16" FontSize="12" TextTrimming="CharacterEllipsis">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+                                        <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+                                        <Style.Triggers><DataTrigger Binding="{Binding LastResult}" Value="{x:Static viewModels:RecordingSessionResult.Failed}"><Setter Property="Foreground" Value="{StaticResource DangerBrush}"/></DataTrigger></Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <TextBlock x:Name="ElapsedStatusTextBlock" Text="{Binding ElapsedStatusText}" Height="16" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                    </Grid>
+                    <StackPanel x:Name="PlaybackOptionsPanel" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <StackPanel.Style>
+                            <Style TargetType="StackPanel"><Setter Property="Visibility" Value="Hidden"/><Style.Triggers><DataTrigger Binding="{Binding HasSelection}" Value="True"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style>
+                        </StackPanel.Style>
+                        <TextBlock x:Name="SpeedLabel" Text="{DynamicResource PlaybackSpeed}" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                        <Slider x:Name="SpeedSlider" Width="64" Minimum="0.5" Maximum="5" TickFrequency="0.1" IsSnapToTickEnabled="True"
+                                SmallChange="0.1" LargeChange="0.5" IsMoveToPointEnabled="True" VerticalAlignment="Center"
+                                Value="{Binding SpeedFactor, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding CanEditPlaybackOptions}"
+                                ToolTip="{DynamicResource PlaybackSpeedHint}" AutomationProperties.Name="{DynamicResource PlaybackSpeed}">
+                            <Slider.Style>
+                                <Style TargetType="Slider" BasedOn="{StaticResource ModernSlider}">
+                                    <Style.Triggers><Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.45"/></Trigger></Style.Triggers>
+                                </Style>
+                            </Slider.Style>
+                        </Slider>
+                        <TextBlock x:Name="SpeedValueText" Text="{Binding SpeedDisplayText}" Width="32" FontSize="12" VerticalAlignment="Center" Margin="4,0,8,0"/>
+                        <TextBlock x:Name="LoopLabel" Text="{DynamicResource PlaybackLoop}" FontSize="12" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                        <Grid Width="48" Height="28" VerticalAlignment="Center">
+                            <TextBox x:Name="LoopCountInput" Text="{Binding LoopCountText, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True}" IsEnabled="{Binding CanEditLoopCount}" Style="{StaticResource RecordingNumberInput}" FontSize="12" AutomationProperties.Name="{DynamicResource PlaybackLoop}"/>
+                            <Border Background="{StaticResource StatusBarBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="2" IsHitTestVisible="False">
+                                <Border.Style><Style TargetType="Border"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers><DataTrigger Binding="{Binding IsInfiniteLoop}" Value="True"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style></Border.Style>
+                                <TextBlock Text="∞" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{StaticResource TextSecondaryBrush}"/>
+                            </Border>
+                        </Grid>
+                        <CheckBox x:Name="InfiniteLoopCheckBox" Content="{DynamicResource PlaybackInfinite}" IsChecked="{Binding IsInfiniteLoop}"
+                                  IsEnabled="{Binding CanEditPlaybackOptions}" Style="{StaticResource ModernCheckBox}" FontSize="12" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                        <TextBlock x:Name="IntervalLabel" Text="{DynamicResource PlaybackIntervalCompact}" FontSize="12" VerticalAlignment="Center" Margin="8,0,4,0" ToolTip="{DynamicResource PlaybackInterval}"/>
+                        <TextBox x:Name="LoopIntervalInput" Width="60" Text="{Binding LoopIntervalText, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True}"
+                                 IsEnabled="{Binding CanEditPlaybackOptions}" Style="{StaticResource RecordingNumberInput}" FontSize="12" AutomationProperties.Name="{DynamicResource PlaybackInterval}"/>
+                    </StackPanel>
+                </Grid>
+            </Grid>
+        </helpers:PixelBorder>
+    </Grid>
+</UserControl>

@@ -32,6 +32,8 @@ namespace Ming_AutoClicker.ViewModels
         private int _currentTabIndex;
         private int _autoClickCount;
         private bool _isStartingMacro;
+        private bool _allMacrosLoaded;
+        private bool _isShowingMacroStartError;
         private MacroProfile? _runningMacro;
         private CancellationTokenSource? _macroStartCancellation;
         private bool _mainWindowMinimizedForMacro;
@@ -169,8 +171,8 @@ namespace Ming_AutoClicker.ViewModels
             ? LocalizationService.Current.GetString("HotkeyMacroHintDisabled")
             : LocalizationService.Current.Format("HotkeyMacroHint", ActiveHotkeyDescription);
 
-        public bool CanConfigureSettings => IsNotExecuting && AutoClickViewModel.IsNotRunning && RecordingPageViewModel.State == RecordingState.Idle;
-        public bool IsNavigationEnabled => IsNotExecuting && AutoClickViewModel.IsNotRunning && RecordingPageViewModel.State == RecordingState.Idle;
+        public bool CanConfigureSettings => IsNotExecuting && AutoClickViewModel.IsNotRunning && RecordingPageViewModel.IsIdle;
+        public bool IsNavigationEnabled => IsNotExecuting && AutoClickViewModel.IsNotRunning && RecordingPageViewModel.IsIdle;
 
         public HotkeyGesture ConfiguredHotkey => _appSettings.Hotkeys.ToggleExecution.Clone();
         public AppLanguage ConfiguredLanguage => _appSettings.Language;
@@ -315,7 +317,7 @@ namespace Ming_AutoClicker.ViewModels
 
                 _hotkeyService.UnregisterTarget($"macro:{macroToDelete.Id}");
                 Macros.Remove(macroToDelete);
-                _screenCaptureService.CleanupUnusedScreenshots(Macros);
+                CleanupUnusedScreenshotsIfLoaded();
                 StatusMessage = LocalizationService.Current.Format("StatusDeletedMacro", name);
             }
         }
@@ -339,14 +341,37 @@ namespace Ming_AutoClicker.ViewModels
             StatusMessage = LocalizationService.Current.Format("StatusDuplicatedMacro", duplicated.Name);
         }
 
-        private bool CanStartMacro() => SelectedMacro != null && IsNotExecuting && SelectedMacro.Actions.Count > 0;
+        private bool CanStartMacro() => SelectedMacro != null && IsNotExecuting &&
+            !_isShowingMacroStartError && SelectedMacro.Actions.Count > 0;
 
         private async Task StartMacroAsync()
         {
             if (!CanStartMacro() || SelectedMacro == null) return;
 
-            var macroToRun = SelectedMacro;
-            _runningMacro = macroToRun;
+            // Validate and execute the same snapshot even if an open editor saves changes later.
+            var sourceMacro = SelectedMacro;
+            var macroToRun = sourceMacro.DeepClone();
+            for (var index = 0; index < macroToRun.Actions.Count; index++)
+            {
+                if (!MacroActionValidator.TryValidate(macroToRun.Actions[index], out var error))
+                {
+                    ReportMacroStartError(LocalizationService.Current.Format("ExecutorInvalidAction", index + 1, error));
+                    return;
+                }
+            }
+
+            var conflict = MacroHotkeyValidator.FindConflict(macroToRun, _hotkeyService.GetRegisteredHotkeys());
+            if (conflict != null)
+            {
+                ReportMacroStartError(LocalizationService.Current.Format(
+                    "MacroHotkeyConflict",
+                    conflict.ActionIndex + 1,
+                    HotkeyGestureHelper.Format(conflict.Hotkey.Gesture),
+                    GetHotkeyTargetDescription(conflict.Hotkey.Target)));
+                return;
+            }
+
+            _runningMacro = sourceMacro;
             SetMacroStarting(true);
             _macroStartCancellation?.Dispose();
             _macroStartCancellation = new CancellationTokenSource();
@@ -401,6 +426,23 @@ namespace Ming_AutoClicker.ViewModels
             }
         }
 
+        private void ReportMacroStartError(string message)
+        {
+            ExecutionStatus = LocalizationService.Current.GetString("StatusStartFailed");
+            StatusMessage = message;
+            // Holding the start hotkey can repeat WM_HOTKEY while the dialog runs
+            // its nested message loop. Show at most one start-error dialog at a time.
+            _isShowingMacroStartError = true;
+            try
+            {
+                ShowMessage(message, ExecutionStatus, MessageBoxImage.Warning);
+            }
+            finally
+            {
+                _isShowingMacroStartError = false;
+            }
+        }
+
         private bool CanStopMacro() => IsExecuting || _isStartingMacro;
 
         private void StopMacro()
@@ -422,7 +464,7 @@ namespace Ming_AutoClicker.ViewModels
         {
             if (AutoClickViewModel.IsRunning) { AutoClickViewModel.Toggle(); return; }
             if (IsExecuting || _isStartingMacro) { StopMacro(); return; }
-            if (RecordingPageViewModel.State != RecordingState.Idle) { RecordingPageViewModel.Toggle(); return; }
+            if (!RecordingPageViewModel.IsIdle) { RecordingPageViewModel.Toggle(); return; }
             if (_currentTabIndex == 0)
             {
                 // 鼠标连点 Tab：转发给 AutoClickViewModel
@@ -472,14 +514,7 @@ namespace Ming_AutoClicker.ViewModels
             }
             else
             {
-                ExecutionStatus = RecordingPageViewModel.State switch
-                {
-                    RecordingState.Recording => LocalizationService.Current.GetString("RecordingStatusRecording"),
-                    RecordingState.RecordPaused => LocalizationService.Current.GetString("StatusPaused"),
-                    RecordingState.Playing => LocalizationService.Current.GetString("RecordingStatusPlaying"),
-                    RecordingState.PlayPaused => LocalizationService.Current.GetString("StatusPaused"),
-                    _ => LocalizationService.Current.GetString("StatusNotRunning")
-                };
+                ExecutionStatus = RecordingPageViewModel.StatusLabel;
             }
         }
 
@@ -488,7 +523,7 @@ namespace Ming_AutoClicker.ViewModels
             try
             {
                 _storageService.SaveMacros(Macros.ToList());
-                _screenCaptureService.CleanupUnusedScreenshots(Macros);
+                CleanupUnusedScreenshotsIfLoaded();
                 StatusMessage = LocalizationService.Current.GetString("StatusSaved");
             }
             catch (Exception ex)
@@ -497,8 +532,18 @@ namespace Ming_AutoClicker.ViewModels
             }
         }
 
+        private void CleanupUnusedScreenshotsIfLoaded()
+        {
+            if (_allMacrosLoaded)
+                _screenCaptureService.CleanupUnusedScreenshots(Macros);
+        }
+
+        public Task PrepareForExitAsync(TimeSpan timeout) => RecordingPageViewModel.PrepareForExitAsync(timeout);
+        public void CancelExitPreparation() => RecordingPageViewModel.CancelExitPreparation();
+
         public void LoadMacros()
         {
+            _allMacrosLoaded = false;
             try
             {
                 var selectedId = SelectedMacro?.Id;
@@ -508,6 +553,7 @@ namespace Ming_AutoClicker.ViewModels
                 {
                     Macros.Add(macro);
                 }
+                _allMacrosLoaded = _storageService.LastLoadCompleted;
                 SelectedMacro = selectedId == null
                     ? Macros.FirstOrDefault()
                     : Macros.FirstOrDefault(m => m.Id == selectedId) ?? Macros.FirstOrDefault();
@@ -554,6 +600,7 @@ namespace Ming_AutoClicker.ViewModels
             _isStartingMacro = value;
             OnPropertyChanged(nameof(IsNotExecuting));
             OnPropertyChanged(nameof(CanConfigureSettings));
+            OnPropertyChanged(nameof(IsNavigationEnabled));
             CommandManager.InvalidateRequerySuggested();
         }
 
@@ -625,7 +672,7 @@ namespace Ming_AutoClicker.ViewModels
 
                 if (AutoClickViewModel.IsRunning) AutoClickViewModel.Toggle();
                 if (IsExecuting || _isStartingMacro) StopMacro();
-                if (RecordingPageViewModel.State != RecordingState.Idle) RecordingPageViewModel.Toggle();
+                if (!RecordingPageViewModel.IsIdle) RecordingPageViewModel.Toggle();
 
                 var until = DateTime.UtcNow.AddSeconds(5);
                 while (IsAnyAutomationActive && DateTime.UtcNow < until)
@@ -657,7 +704,7 @@ namespace Ming_AutoClicker.ViewModels
         }
 
         private bool IsAnyAutomationActive => AutoClickViewModel.IsRunning || IsExecuting ||
-            _isStartingMacro || RecordingPageViewModel.State != RecordingState.Idle;
+            _isStartingMacro || !RecordingPageViewModel.IsIdle;
 
         private bool IsTargetRunning(string target)
         {
@@ -705,7 +752,17 @@ namespace Ming_AutoClicker.ViewModels
 
         private void OnRecordingViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            if(e.PropertyName==nameof(RecordingPageViewModel.State)){OnUIThread(()=>{OnPropertyChanged(nameof(IsNavigationEnabled));OnPropertyChanged(nameof(CanConfigureSettings));UpdateExecutionStatus();});}
+            if (e.PropertyName == nameof(RecordingPageViewModel.State))
+            {
+                OnUIThread(() =>
+                {
+                    OnPropertyChanged(nameof(IsNavigationEnabled));
+                    OnPropertyChanged(nameof(CanConfigureSettings));
+                    UpdateExecutionStatus();
+                });
+            }
+            else if (e.PropertyName == nameof(RecordingPageViewModel.StatusLabel) && _currentTabIndex == 2)
+                OnUIThread(UpdateExecutionStatus);
         }
 
         private void OnRecordingDeleted(string id) => _hotkeyService.UnregisterTarget($"recording:{id}");
@@ -754,17 +811,131 @@ namespace Ming_AutoClicker.ViewModels
 
         public HotkeyRegistrationResult SetMacroHotkey(MacroProfile macro, HotkeyGesture? gesture)
         {
-            var target=$"macro:{macro.Id}";var previous=macro.Hotkey?.Clone();_hotkeyService.UnregisterTarget(target);
-            if(gesture!=null){var result=_hotkeyService.RegisterTarget(_mainWindowHandle,target,gesture);if(!result.Success){if(previous!=null)_hotkeyService.RegisterTarget(_mainWindowHandle,target,previous);return result;}}
-            try{macro.Hotkey=gesture?.Clone();macro.UpdatedAt=DateTime.Now;_storageService.Save(macro);return HotkeyRegistrationResult.Succeeded();}
-            catch(Exception ex){_hotkeyService.UnregisterTarget(target);macro.Hotkey=previous;if(previous!=null)_hotkeyService.RegisterTarget(_mainWindowHandle,target,previous);return HotkeyRegistrationResult.Failed(HotkeyRegistrationFailure.SettingsSaveFailed,LocalizationService.Current.Format("HotkeySettingsSaveFailed",ex.Message));}
+            ArgumentNullException.ThrowIfNull(macro);
+            if (ValidateHotkeyChange(gesture) is { } failure)
+                return failure;
+
+            var target = $"macro:{macro.Id}";
+            var previous = macro.Hotkey?.Clone();
+            var previousActive = GetRegisteredTargetGesture(target);
+            if (!_hotkeyService.UnregisterTarget(target))
+                return TargetUnregisterFailed();
+
+            if (gesture != null)
+            {
+                var result = _hotkeyService.RegisterTarget(_mainWindowHandle, target, gesture);
+                if (!result.Success)
+                {
+                    RestoreTargetHotkey(target, previousActive);
+                    return result;
+                }
+            }
+
+            var previousUpdatedAt = macro.UpdatedAt;
+            try
+            {
+                macro.Hotkey = gesture?.Clone();
+                macro.UpdatedAt = DateTime.Now;
+                _storageService.Save(macro);
+                return HotkeyRegistrationResult.Succeeded();
+            }
+            catch (Exception ex)
+            {
+                macro.Hotkey = previous;
+                macro.UpdatedAt = previousUpdatedAt;
+                RestoreTargetHotkey(target, previousActive);
+                return HotkeyRegistrationResult.Failed(
+                    HotkeyRegistrationFailure.SettingsSaveFailed,
+                    LocalizationService.Current.Format("HotkeySettingsSaveFailed", ex.Message));
+            }
         }
+
         public HotkeyRegistrationResult SetRecordingHotkey(RecordingItemViewModel item, HotkeyGesture? gesture)
         {
-            var target=$"recording:{item.Id}";var previous=item.Model.Hotkey?.Clone();_hotkeyService.UnregisterTarget(target);
-            if(gesture!=null){var result=_hotkeyService.RegisterTarget(_mainWindowHandle,target,gesture);if(!result.Success){if(previous!=null)_hotkeyService.RegisterTarget(_mainWindowHandle,target,previous);return result;}}
-            try{item.Model.Hotkey=gesture?.Clone();RecordingPageViewModel.Save(item.Model);item.Refresh();return HotkeyRegistrationResult.Succeeded();}
-            catch(Exception ex){_hotkeyService.UnregisterTarget(target);item.Model.Hotkey=previous;if(previous!=null)_hotkeyService.RegisterTarget(_mainWindowHandle,target,previous);item.Refresh();return HotkeyRegistrationResult.Failed(HotkeyRegistrationFailure.SettingsSaveFailed,LocalizationService.Current.Format("HotkeySettingsSaveFailed",ex.Message));}
+            ArgumentNullException.ThrowIfNull(item);
+            if (ValidateHotkeyChange(gesture) is { } failure)
+                return failure;
+
+            var target = $"recording:{item.Id}";
+            var previous = item.Model.Hotkey?.Clone();
+            var previousActive = GetRegisteredTargetGesture(target);
+            if (!_hotkeyService.UnregisterTarget(target))
+                return TargetUnregisterFailed();
+
+            if (gesture != null)
+            {
+                var result = _hotkeyService.RegisterTarget(_mainWindowHandle, target, gesture);
+                if (!result.Success)
+                {
+                    RestoreTargetHotkey(target, previousActive);
+                    return result;
+                }
+            }
+
+            try
+            {
+                item.Model.Hotkey = gesture?.Clone();
+                RecordingPageViewModel.Save(item.Model);
+                item.Refresh();
+                return HotkeyRegistrationResult.Succeeded();
+            }
+            catch (Exception ex)
+            {
+                item.Model.Hotkey = previous;
+                RestoreTargetHotkey(target, previousActive);
+                item.Refresh();
+                return HotkeyRegistrationResult.Failed(
+                    HotkeyRegistrationFailure.SettingsSaveFailed,
+                    LocalizationService.Current.Format("HotkeySettingsSaveFailed", ex.Message));
+            }
+        }
+
+        private HotkeyRegistrationResult? ValidateHotkeyChange(HotkeyGesture? gesture)
+        {
+            if (!CanConfigureSettings)
+                return HotkeyRegistrationResult.Failed(
+                    HotkeyRegistrationFailure.SystemError,
+                    LocalizationService.Current.GetString("HotkeyStopBeforeSettings"));
+            if (_mainWindowHandle == IntPtr.Zero)
+                return HotkeyRegistrationResult.Failed(
+                    HotkeyRegistrationFailure.SystemError,
+                    LocalizationService.Current.GetString("HotkeyWindowNotReady"));
+            if (gesture != null && !HotkeyGestureHelper.TryValidate(gesture, out var error))
+                return HotkeyRegistrationResult.Failed(HotkeyRegistrationFailure.InvalidGesture, error);
+            return null;
+        }
+
+        private HotkeyGesture? GetRegisteredTargetGesture(string target) =>
+            _hotkeyService.GetRegisteredHotkeys().FirstOrDefault(hotkey => hotkey.Target == target)?.Gesture;
+
+        private void RestoreTargetHotkey(string target, HotkeyGesture? previousActive)
+        {
+            if (_hotkeyService.UnregisterTarget(target) && previousActive != null)
+                _hotkeyService.RegisterTarget(_mainWindowHandle, target, previousActive);
+        }
+
+        private static HotkeyRegistrationResult TargetUnregisterFailed() =>
+            HotkeyRegistrationResult.Failed(
+                HotkeyRegistrationFailure.SystemError,
+                LocalizationService.Current.GetString("HotkeyUnregisterTargetFailed"));
+
+        private string GetHotkeyTargetDescription(string? target)
+        {
+            if (string.IsNullOrEmpty(target))
+                return LocalizationService.Current.GetString("MacroHotkeyTargetGlobal");
+            if (target.StartsWith("macro:", StringComparison.Ordinal))
+            {
+                var id = target[6..];
+                var name = Macros.FirstOrDefault(macro => macro.Id == id)?.Name ?? id;
+                return LocalizationService.Current.Format("MacroHotkeyTargetMacro", name);
+            }
+            if (target.StartsWith("recording:", StringComparison.Ordinal))
+            {
+                var id = target[10..];
+                var name = RecordingPageViewModel.Recordings.FirstOrDefault(recording => recording.Id == id)?.Name ?? id;
+                return LocalizationService.Current.Format("MacroHotkeyTargetRecording", name);
+            }
+            return target;
         }
 
         /// <summary>

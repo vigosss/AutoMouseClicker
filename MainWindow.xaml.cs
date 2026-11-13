@@ -2,13 +2,17 @@ using System;
 using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
 using Ming_AutoClicker.Models;
 using Ming_AutoClicker.Services;
 using Ming_AutoClicker.ViewModels;
-using Ming_AutoClicker.Views;
+using Ming_AutoClicker.Views.Macros;
+using Ming_AutoClicker.Views.Recordings;
+using Ming_AutoClicker.Views.Settings;
+using Ming_AutoClicker.Views.Shared;
 
 namespace Ming_AutoClicker
 {
@@ -22,6 +26,8 @@ namespace Ming_AutoClicker
         private System.Windows.Forms.ContextMenuStrip? _trayMenu;
         private System.Drawing.Icon? _trayDrawingIcon;
         private bool _allowExit;
+        private bool _exitPending;
+        private object _contentEnabledValue = DependencyProperty.UnsetValue;
         private bool _viewInitialized;
 
         public MainWindow()
@@ -137,7 +143,8 @@ namespace Ming_AutoClicker
             {
                 if (_viewModel != null)
                 {
-                    _viewModel.HandleHotkeyMessage(msg, wParam, lParam);
+                    if (!_exitPending)
+                        _viewModel.HandleHotkeyMessage(msg, wParam, lParam);
                     handled = true;
                 }
             }
@@ -242,8 +249,49 @@ namespace Ming_AutoClicker
             Activate();
         }
 
-        private void ExitFromTray()
+        internal async Task<bool> TryPrepareExitAsync()
         {
+            if (_exitPending) return false;
+            _exitPending = true;
+            if (Content is UIElement content)
+            {
+                // The effective value can be false while a modal update window
+                // disables its owner. Preserve the root's local value instead.
+                _contentEnabledValue = content.ReadLocalValue(UIElement.IsEnabledProperty);
+                content.IsEnabled = false;
+            }
+            try
+            {
+                if (_viewModel != null)
+                    await _viewModel.PrepareForExitAsync(TimeSpan.FromSeconds(5));
+                return true;
+            }
+            catch (Exception)
+            {
+                CancelExitPreparation();
+                Dialog.ShowError(LocalizationService.Current.GetString("ExitCleanupFailed"),
+                    LocalizationService.Current.GetString("TrayExit"));
+                return false;
+            }
+        }
+
+        internal void CancelExitPreparation()
+        {
+            if (!_exitPending) return;
+            _exitPending = false;
+            _viewModel?.CancelExitPreparation();
+            if (Content is UIElement content)
+            {
+                if (_contentEnabledValue == DependencyProperty.UnsetValue)
+                    content.ClearValue(UIElement.IsEnabledProperty);
+                else
+                    content.SetValue(UIElement.IsEnabledProperty, _contentEnabledValue);
+            }
+        }
+
+        private async void ExitFromTray()
+        {
+            if (!await TryPrepareExitAsync()) return;
             _allowExit = true;
             if (_trayIcon != null)
                 _trayIcon.Visible = false;
@@ -262,7 +310,14 @@ namespace Ming_AutoClicker
         }
         private void OnOptimizeRecording(RecordingItemViewModel item)
         {
-            var window=new OptimizeWindow(item.Model){Owner=this};if(window.ShowDialog()==true&&window.Result!=null){item.Model.Name=window.Result.Name;item.Model.Actions=window.Result.Actions;_viewModel!.RecordingPageViewModel.Save(item.Model);item.Refresh();}
+            var window = new OptimizeWindow(item.Model) { Owner = this };
+            if (window.ShowDialog() == true && window.Result != null)
+            {
+                item.Model.Name = window.Result.Name;
+                item.Model.Actions = window.Result.Actions;
+                _viewModel!.RecordingPageViewModel.Save(item.Model);
+                _viewModel.RecordingPageViewModel.OnRecordingOptimized(item);
+            }
         }
         private void ShowItemHotkey(HotkeyGesture? current, Func<HotkeyGesture?, HotkeyRegistrationResult> save)
         {
@@ -354,6 +409,12 @@ namespace Ming_AutoClicker
                                 break;
                             case MouseClickAction mca:
                                 original.Actions.Add(mca.Clone());
+                                break;
+                            case MouseScrollAction scroll:
+                                original.Actions.Add(scroll.Clone());
+                                break;
+                            case KeyPressAction keyPress:
+                                original.Actions.Add(keyPress.Clone());
                                 break;
                         }
                     }

@@ -25,11 +25,45 @@
     <sys:String x:Key="MainRecordingTab">录制回放</sys:String>
     <sys:String x:Key="RecordingSearch">搜索录制</sys:String><sys:String x:Key="RecordingImport">导入</sys:String><sys:String x:Key="RecordingExport">导出</sys:String><sys:String x:Key="RecordingHelp">使用帮助</sys:String>
     <sys:String x:Key="RecordingCancelSelection">取消选择</sys:String><sys:String x:Key="RecordingCreatedAt">录制时间: </sys:String><sys:String x:Key="RecordingDuration">  时长: </sys:String><sys:String x:Key="RecordingSelected">已选中</sys:String>
-    <sys:String x:Key="RecordingOptimize">优化</sys:String><sys:String x:Key="RecordingRename">重命名</sys:String><sys:String x:Key="RecordingDelete">删除</sys:String><sys:String x:Key="RecordingSetHotkey">设置热键</sys:String><sys:String x:Key="RecordingStepCount">{0}步</sys:String>
+    <sys:String x:Key="RecordingOptimize">优化</sys:String><sys:String x:Key="RecordingRename">重命名</sys:String><sys:String x:Key="RecordingDelete">删除</sys:String><sys:String x:Key="RecordingSetHotkey">设置热键</sys:String><sys:String x:Key="RecordingStepCount">{0}个动作</sys:String>
+    <sys:String x:Key="RecordingPause">暂停</sys:String>
+    <sys:String x:Key="RecordingResume">继续</sys:String>
+    <sys:String x:Key="RecordingStopShort">停止</sys:String>
+    <sys:String x:Key="RecordingPauseTooltip">暂停录制：暂时停止采集输入和计时，点击“继续”后接着录制。</sys:String>
+    <sys:String x:Key="RecordingResumeTooltip">继续录制：恢复采集输入和计时，追加到本次录制。</sys:String>
+    <sys:String x:Key="RecordingStopTooltip">停止录制：结束本次录制，并保存已采集的动作。</sys:String>
+    <sys:String x:Key="PlaybackPauseTooltip">暂停回放：保留当前位置并暂停计时，点击“继续”后从此处接着执行。</sys:String>
+    <sys:String x:Key="PlaybackResumeTooltip">继续回放：从暂停位置继续执行并恢复计时。</sys:String>
+    <sys:String x:Key="PlaybackStopTooltip">停止回放：结束本次运行；再次点击“开始回放”将从第一个动作重新开始。</sys:String>
+    <sys:String x:Key="RecordingMore">更多</sys:String>
+    <sys:String x:Key="PlaybackSpeedHint">回放速度：0.5–5倍，每次调整0.1倍。支持拖动、点击滑轨或使用方向键；运行时不可调整。</sys:String>
+    <sys:String x:Key="RecordingReadyStatus">待录制</sys:String>
+    <sys:String x:Key="PlaybackReadyStatus">待回放 · 共 {0} 个动作</sys:String>
+    <sys:String x:Key="RecordingSessionStatus">{0} · 已录制 {1} 个动作 · 已用时 {2}</sys:String>
+    <sys:String x:Key="PlaybackSessionStatus">{0} · 动作 {1}/{2} · 第 {3}/{4} 轮 · 已用时 {5}</sys:String>
+    <sys:String x:Key="RecordingCompactStatus">{0} · 动作 {1}</sys:String>
+    <sys:String x:Key="PlaybackCompactStatus">{0} · 动作 {1}/{2}</sys:String>
+    <sys:String x:Key="RecordingElapsedStatus">已用时 {0}</sys:String>
+    <sys:String x:Key="PlaybackIntervalCompact">间隔(ms)</sys:String>
+    <sys:String x:Key="RecordingStatusPaused">录制已暂停</sys:String>
+    <sys:String x:Key="PlaybackStatusPaused">回放已暂停</sys:String>
+    <sys:String x:Key="RecordingStatusStopping">正在停止…</sys:String>
+    <sys:String x:Key="RecordingStatusStopped">已停止录制</sys:String>
+    <sys:String x:Key="PlaybackStatusCompleted">已完成</sys:String>
+    <sys:String x:Key="PlaybackStatusStopped">已停止</sys:String>
+    <sys:String x:Key="PlaybackStatusFailed">回放失败</sys:String>
+    <sys:String x:Key="RecordingStatusFailed">录制失败</sys:String>
+    <sys:String x:Key="RecordingEmptyPlayback">此录制没有启用的动作，请先录制或启用动作。</sys:String>
+    <sys:String x:Key="PlaybackInvalidSpeed">速度须为0.5–5之间的数值。</sys:String>
+    <sys:String x:Key="PlaybackInvalidLoopCount">循环次数须为大于0的整数。</sys:String>
+    <sys:String x:Key="PlaybackInvalidInterval">循环间隔须为大于或等于0的整数（毫秒）。</sys:String>
+    <sys:String x:Key="RecordingError">录制失败：{0}</sys:String>
+    <sys:String x:Key="RecordingElapsedHelp">已用时格式为时:分:秒.十分之一秒；不包含暂停时间，包含循环间隔。动作包含鼠标移动、按下、松开等事件，不等于点击次数。</sys:String>
+    <sys:String x:Key="PlaybackInfiniteCount">∞</sys:String>
     <sys:String x:Key="RecordingStart">开始录制</sys:String><sys:String x:Key="RecordingPauseResume">暂停 / 继续</sys:String><sys:String x:Key="RecordingStop">停止录制</sys:String><sys:String x:Key="RecordingActions">动作 </sys:String>
     <sys:String x:Key="PlaybackSpeed">速度</sys:String><sys:String x:Key="PlaybackLoop">循环</sys:String><sys:String x:Key="PlaybackInfinite">无限</sys:String><sys:String x:Key="PlaybackInterval">间隔(ms)</sys:String><sys:String x:Key="PlaybackStart">开始回放</sys:String><sys:String x:Key="PlaybackStop">停止回放</sys:String><sys:String x:Key="PlaybackStep">步骤 </sys:String>
     <sys:String x:Key="RecordingStatusRecording">录制中</sys:String><sys:String x:Key="RecordingStatusPlaying">回放中</sys:String><sys:String x:Key="RecordingDefaultName">鼠标录制-{0}</sys:String><sys:String x:Key="RecordingDeletePrompt">确定删除“{0}”吗？</sys:String>
-    <sys:String x:Key="RecordingHelpTitle">录制回放帮助</sys:String><sys:String x:Key="RecordingHelpText">无选择时，全局热键开始录制；有选择时开始回放。普通权限无法控制管理员窗口。</sys:String>
+    <sys:String x:Key="RecordingHelpTitle">录制回放帮助</sys:String><sys:String x:Key="RecordingHelpText">无选择时，全局热键开始录制；有选择时开始回放；运行时再次按热键会停止。&#10;&#10;第一行是操作区。录制时显示开始、暂停/继续、停止：暂停会暂时停止采集输入和计时，继续会追加到本次录制；停止会结束并保存已采集的动作。回放时主按钮会从“开始回放”变为“停止回放”；停止后再次开始将从第一个动作重新执行。&#10;&#10;第二行左侧显示状态、动作进度和已用时；悬停可查看完整循环轮次及错误详情。动作包含鼠标移动、按下、松开等事件，一次点击可能包含多个动作。&#10;&#10;已用时格式为时:分:秒.十分之一秒；暂停不计时，循环间隔计时。停止或完成后保留本次结果，切换录制后清零。&#10;&#10;第二行右侧可直接调整速度滑条（0.5–5倍，步长0.1）、循环次数、无限循环和循环间隔，运行时不可调整。卡片“更多”菜单提供热键、优化、重命名和删除。普通权限无法控制管理员窗口。</sys:String>
     <sys:String x:Key="RecordingLargeTitle">录制较大</sys:String><sys:String x:Key="RecordingLargeMessage">本次录制超过 10000 个动作，建议先使用优化功能。</sys:String><sys:String x:Key="RecordingDisplayChangedTitle">显示器布局变化</sys:String><sys:String x:Key="RecordingDisplayChangedMessage">当前显示器布局与录制时不同，将按虚拟桌面比例映射坐标。是否继续？</sys:String>
     <sys:String x:Key="PlaybackErrorTitle">回放错误</sys:String><sys:String x:Key="PlaybackError">回放失败：{0}</sys:String><sys:String x:Key="RecordingImportErrorTitle">导入失败</sys:String><sys:String x:Key="AutomationSwitchFailed">无法安全停止当前任务，已取消切换。</sys:String>
     <sys:String x:Key="ItemHotkeyTitle">设置独立热键</sys:String><sys:String x:Key="ItemHotkeyHint">点击输入框，然后按下快捷键</sys:String><sys:String x:Key="ItemHotkeyClear">清除</sys:String><sys:String x:Key="ItemHotkeyUnavailableTitle">热键不可用</sys:String><sys:String x:Key="MacroItemHotkey">热键</sys:String>
@@ -39,4 +73,117 @@
     <sys:String x:Key="TrayShow">显示主窗口</sys:String>
     <sys:String x:Key="TrayExit">退出</sys:String>
     <sys:String x:Key="TrayMinimized">程序仍在后台运行。右击托盘图标可退出。</sys:String>
+    <sys:String x:Key="EditorAddScroll">滚动</sys:String>
+    <sys:String x:Key="EditorAddKeyboard">键盘</sys:String>
+    <sys:String x:Key="EditorAddedScroll">已添加滚动动作</sys:String>
+    <sys:String x:Key="EditorAddedKeyboard">已添加键盘动作</sys:String>
+    <sys:String x:Key="EditorScrollSettings">滚动设置</sys:String>
+    <sys:String x:Key="EditorScrollDirection">方向</sys:String>
+    <sys:String x:Key="EditorScrollUp">向上</sys:String>
+    <sys:String x:Key="EditorScrollDown">向下</sys:String>
+    <sys:String x:Key="EditorScrollLeft">向左</sys:String>
+    <sys:String x:Key="EditorScrollRight">向右</sys:String>
+    <sys:String x:Key="EditorScrollNotches">滚动刻度</sys:String>
+    <sys:String x:Key="EditorScrollNotchesHint">请输入正整数。1 格对应一次滚轮刻度，实际滚动距离由目标软件和系统设置决定。</sys:String>
+    <sys:String x:Key="EditorScrollPosition">滚动位置</sys:String>
+    <sys:String x:Key="EditorScrollCurrentPosition">当前鼠标位置</sys:String>
+    <sys:String x:Key="EditorScrollCoordinates">指定屏幕坐标</sys:String>
+    <sys:String x:Key="EditorScrollHorizontalHint">向左、向右滚动需要目标软件支持横向滚轮。</sys:String>
+    <sys:String x:Key="EditorScrollInvalidNotches">滚动刻度必须是 1 至 17895697 之间的整数。</sys:String>
+    <sys:String x:Key="EditorScrollInvalidCoordinates">X、Y 坐标必须是有效整数，支持负坐标。</sys:String>
+    <sys:String x:Key="EditorKeyboardSettings">键盘设置</sys:String>
+    <sys:String x:Key="EditorKeyboardKey">要按的键</sys:String>
+    <sys:String x:Key="EditorKeyboardModifiers">同时按住（可不选）</sys:String>
+    <sys:String x:Key="EditorKeyboardPreview">本步骤将执行：{0}</sys:String>
+    <sys:String x:Key="EditorKeyboardHint">按一次后自动松开。按键会发给当前正在操作的窗口；要在输入框中操作，请先添加「点击」步骤。</sys:String>
+    <sys:String x:Key="EditorInvalidAction">第 {0} 步无法保存：{1}</sys:String>
+    <sys:String x:Key="ActionScrollCurrent">滚动: {0} {1} 格（当前位置）</sys:String>
+    <sys:String x:Key="ActionScrollCoordinates">滚动: {0} {1} 格，位置 ({2}, {3})</sys:String>
+    <sys:String x:Key="ActionKeyPress">键盘: {0}</sys:String>
+    <sys:String x:Key="MacroInvalidScrollDirection">请选择有效的滚动方向</sys:String>
+    <sys:String x:Key="MacroInvalidScrollPosition">请选择有效的滚动位置模式</sys:String>
+    <sys:String x:Key="MacroInvalidScrollNotches">滚动刻度必须为 1 至 17895697 的整数</sys:String>
+    <sys:String x:Key="MacroInvalidKey">请选择支持的主键</sys:String>
+    <sys:String x:Key="MacroInvalidModifiers">键盘修饰键无效</sys:String>
+    <sys:String x:Key="ExecutorInvalidAction">第 {0} 步无效: {1}</sys:String>
+    <sys:String x:Key="MacroInputMoveFailed">无法将鼠标移动到 ({0}, {1})</sys:String>
+    <sys:String x:Key="MacroInputSendFailed">输入发送失败：仅发送 {0}/{1} 个事件</sys:String>
+    <sys:String x:Key="MacroInputReleaseFailed">输入发送失败，部分按键未能释放，请手动按下并松开相关按键</sys:String>
+    <sys:String x:Key="MacroHotkeyConflict">第 {0} 步的按键“{1}”与{2}冲突。请修改该步骤或控制热键后再运行。</sys:String>
+    <sys:String x:Key="MacroHotkeyTargetGlobal">全局开始/停止热键</sys:String>
+    <sys:String x:Key="MacroHotkeyTargetMacro">宏“{0}”的热键</sys:String>
+    <sys:String x:Key="MacroHotkeyTargetRecording">录制“{0}”的热键</sys:String>
+    <sys:String x:Key="HotkeyUnregisterTargetFailed">无法注销原有热键，请稍后重试。</sys:String>
+    <sys:String x:Key="EditorAddAction">添加动作 ▾</sys:String>
+    <sys:String x:Key="ImageAutomaticHint">自动适应目标缩放；测试不会操作鼠标。</sys:String>
+    <sys:String x:Key="ImageClickPointHint">在图片上点选点击位置；十字会跟随目标缩放。</sys:String>
+    <sys:String x:Key="ImageEditTemplate">点击点与忽略区域</sys:String>
+    <sys:String x:Key="ImageResetCenter">恢复中心</sys:String>
+    <sys:String x:Key="ImageStopTest">停止测试</sys:String>
+    <sys:String x:Key="ImageTimeoutLabel">最多等待（秒）</sys:String>
+    <sys:String x:Key="ImageTimeoutHint">0 = 只查找一次；超时或目标不明确时停止宏。</sys:String>
+    <sys:String x:Key="ImageAdvanced">高级设置</sys:String>
+    <sys:String x:Key="ImageThresholdHint">默认 80%。相似度不是正确率；目标不明确时请先缩小范围或改善截图。</sys:String>
+    <sys:String x:Key="ImageLegacyOffset">旧任务使用固定像素偏移；重新点选点击点后才会随目标缩放。</sys:String>
+    <sys:String x:Key="ImageSearchScope">搜索范围</sys:String>
+    <sys:String x:Key="ImageScopeDesktop">整个可见桌面</sys:String>
+    <sys:String x:Key="ImageScopeRegion">固定屏幕区域</sys:String>
+    <sys:String x:Key="ImageScopeWindow">指定窗口</sys:String>
+    <sys:String x:Key="ImageScopeDesktopHint">搜索所有显示器的可见内容。</sys:String>
+    <sys:String x:Key="ImageScopeNotSelected">尚未选择范围，请先选择。</sys:String>
+    <sys:String x:Key="ImagePickRegion">选择屏幕区域</sys:String>
+    <sys:String x:Key="ImageChooseWindow">选择窗口</sys:String>
+    <sys:String x:Key="ImagePickWindowRegion">选择窗口内区域</sys:String>
+    <sys:String x:Key="ImageClearWindowRegion">使用整个窗口</sys:String>
+    <sys:String x:Key="ImageWindowRegionSet">已限定窗口内区域</sys:String>
+    <sys:String x:Key="ImageRegionMustBeInWindow">选区必须完整位于所选窗口的客户区内。</sys:String>
+    <sys:String x:Key="ImageChooseWindowHint">选择要跟随的窗口。窗口不存在、被遮挡或存在多个同名目标时，会停止查找。</sys:String>
+    <sys:String x:Key="ImageRefreshWindows">刷新列表</sys:String>
+    <sys:String x:Key="ImageUseWindow">使用所选窗口</sys:String>
+    <sys:String x:Key="ImageMultipleTargets">多个相似目标</sys:String>
+    <sys:String x:Key="ImageSelectionUnique">仅接受明确的唯一目标</sys:String>
+    <sys:String x:Key="ImageSelectionOrdered">按位置选择指定序号</sys:String>
+    <sys:String x:Key="ImageMatchIndexLabel">目标序号（从 1 开始）</sys:String>
+    <sys:String x:Key="ImageMatchIndexHint">候选按屏幕 Y 坐标、再按 X 坐标排序；数量不足时不点击。</sys:String>
+    <sys:String x:Key="ImageAlternates">备用外观</sys:String>
+    <sys:String x:Key="ImageAlternatesHint">添加同一目标的其他外观。每张图片都有独立点击点和忽略区域。</sys:String>
+    <sys:String x:Key="ImageEditAlternate">编辑</sys:String>
+    <sys:String x:Key="ImageRemoveAlternate">移除</sys:String>
+    <sys:String x:Key="ImageInvalidTimeout">等待时间必须是有效的非负秒数，且不超过 2147483 秒。</sys:String>
+    <sys:String x:Key="ImageInvalidMatchIndex">目标序号必须是从 1 开始的整数。</sys:String>
+    <sys:String x:Key="ImageTemplateEditorTitle">编辑模板</sys:String>
+    <sys:String x:Key="ImageTemplateEditorHint">点选实际点击位置，或切换到忽略区域并拖框。橙色区域不参与找图。</sys:String>
+    <sys:String x:Key="ImageEditClickPoint">点选点击位置</sys:String>
+    <sys:String x:Key="ImageEditIgnoredRegion">拖框忽略区域</sys:String>
+    <sys:String x:Key="ImageClearIgnored">清除忽略区域</sys:String>
+    <sys:String x:Key="ImageCancel">取消</sys:String>
+    <sys:String x:Key="MatchAmbiguous">存在多个可信目标，请缩小范围或指定序号。</sys:String>
+    <sys:String x:Key="MatchScopeUnavailable">搜索范围不可用，请检查窗口、遮挡或区域。</sys:String>
+    <sys:String x:Key="MatchTemplateUninformative">有效图案太少，请扩大截图或减少忽略区域。</sys:String>
+    <sys:String x:Key="MatchTargetChanged">目标已变化，未点击。</sys:String>
+    <sys:String x:Key="MacroInvalidFindImage">找图参数无效，请检查图片、范围、点击点和等待时间。</sys:String>
+    <sys:String x:Key="MacroInputClickFailed">无法点击目标位置。</sys:String>
+    <sys:String x:Key="MatchMethodAutomatic">自动多尺度匹配</sys:String>
+    <sys:String x:Key="MatchMultipleCandidates">检测到多个候选目标。</sys:String>
+    <sys:String x:Key="MatchSearchIncomplete">搜索未完成，没有点击。</sys:String>
+    <sys:String x:Key="ImageScopeUnavailable">搜索范围不可用。</sys:String>
+    <sys:String x:Key="ImageScopeMoved">目标窗口在截图时发生变化，请保持窗口稳定后重试。</sys:String>
+    <sys:String x:Key="ImageScopeOutsideScreen">搜索范围超出可见屏幕或位于显示器之间的空隙。</sys:String>
+    <sys:String x:Key="ImageScopeSelectWindow">请选择需要搜索的窗口。</sys:String>
+    <sys:String x:Key="ImageScopeWindowMissing">找不到已绑定窗口，请确认窗口已打开、未最小化且标题未改变。</sys:String>
+    <sys:String x:Key="ImageScopeMultipleWindows">多个窗口符合绑定条件，请重新选择唯一窗口。</sys:String>
+    <sys:String x:Key="ImageScopeInvalidRegion">窗口内搜索区域无效，请重新框选。</sys:String>
+    <sys:String x:Key="ImageScopeObscured">搜索区域被其他窗口遮挡，请露出目标窗口后重试。</sys:String>
+    <sys:String x:Key="MatchPreviewNoClick">这是识别时的截图，测试不会点击鼠标。</sys:String>
+    <sys:String x:Key="MatchDetails">匹配详情</sys:String>
+    <sys:String x:Key="MatchClickPosition">点击位置</sys:String>
+    <sys:String x:Key="MatchScore">匹配分数</sys:String>
+    <sys:String x:Key="MatchTemplateLabel">匹配图片</sys:String>
+    <sys:String x:Key="MatchPreviewFound">已找到目标，实际点击位置为 ({0}, {1})。</sys:String>
+    <sys:String x:Key="MatchPreviewAmbiguous">检测到 {0} 个候选，请缩小搜索范围或指定目标序号。</sys:String>
+    <sys:String x:Key="MatchPreviewNoSnapshot">本次未生成截图预览。</sys:String>
+    <sys:String x:Key="MatchHelpScope">调整搜索范围</sys:String>
+    <sys:String x:Key="MatchHelpAlternate">添加备用截图</sys:String>
+    <sys:String x:Key="MatchHelpRecapture">重新截图</sys:String>
+    <sys:String x:Key="ExitCleanupFailed">回放输入清理尚未完成，应用将保持运行。请稍候再尝试退出。</sys:String>
 </ResourceDictionary>

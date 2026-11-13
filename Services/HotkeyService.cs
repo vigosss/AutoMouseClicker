@@ -42,6 +42,20 @@ namespace Ming_AutoClicker.Services
             : null;
 
         /// <summary>
+        /// 仅返回实际注册成功的热键。快照及其中的手势均与服务内部状态隔离。
+        /// 与注册、注销一样，应在窗口线程调用。
+        /// </summary>
+        public IReadOnlyList<RegisteredHotkey> GetRegisteredHotkeys()
+        {
+            var hotkeys = new List<RegisteredHotkey>();
+            if (CurrentGesture is { } global)
+                hotkeys.Add(new RegisteredHotkey(null, global));
+            hotkeys.AddRange(_targets.Values.Select(target =>
+                new RegisteredHotkey(target.Target, target.Gesture)));
+            return hotkeys.AsReadOnly();
+        }
+
+        /// <summary>
         /// 热键是否已注册
         /// </summary>
         public bool IsRegistered => _isRegistered;
@@ -265,7 +279,8 @@ namespace Ming_AutoClicker.Services
         {
             if (!HotkeyGestureHelper.TryValidate(gesture, out var error))
                 return HotkeyRegistrationResult.Failed(HotkeyRegistrationFailure.InvalidGesture, error);
-            if (CurrentGesture?.Equals(gesture) == true || _targets.Values.Any(x => x.Gesture.Equals(gesture)))
+            if (CurrentGesture?.Equals(gesture) == true ||
+                _targets.Values.Any(x => x.Target == target || x.Gesture.Equals(gesture)))
                 return HotkeyRegistrationResult.Failed(HotkeyRegistrationFailure.AlreadyRegistered, LocalizationService.Current.GetString("HotkeyInUse"));
             int id; lock (_idLock) id = _nextHotkeyId++;
             if (!Win32Api.RegisterHotKey(windowHandle, id, (uint)gesture.Modifiers, gesture.VirtualKey))
@@ -273,12 +288,21 @@ namespace Ming_AutoClicker.Services
             _windowHandle = windowHandle; _targets[id] = (target, gesture.Clone()); return HotkeyRegistrationResult.Succeeded();
         }
 
-        public void UnregisterTarget(string target)
+        public bool UnregisterTarget(string target)
         {
-            foreach (var pair in _targets.Where(x => x.Value.Target == target).ToArray()) { Win32Api.UnregisterHotKey(_windowHandle, pair.Key); _targets.Remove(pair.Key); }
+            var success = true;
+            foreach (var pair in _targets.Where(x => x.Value.Target == target).ToArray())
+            {
+                if (Win32Api.UnregisterHotKey(_windowHandle, pair.Key))
+                    _targets.Remove(pair.Key);
+                else
+                    success = false;
+            }
+            return success;
         }
 
-        public bool IsControlKey(uint virtualKey) => CurrentKey == virtualKey || _targets.Values.Any(x => x.Gesture.VirtualKey == virtualKey);
+        public bool IsControlKey(uint virtualKey) => (_isRegistered && CurrentKey == virtualKey) ||
+            _targets.Values.Any(x => x.Gesture.VirtualKey == virtualKey);
 
         public void Dispose()
         {

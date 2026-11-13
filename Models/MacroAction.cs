@@ -10,7 +10,9 @@ namespace Ming_AutoClicker.Models
     {
         FindImage,
         Wait,
-        MouseClick
+        MouseClick,
+        MouseScroll,
+        KeyPress
     }
 
     /// <summary>

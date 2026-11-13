@@ -1,0 +1,609 @@
+<UserControl x:Class="Ming_AutoClicker.Views.Macros.MacroEditorView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:models="clr-namespace:Ming_AutoClicker.Models"
+             xmlns:imageMatching="clr-namespace:Ming_AutoClicker.Views.ImageMatching"
+             xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+             xmlns:helpers="clr-namespace:Ming_AutoClicker.Helpers">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Ming-AutoClicker;component/Styles/ImageMatching.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+            <Style x:Key="EditorActionMenuItemStyle" TargetType="MenuItem">
+                <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="FontFamily" Value="{StaticResource PixelFontFamily}"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="Padding" Value="12,8"/>
+                <Setter Property="TextOptions.TextFormattingMode" Value="Display"/>
+                <Setter Property="TextOptions.TextRenderingMode" Value="Aliased"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="MenuItem">
+                            <Border x:Name="Frame" Background="{TemplateBinding Background}"
+                                    Padding="{TemplateBinding Padding}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="32"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <iconPacks:PackIconPixelartIcons
+                                        Kind="{Binding Path=(helpers:PixelIcon.Kind), RelativeSource={RelativeSource TemplatedParent}}"
+                                        Width="24" Height="24" HorizontalAlignment="Left" VerticalAlignment="Center"
+                                        Foreground="{TemplateBinding Foreground}"/>
+                                    <ContentPresenter Grid.Column="1" ContentSource="Header"
+                                                      VerticalAlignment="Center" RecognizesAccessKey="True"/>
+                                </Grid>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsHighlighted" Value="True">
+                                    <Setter TargetName="Frame" Property="Background" Value="{StaticResource HoverOverlayBrush}"/>
+                                    <Setter Property="Foreground" Value="{StaticResource PrimaryLightBrush}"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Foreground" Value="{StaticResource TextDisabledBrush}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- 顶部: 宏名称 + 循环设置 -->
+        <helpers:PixelBorder x:Name="EditorHeaderFrame" Grid.Row="0"
+                Background="{StaticResource CardBrush}"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="2"
+                Padding="12"
+                Margin="0,0,0,12">
+            <Grid x:Name="EditorHeaderGrid">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*" MinWidth="140" MaxWidth="200"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                    <TextBlock Text="{DynamicResource EditorMacroName}" Style="{StaticResource LabelText}"
+                           VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <TextBox x:Name="EditorNameInput" Grid.Column="1"
+                         Text="{Binding MacroName, UpdateSourceTrigger=PropertyChanged}"
+                         Style="{StaticResource ModernTextBox}"
+                         Height="36"/>
+                <CheckBox x:Name="EditorLoopToggle" Grid.Column="2" Content="{DynamicResource EditorLoop}"
+                          Style="{StaticResource ModernCheckBox}"
+                          IsChecked="{Binding LoopEnabled}"
+                          VerticalAlignment="Center" Margin="12,0,12,0"/>
+
+                <StackPanel x:Name="EditorLoopOptions" Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center"
+                            Visibility="{Binding LoopEnabled, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Text="{DynamicResource EditorLoopCount}" Style="{StaticResource LabelText}"
+                               VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <TextBox Text="{Binding LoopCount}" Width="52"
+                             Style="{StaticResource CompactNumberTextBox}"
+                             ToolTip="{DynamicResource EditorInfiniteTooltip}"/>
+                    <TextBlock Text="{DynamicResource EditorInfiniteHint}" Style="{StaticResource CaptionText}"
+                               VerticalAlignment="Center" Margin="8,0,0,0"/>
+                    <TextBlock Text="{DynamicResource EditorLoopInterval}" Style="{StaticResource LabelText}"
+                               VerticalAlignment="Center" Margin="12,0,8,0"/>
+                    <TextBox Text="{Binding LoopIntervalMs}" Width="60"
+                             Style="{StaticResource CompactNumberTextBox}"/>
+                </StackPanel>
+            </Grid>
+        </helpers:PixelBorder>
+
+        <!-- 中间: 动作列表 + 属性面板 -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="230"/>
+                <ColumnDefinition Width="12"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- 左侧: 动作列表 -->
+            <helpers:PixelBorder Grid.Column="0"
+                    Background="{StaticResource CardBrush}"
+                    BorderBrush="{StaticResource BorderBrush}"
+                    BorderThickness="2"
+                    Padding="8">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- 新增统一放在列表顶部，菜单选择后立即添加并选中动作。 -->
+                    <Button x:Name="AddActionButton" Grid.Row="0" Margin="0,0,0,8"
+                            Content="{DynamicResource EditorAddAction}"
+                            Style="{StaticResource SmallButton}" Height="36"
+                            BorderBrush="{StaticResource PrimaryDarkBrush}"
+                            Foreground="{StaticResource PrimaryLightBrush}"
+                            helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.AddBox}"
+                            Click="OnAddActionClick" PreviewKeyDown="OnAddActionPreviewKeyDown">
+                        <Button.ContextMenu>
+                            <ContextMenu Placement="Bottom" VerticalOffset="2"
+                                         DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}"
+                                         MinWidth="{Binding PlacementTarget.ActualWidth, RelativeSource={RelativeSource Self}}"
+                                         Background="{StaticResource SurfaceBrush}"
+                                         BorderBrush="{StaticResource PrimaryDarkBrush}" BorderThickness="2"
+                                         ItemContainerStyle="{StaticResource EditorActionMenuItemStyle}">
+                                <ContextMenu.Template>
+                                    <ControlTemplate TargetType="ContextMenu">
+                                        <helpers:PixelBorder Background="{TemplateBinding Background}"
+                                                BorderBrush="{TemplateBinding BorderBrush}"
+                                                BorderThickness="{TemplateBinding BorderThickness}" Padding="4">
+                                            <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Cycle"/>
+                                        </helpers:PixelBorder>
+                                    </ControlTemplate>
+                                </ContextMenu.Template>
+                                <MenuItem Header="{DynamicResource EditorAddFindImage}"
+                                          helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.Search}"
+                                          Command="{Binding AddFindImageActionCommand}"/>
+                                <MenuItem Header="{DynamicResource EditorAddWait}"
+                                          helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.Clock}"
+                                          Command="{Binding AddWaitActionCommand}"/>
+                                <MenuItem Header="{DynamicResource EditorAddClick}"
+                                          helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.Bullseye}"
+                                          Command="{Binding AddMouseClickActionCommand}"/>
+                                <MenuItem Header="{DynamicResource EditorAddScroll}"
+                                          helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.ArrowDown}"
+                                          Command="{Binding AddMouseScrollActionCommand}"/>
+                                <MenuItem Header="{DynamicResource EditorAddKeyboard}"
+                                          helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.Keyboard}"
+                                          Command="{Binding AddKeyPressActionCommand}"/>
+                            </ContextMenu>
+                        </Button.ContextMenu>
+                    </Button>
+
+                    <!-- 动作 ListBox -->
+                    <ListBox Grid.Row="1"
+                             x:Name="ActionListBox"
+                             ItemsSource="{Binding Actions}"
+                             SelectedItem="{Binding SelectedAction}"
+                             Style="{StaticResource ModernListBox}">
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem" BasedOn="{StaticResource CompactListBoxItem}"/>
+                        </ListBox.ItemContainerStyle>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Description}" TextTrimming="CharacterEllipsis"
+                                               Style="{StaticResource BodyText}"/>
+                                    <TextBlock Text="{Binding Note}"
+                                               TextTrimming="CharacterEllipsis"
+                                               ToolTip="{Binding Note}"
+                                               Margin="0,2,0,0">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock" BasedOn="{StaticResource CaptionText}">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Note}" Value="">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Note}" Value="{x:Null}">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <!-- 动作操作按钮 -->
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,8,0,4">
+                        <Button helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.ArrowUp}" Style="{StaticResource IconButton}" Margin="0,0,4,0"
+                                Command="{Binding MoveUpCommand}" ToolTip="{DynamicResource EditorMoveUp}"/>
+                        <Button helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.ArrowDown}" Style="{StaticResource IconButton}" Margin="0,0,4,0"
+                                Command="{Binding MoveDownCommand}" ToolTip="{DynamicResource EditorMoveDown}"/>
+                        <Button helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.Trash}"
+                                Command="{Binding RemoveActionCommand}" ToolTip="{DynamicResource EditorDeleteAction}">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource IconButton}">
+                                    <Setter Property="Background" Value="#311429"/>
+                                    <Setter Property="Foreground" Value="{StaticResource DangerBrush}"/>
+                                    <Setter Property="BorderBrush" Value="{StaticResource DangerBrush}"/>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </helpers:PixelBorder>
+
+            <!-- 右侧: 属性面板 -->
+            <helpers:PixelBorder Grid.Column="2"
+                    Background="{StaticResource CardBrush}"
+                    BorderBrush="{StaticResource BorderBrush}"
+                    BorderThickness="2"
+                    Padding="16">
+                <Grid>
+                    <!-- 未选中动作时的提示 -->
+                    <TextBlock Text="{DynamicResource EditorSelectAction}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource CaptionText}">
+                                <Setter Property="Visibility" Value="Visible"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsActionSelected}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+
+                    <!-- 属性面板内容：单个 ScrollViewer，内部用 StackPanel 分别控制可见性 -->
+                    <ScrollViewer x:Name="ActionPropertiesScrollViewer" VerticalScrollBarVisibility="Auto"
+                                  Visibility="{Binding IsActionSelected, Converter={StaticResource BoolToVis}}">
+                        <StackPanel>
+                            <Grid>
+                            <!-- 找图动作属性 -->
+                            <StackPanel x:Name="FindImagePanel">
+                                <StackPanel.Style>
+                                    <Style TargetType="StackPanel">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SelectedActionType}" Value="FindImage">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </StackPanel.Style>
+                                <TextBlock Text="{DynamicResource EditorFindSettings}" Style="{StaticResource SectionTitleText}" Margin="0,0,0,8"/>
+                                <TextBlock Text="{DynamicResource ImageAutomaticHint}" Style="{StaticResource CaptionText}" TextWrapping="Wrap" Margin="0,4,0,6"/>
+                                <WrapPanel Margin="0,0,0,8">
+                                    <Button Content="{DynamicResource EditorCapture}" Command="{Binding CaptureScreenshotCommand}" Style="{StaticResource BaseButton}" MinHeight="40" Margin="0,0,6,4" />
+                                    <Button Content="{DynamicResource EditorUpload}" Command="{Binding ImportImageCommand}" Style="{StaticResource BaseButton}" MinHeight="40" Margin="0,0,6,4" />
+                                    <Button Content="{DynamicResource EditorClear}" Command="{Binding ClearImageCommand}" Style="{StaticResource BaseButton}" MinHeight="40" Margin="0,0,6,4" />
+                                    <Button Content="{DynamicResource EditorTest}" Command="{Binding TestMatchCommand}" Style="{StaticResource BaseButton}" MinHeight="40" Margin="0,0,6,4" />
+                                </WrapPanel>
+                                <Border Background="{StaticResource BackgroundBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="2" Padding="4" Margin="0,0,0,6" ToolTip="{Binding ImagePath}">
+                                    <Grid>
+                                        <imageMatching:TemplatePreviewControl x:Name="MainTemplatePreview" Height="110" Source="{Binding ScreenshotPreview}" ClickPoint="{Binding PreviewClickPoint}" IgnoredRegions="{Binding ImageIgnoredRegions}" PointSelected="OnImagePointSelected"/>
+                                        <TextBlock Text="{DynamicResource EditorImagePlaceholder}" HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" Margin="16,12" IsHitTestVisible="False">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock" BasedOn="{StaticResource CaptionText}">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding HasScreenshot}" Value="False">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </Grid>
+                                </Border>
+                                <TextBlock Text="{DynamicResource ImageClickPointHint}" Style="{StaticResource CaptionText}" TextWrapping="Wrap" Margin="0,4,0,6"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Margin="0,0,8,0">
+                                        <TextBlock Text="{DynamicResource EditorOperation}" Style="{StaticResource LabelText}" TextWrapping="Wrap" Margin="0,4,0,6"/>
+                                        <ComboBox SelectedValue="{Binding Operation}" SelectedValuePath="Tag" Height="32" Style="{StaticResource ModernComboBox}">
+                                            <ComboBoxItem Content="{DynamicResource EditorLeftClick}" Tag="Click" Style="{StaticResource ModernComboBoxItem}"/>
+                                            <ComboBoxItem Content="{DynamicResource EditorRightClick}" Tag="RightClick" Style="{StaticResource ModernComboBoxItem}"/>
+                                        </ComboBox>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                                        <TextBlock Text="{DynamicResource ImageTimeoutLabel}" Style="{StaticResource LabelText}" TextWrapping="Wrap" Margin="0,4,0,6"/>
+                                        <TextBox x:Name="ImageTimeoutBox" Text="{Binding ImageTimeoutSecondsText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBox}" Height="32"/>
+                                    </StackPanel>
+                                </Grid>
+                                <TextBlock Text="{DynamicResource ImageTimeoutHint}" Style="{StaticResource CaptionText}" TextWrapping="Wrap" Margin="0,4,0,6"/>
+                                <Expander x:Name="ImageAdvancedExpander" Header="{DynamicResource ImageAdvanced}" IsExpanded="{Binding ImageAdvancedExpanded}" Style="{StaticResource ImageMatchingExpander}">
+                                    <StackPanel Margin="0,12,0,0">
+                                        <WrapPanel>
+                                            <Button x:Name="ImageEditTemplateButton" Content="{DynamicResource ImageEditTemplate}" Command="{Binding EditImageTemplateCommand}" Style="{StaticResource BaseButton}" MinHeight="40" Margin="0,0,6,4" />
+                                            <Button Content="{DynamicResource ImageResetCenter}" Command="{Binding ResetImageClickPointCommand}" Style="{StaticResource BaseButton}" MinHeight="40" Margin="0,0,6,4" />
+                                        </WrapPanel>
+                                        <TextBlock Text="{DynamicResource EditorThreshold}" Style="{StaticResource LabelText}" TextWrapping="Wrap" Margin="0,4,0,6"/>
+                                        <Grid Margin="0,4,0,4">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Slider x:Name="ImageThresholdSlider" Minimum="0.1" Maximum="1" Value="{Binding MatchThreshold}" TickFrequency="0.01" IsSnapToTickEnabled="True" IsMoveToPointEnabled="True" Style="{StaticResource ModernSlider}"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding MatchThreshold, StringFormat={}{0:P0}}" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                                        </Grid>
+                                        <TextBlock Text="{DynamicResource ImageThresholdHint}" Style="{StaticResource CaptionText}" TextWrapping="Wrap" Margin="0,4,0,6"/>
+                                        <StackPanel Visibility="{Binding UsesLegacyImageOffset, Converter={StaticResource BoolToVis}}">
+                                            <TextBlock Text="{DynamicResource ImageLegacyOffset}" Style="{StaticResource CaptionText}" TextWrapping="Wrap" Margin="0,4,0,6"/>
+                                            <TextBlock Text="{DynamicResource EditorOffsetX}" Style="{StaticResource LabelText}" TextWrapping="Wrap" Margin="0,4,0,6"/>
+                                            <TextBox Text="{Binding OffsetX, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBox}" Height="32"/>
+                                            <TextBlock Text="{DynamicResource EditorOffsetY}" Style="{StaticResource LabelText}" TextWrapping="Wrap" Margin="0,4,0,6"/>
+                                            <TextBox Text="{Binding OffsetY, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBox}" Height="32"/>
+                                        </StackPanel>
+                                        <TextBlock Text="{DynamicResource ImageSearchScope}" Style="{StaticResource LabelText}" TextWrapping="Wrap" Margin="0,4,0,6"/>
+                                        <ComboBox x:Name="ImageScopeCombo" SelectedValue="{Binding ImageScopeKind}" SelectedValuePath="Tag" Height="32" Style="{StaticResource ModernComboBox}">
+                                            <ComboBoxItem Content="{DynamicResource ImageScopeDesktop}" Tag="{x:Static models:ImageSearchScopeKind.Desktop}" Style="{StaticResource ModernComboBoxItem}"/>
+                                            <ComboBoxItem Content="{DynamicResource ImageScopeRegion}" Tag="{x:Static models:ImageSearchScopeKind.Region}" Style="{StaticResource ModernComboBoxItem}"/>
+                                            <ComboBoxItem Content="{DynamicResource ImageScopeWindow}" Tag="{x:Static models:ImageSearchScopeKind.Window}" Style="{StaticResource ModernComboBoxItem}"/>
+                                        </ComboBox>
+                                        <TextBlock Text="{Binding ImageScopeDescription}" Style="{StaticResource CaptionText}" TextWrapping="Wrap" Margin="0,4,0,6"/>
+                                        <Button Content="{DynamicResource ImagePickRegion}" Command="{Binding PickImageRegionCommand}" Style="{StaticResource BaseButton}" MinHeight="40" Margin="0,0,6,4" Visibility="{Binding UsesImageRegion, Converter={StaticResource BoolToVis}}"/>
+                                        <WrapPanel Visibility="{Binding UsesImageWindow, Converter={StaticResource BoolToVis}}">
+                                            <Button x:Name="ImageChooseWindowButton" Content="{DynamicResource ImageChooseWindow}" Command="{Binding PickImageWindowCommand}" Style="{StaticResource BaseButton}" MinHeight="40" Margin="0,0,6,4" />
+                                            <Button Content="{DynamicResource ImagePickWindowRegion}" Command="{Binding PickImageWindowRegionCommand}" Style="{StaticResource BaseButton}" MinHeight="40" Margin="0,0,6,4" />
+                                            <Button Content="{DynamicResource ImageClearWindowRegion}" Command="{Binding ClearImageWindowRegionCommand}" Style="{StaticResource BaseButton}" MinHeight="40" Margin="0,0,6,4" />
+                                        </WrapPanel>
+                                        <TextBlock Text="{DynamicResource ImageMultipleTargets}" Style="{StaticResource LabelText}" TextWrapping="Wrap" Margin="0,4,0,6"/>
+                                        <ComboBox x:Name="ImageSelectionCombo" SelectedValue="{Binding ImageSelection}" SelectedValuePath="Tag" Height="32" Style="{StaticResource ModernComboBox}">
+                                            <ComboBoxItem Content="{DynamicResource ImageSelectionUnique}" Tag="{x:Static models:ImageSelectionMode.Unique}" Style="{StaticResource ModernComboBoxItem}"/>
+                                            <ComboBoxItem Content="{DynamicResource ImageSelectionOrdered}" Tag="{x:Static models:ImageSelectionMode.Ordered}" Style="{StaticResource ModernComboBoxItem}"/>
+                                        </ComboBox>
+                                        <StackPanel Visibility="{Binding UsesImageMatchIndex, Converter={StaticResource BoolToVis}}">
+                                            <TextBlock Text="{DynamicResource ImageMatchIndexLabel}" Style="{StaticResource LabelText}" TextWrapping="Wrap" Margin="0,4,0,6"/>
+                                            <TextBox x:Name="ImageMatchIndexBox" Text="{Binding ImageMatchIndexText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBox}" Height="32"/>
+                                            <TextBlock Text="{DynamicResource ImageMatchIndexHint}" Style="{StaticResource CaptionText}" TextWrapping="Wrap" Margin="0,4,0,6"/>
+                                        </StackPanel>
+                                        <TextBlock Text="{DynamicResource ImageAlternates}" Style="{StaticResource LabelText}" TextWrapping="Wrap" Margin="0,4,0,6"/>
+                                        <TextBlock Text="{DynamicResource ImageAlternatesHint}" Style="{StaticResource CaptionText}" TextWrapping="Wrap" Margin="0,4,0,6"/>
+                                        <ListBox x:Name="AlternateTemplatesList" ItemsSource="{Binding AlternateTemplates}" SelectedItem="{Binding SelectedAlternateTemplate}" Style="{StaticResource ModernListBox}" ItemContainerStyle="{StaticResource CompactListBoxItem}" MinHeight="48" MaxHeight="120"/>
+                                        <WrapPanel Margin="0,6,0,0">
+                                            <Button Content="{DynamicResource EditorCapture}" Command="{Binding CaptureAlternateTemplateCommand}" Style="{StaticResource BaseButton}" MinHeight="40" Margin="0,0,6,4" />
+                                            <Button Content="{DynamicResource EditorUpload}" Command="{Binding AddAlternateTemplateCommand}" Style="{StaticResource BaseButton}" MinHeight="40" Margin="0,0,6,4" />
+                                            <Button Content="{DynamicResource ImageEditAlternate}" Command="{Binding EditAlternateTemplateCommand}" Style="{StaticResource BaseButton}" MinHeight="40" Margin="0,0,6,4" />
+                                            <Button x:Name="ImageRemoveAlternateButton" Content="{DynamicResource ImageRemoveAlternate}" Command="{Binding RemoveAlternateTemplateCommand}" Style="{StaticResource BaseButton}" MinHeight="40" Margin="0,0,6,4" />
+                                        </WrapPanel>
+                                    </StackPanel>
+                                </Expander>
+                            </StackPanel>
+
+                            <!-- 等待动作属性 -->
+                            <StackPanel>
+                                <StackPanel.Style>
+                                    <Style TargetType="StackPanel">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SelectedActionType}" Value="Wait">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </StackPanel.Style>
+
+                                <TextBlock Text="{DynamicResource EditorWaitSettings}" Style="{StaticResource SectionTitleText}" Margin="0,0,0,12"/>
+
+                                <TextBlock Text="{DynamicResource EditorWaitSeconds}" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                                <TextBox Text="{Binding WaitSeconds}" Height="32"
+                                         Style="{StaticResource ModernTextBox}"
+                                         Margin="0,0,0,8"/>
+                                <TextBlock Text="{DynamicResource EditorWaitHint}" Style="{StaticResource CaptionText}"/>
+                            </StackPanel>
+
+                            <!-- 鼠标点击位置动作属性 -->
+                            <StackPanel>
+                                <StackPanel.Style>
+                                    <Style TargetType="StackPanel">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SelectedActionType}" Value="MouseClick">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </StackPanel.Style>
+
+                                <TextBlock Text="{DynamicResource EditorClickSettings}" Style="{StaticResource SectionTitleText}" Margin="0,0,0,12"/>
+
+                                <!-- 坐标输入 -->
+                                <Grid Margin="0,0,0,12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                        <TextBlock Text="{DynamicResource EditorCoordinateX}" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                                        <TextBox Text="{Binding ClickX}" Height="32"
+                                                 Style="{StaticResource ModernTextBox}"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                                        <TextBlock Text="{DynamicResource EditorCoordinateY}" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                                        <TextBox Text="{Binding ClickY}" Height="32"
+                                                 Style="{StaticResource ModernTextBox}"/>
+                                    </StackPanel>
+                                </Grid>
+
+                                <!-- 准星拾取按钮 -->
+                                <TextBlock Text="{DynamicResource EditorPickCoordinate}" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                                <Button Content="{DynamicResource EditorPickCoordinateButton}"
+                                        helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.BullseyeArrow}"
+                                        Style="{StaticResource PrimaryButton}"
+                                        Height="36"
+                                        HorizontalAlignment="Stretch"
+                                        Command="{Binding PickCoordinateCommand}"
+                                        Margin="0,0,0,12"/>
+
+                                <!-- 操作类型 -->
+                                <TextBlock Text="{DynamicResource EditorOperation}" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                                <ComboBox SelectedValue="{Binding ClickOperation}" SelectedValuePath="Tag"
+                                          Height="32" Style="{StaticResource ModernComboBox}"
+                                          Margin="0,0,0,12">
+                                    <ComboBoxItem Content="{DynamicResource EditorLeftClick}" Tag="Click" Style="{StaticResource ModernComboBoxItem}"/>
+                                    <ComboBoxItem Content="{DynamicResource EditorRightClick}" Tag="RightClick" Style="{StaticResource ModernComboBoxItem}"/>
+                                </ComboBox>
+                            </StackPanel>
+                            <!-- 滚动动作属性 -->
+                            <StackPanel>
+                                <StackPanel.Style>
+                                    <Style TargetType="StackPanel">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SelectedActionType}" Value="MouseScroll">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </StackPanel.Style>
+
+                                <TextBlock Text="{DynamicResource EditorScrollSettings}" Style="{StaticResource SectionTitleText}" Margin="0,0,0,12"/>
+                                <TextBlock Text="{DynamicResource EditorScrollDirection}" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                                <ComboBox SelectedValue="{Binding ScrollDirectionValue}" SelectedValuePath="Tag"
+                                          Height="32" Style="{StaticResource ModernComboBox}" Margin="0,0,0,12">
+                                    <ComboBoxItem Content="{DynamicResource EditorScrollUp}" Tag="{x:Static models:ScrollDirection.Up}" Style="{StaticResource ModernComboBoxItem}"/>
+                                    <ComboBoxItem Content="{DynamicResource EditorScrollDown}" Tag="{x:Static models:ScrollDirection.Down}" Style="{StaticResource ModernComboBoxItem}"/>
+                                    <ComboBoxItem Content="{DynamicResource EditorScrollLeft}" Tag="{x:Static models:ScrollDirection.Left}" Style="{StaticResource ModernComboBoxItem}"/>
+                                    <ComboBoxItem Content="{DynamicResource EditorScrollRight}" Tag="{x:Static models:ScrollDirection.Right}" Style="{StaticResource ModernComboBoxItem}"/>
+                                </ComboBox>
+                                <TextBlock Text="{DynamicResource EditorScrollNotches}" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                                <TextBox Text="{Binding ScrollNotchesText, UpdateSourceTrigger=PropertyChanged}"
+                                         Height="32" Style="{StaticResource ModernTextBox}" Margin="0,0,0,4"/>
+                                <TextBlock Text="{DynamicResource EditorScrollNotchesHint}" Style="{StaticResource CaptionText}"
+                                           TextWrapping="Wrap" Margin="0,0,0,12"/>
+
+                                <TextBlock Text="{DynamicResource EditorScrollPosition}" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                                <ComboBox SelectedValue="{Binding ScrollPositionModeValue}" SelectedValuePath="Tag"
+                                          Height="32" Style="{StaticResource ModernComboBox}" Margin="0,0,0,12">
+                                    <ComboBoxItem Content="{DynamicResource EditorScrollCurrentPosition}" Tag="{x:Static models:ScrollPositionMode.CurrentCursor}" Style="{StaticResource ModernComboBoxItem}"/>
+                                    <ComboBoxItem Content="{DynamicResource EditorScrollCoordinates}" Tag="{x:Static models:ScrollPositionMode.Coordinates}" Style="{StaticResource ModernComboBoxItem}"/>
+                                </ComboBox>
+
+                                <StackPanel Visibility="{Binding UsesScrollCoordinates, Converter={StaticResource BoolToVis}}">
+                                    <Grid Margin="0,0,0,12">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                            <TextBlock Text="{DynamicResource EditorCoordinateX}" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                                            <TextBox Text="{Binding ScrollXText, UpdateSourceTrigger=PropertyChanged}" Height="32"
+                                                     Style="{StaticResource ModernTextBox}"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                                            <TextBlock Text="{DynamicResource EditorCoordinateY}" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                                            <TextBox Text="{Binding ScrollYText, UpdateSourceTrigger=PropertyChanged}" Height="32"
+                                                     Style="{StaticResource ModernTextBox}"/>
+                                        </StackPanel>
+                                    </Grid>
+                                    <Button Content="{DynamicResource EditorPickCoordinateButton}"
+                                            helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.BullseyeArrow}"
+                                            Style="{StaticResource PrimaryButton}" Height="36" HorizontalAlignment="Stretch"
+                                            Command="{Binding PickCoordinateCommand}" Margin="0,0,0,12"/>
+                                </StackPanel>
+                                <TextBlock Text="{DynamicResource EditorScrollHorizontalHint}" Style="{StaticResource CaptionText}" TextWrapping="Wrap"/>
+                            </StackPanel>
+
+                            <!-- 键盘动作属性 -->
+                            <StackPanel>
+                                <StackPanel.Style>
+                                    <Style TargetType="StackPanel">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SelectedActionType}" Value="KeyPress">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </StackPanel.Style>
+
+                                <TextBlock Text="{DynamicResource EditorKeyboardSettings}" Style="{StaticResource SectionTitleText}" Margin="0,0,0,12"/>
+                                <TextBlock Text="{DynamicResource EditorKeyboardKey}" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                                <ComboBox ItemsSource="{Binding KeyboardKeys}" DisplayMemberPath="DisplayName"
+                                          SelectedValue="{Binding KeyVirtualKey}" SelectedValuePath="VirtualKey"
+                                          TextSearch.TextPath="DisplayName" IsTextSearchEnabled="True"
+                                          ItemContainerStyle="{StaticResource ModernComboBoxItem}"
+                                          Height="32" Style="{StaticResource ModernComboBox}" Margin="0,0,0,12"/>
+                                <TextBlock Text="{DynamicResource EditorKeyboardModifiers}" Style="{StaticResource LabelText}" Margin="0,0,0,8"/>
+                                <WrapPanel Margin="0,0,0,12">
+                                    <CheckBox Content="Ctrl" IsChecked="{Binding KeyControl}" Style="{StaticResource ModernCheckBox}" Margin="0,0,16,8"/>
+                                    <CheckBox Content="Alt" IsChecked="{Binding KeyAlt}" Style="{StaticResource ModernCheckBox}" Margin="0,0,16,8"/>
+                                    <CheckBox Content="Shift" IsChecked="{Binding KeyShift}" Style="{StaticResource ModernCheckBox}" Margin="0,0,16,8"/>
+                                    <CheckBox Content="Win" IsChecked="{Binding KeyWindows}" Style="{StaticResource ModernCheckBox}" Margin="0,0,0,8"/>
+                                </WrapPanel>
+                                <Border Background="{StaticResource PanelHeaderBrush}"
+                                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                                        Padding="10,8" Margin="0,0,0,10">
+                                    <TextBlock Text="{Binding KeyPressPreview}" TextWrapping="Wrap"
+                                               Style="{StaticResource BodyText}"
+                                               Foreground="{StaticResource PrimaryLightBrush}"/>
+                                </Border>
+                                <TextBlock Text="{DynamicResource EditorKeyboardHint}" Style="{StaticResource CaptionText}" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            </Grid>
+
+                            <!-- 所有动作共用的步骤说明 -->
+                            <StackPanel x:Name="ActionNotePanel" Margin="0,16,0,0">
+                                <TextBlock Text="{DynamicResource EditorStepNote}" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                                <TextBox x:Name="ActionNoteBox" Text="{Binding ActionNote, UpdateSourceTrigger=PropertyChanged}"
+                                         MaxLength="500"
+                                         AcceptsReturn="True"
+                                         TextWrapping="Wrap"
+                                         VerticalContentAlignment="Top"
+                                         ToolTip="{DynamicResource EditorStepNoteTooltip}">
+                                    <TextBox.Style>
+                                        <Style TargetType="TextBox" BasedOn="{StaticResource ModernTextBox}">
+                                            <Setter Property="MinHeight" Value="72"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding SelectedActionType}" Value="FindImage">
+                                                    <Setter Property="MinHeight" Value="32"/>
+                                                    <Setter Property="MaxHeight" Value="80"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBox.Style>
+                                </TextBox>
+                                <TextBlock Text="{DynamicResource EditorStepNoteHint}" Margin="0,4,0,0">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock" BasedOn="{StaticResource CaptionText}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding SelectedActionType}" Value="FindImage">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </StackPanel>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </helpers:PixelBorder>
+        </Grid>
+
+        <!-- 底部: 状态 + 按钮 -->
+        <Grid Grid.Row="2" Margin="8,12,8,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0"
+                       Text="{Binding StatusMessage}"
+                       ToolTip="{Binding StatusMessage}"
+                       Style="{StaticResource StatusText}"
+                       VerticalAlignment="Center"
+                       TextTrimming="CharacterEllipsis"/>
+
+            <Button Grid.Column="1"
+                    Content="{DynamicResource CommonCancel}"
+                    helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.Close}"
+                    Style="{StaticResource BaseButton}"
+                    MinWidth="100" Height="40" Padding="12,4" FontSize="12"
+                    Margin="0,0,8,0"
+                    Command="{Binding CancelCommand}"/>
+            <Button Grid.Column="2"
+                    Content="{DynamicResource EditorSave}"
+                    helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.Save}"
+                    Style="{StaticResource PrimaryButton}"
+                    MinWidth="100" Height="40" Padding="12,4" FontSize="12"
+                    Command="{Binding SaveCommand}"/>
+        </Grid>
+    </Grid>
+</UserControl>

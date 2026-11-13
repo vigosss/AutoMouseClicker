@@ -11,6 +11,8 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+    env:
+      RELEASE_DOTNET_SDK: '10.0.404'
     permissions:
       contents: write
 
@@ -19,34 +21,47 @@ jobs:
       uses: actions/checkout@v4
 
     # 标签是发布入口；必须与项目内部版本一致，避免发布包和自动更新版本错位。
-    - name: Extract version from tag
+    - name: Verify release tag and project version
       if: startsWith(github.ref, 'refs/tags/v')
       id: version
-      shell: bash
-      run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-
-    - name: Verify tag matches project version
-      if: startsWith(github.ref, 'refs/tags/v')
       shell: pwsh
       run: |
-        [xml]$project = Get-Content "Ming-AutoClicker.csproj"
-        $projectVersion = [string]($project.Project.PropertyGroup.Version | Select-Object -First 1)
-        $tag = "${{ steps.version.outputs.VERSION }}"
-        $tagVersion = $tag.TrimStart('v', 'V')
-
-        if ($tagVersion -notmatch '^\d+\.\d+\.\d+$') {
+        $tag = $env:GITHUB_REF_NAME
+        if ($tag -cnotmatch '^v(?<version>\d+\.\d+\.\d+)$') {
           throw "Release tag must use vMAJOR.MINOR.PATCH format, but got '$tag'."
         }
+        $tagVersion = $Matches['version']
+        [xml]$project = Get-Content "Ming-AutoClicker.csproj" -Raw -Encoding UTF8
+        $projectVersion = [string]($project.Project.PropertyGroup.Version | Select-Object -First 1)
         if ($projectVersion -ne $tagVersion) {
           throw "Release tag '$tag' does not match project version '$projectVersion'."
         }
-
+        "VERSION=$tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
         Write-Host "Version check passed: $tag"
+
+    - name: Prepare bilingual release notes
+      if: startsWith(github.ref, 'refs/tags/v')
+      id: release_notes
+      shell: pwsh
+      run: |
+        $notesPath = Join-Path $env:RUNNER_TEMP "release-notes-$($env:GITHUB_REF_NAME).md"
+        & ./scripts/Write-ReleaseNotes.ps1 -ProjectDirectory $env:GITHUB_WORKSPACE -Tag $env:GITHUB_REF_NAME -OutputFile $notesPath
+        "path=$notesPath" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
+      env:
+        DOTNET_INSTALL_DIR: ${{ runner.temp }}/ming-dotnet
       with:
-        dotnet-version: '10.0.x'
+        dotnet-version: ${{ env.RELEASE_DOTNET_SDK }}
+
+    - name: Verify selected .NET SDK
+      shell: pwsh
+      run: |
+        $selectedSdk = (dotnet --version).Trim()
+        if ($LASTEXITCODE -ne 0 -or $selectedSdk -ne $env:RELEASE_DOTNET_SDK) {
+          throw "Expected SDK $($env:RELEASE_DOTNET_SDK), but the repository selected '$selectedSdk'."
+        }
 
     - name: Restore dependencies
       run: dotnet restore
@@ -60,9 +75,40 @@ jobs:
     - name: Build
       run: dotnet build -c Release --no-restore
 
+    - name: Run regression tests
+      run: dotnet run --project Tests/Ming-AutoClicker.Tests.csproj -c Release --no-build
+
     - name: Publish EXE
       if: startsWith(github.ref, 'refs/tags/v')
-      run: dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+      run: dotnet publish Ming-AutoClicker.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+
+    - name: Verify release attachments
+      if: startsWith(github.ref, 'refs/tags/v')
+      shell: pwsh
+      run: |
+        $publishDir = "bin/Release/net10.0-windows/win-x64/publish"
+        $required = @("Ming-AutoClicker.exe", "LICENSE", "THIRD_PARTY_NOTICES.md", "SOURCE_INFORMATION.md", "BUILD_INFO.json", "Assets/Fonts/OFL.txt")
+        $required += Get-ChildItem -Path "licenses", "Assets/Fonts/LICENSES" -Recurse -File |
+          ForEach-Object { [IO.Path]::GetRelativePath($env:GITHUB_WORKSPACE, $_.FullName) }
+        foreach ($relativePath in $required) {
+          if (-not (Test-Path -LiteralPath (Join-Path $publishDir $relativePath) -PathType Leaf)) {
+            throw "Missing release attachment: $relativePath"
+          }
+        }
+
+        $metadata = Get-Content (Join-Path $publishDir "BUILD_INFO.json") -Raw | ConvertFrom-Json
+        if ($metadata.sourceCommit -ne $env:GITHUB_SHA -or
+            $metadata.sourceTag -ne $env:GITHUB_REF_NAME -or
+            $metadata.version -ne $env:GITHUB_REF_NAME.Substring(1) -or
+            $metadata.workingTreeDirty -ne $false -or
+            $metadata.buildReused -ne $false -or
+            $metadata.runtimeIdentifier -ne 'win-x64' -or
+            $metadata.selfContained -ne $true -or
+            -not $metadata.sourceArchiveUrl -or
+            $metadata.license -ne "GPL-3.0-only") {
+          throw "Release source metadata does not match the clean tagged checkout."
+        }
+        Write-Host "Release licenses and source metadata verified."
 
     # ========== 以下仅在 tag 推送时执行（发布 Release） ==========
 
@@ -84,7 +130,7 @@ jobs:
         name: 智点精灵 ${{ steps.version.outputs.VERSION }}
         draft: false
         prerelease: false
-        generate_release_notes: true
+        body_path: ${{ steps.release_notes.outputs.path }}
         files: |
           Ming-AutoClicker-${{ steps.version.outputs.VERSION }}.zip
       env:

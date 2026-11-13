@@ -1,32 +1,36 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <FontFamily x:Key="PixelFontFamily">pack://application:,,,/Assets/Fonts/#Fusion Pixel 12px Prop zh_hans</FontFamily>
-    <FontFamily x:Key="PixelMonoFontFamily">Consolas</FontFamily>
-    <Style TargetType="TextBlock">
+    <FontFamily x:Key="PixelFontFamily">pack://application:,,,/Ming-AutoClicker;component/Assets/Fonts/#Fusion Pixel 12px Prop zh_hans</FontFamily>
+    <FontFamily x:Key="PixelMonoFontFamily">pack://application:,,,/Ming-AutoClicker;component/Assets/Fonts/#Fusion Pixel 12px Prop zh_hans</FontFamily>
+    <Style x:Key="PixelTextBase" TargetType="TextBlock">
         <Setter Property="FontFamily" Value="{StaticResource PixelFontFamily}"/>
+        <Setter Property="FontSize" Value="{StaticResource PixelBodySize}"/>
+        <Setter Property="FontWeight" Value="Normal"/>
         <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
         <Setter Property="TextOptions.TextFormattingMode" Value="Display"/>
-        <Setter Property="TextOptions.TextRenderingMode" Value="ClearType"/>
+        <Setter Property="TextOptions.TextRenderingMode" Value="Aliased"/>
+        <Setter Property="UseLayoutRounding" Value="True"/>
         <Setter Property="SnapsToDevicePixels" Value="True"/>
     </Style>
-    <Style x:Key="PageTitleText" TargetType="TextBlock">
+    <Style TargetType="TextBlock" BasedOn="{StaticResource PixelTextBase}"/>
+    <Style x:Key="PageTitleText" TargetType="TextBlock" BasedOn="{StaticResource PixelTextBase}">
         <Setter Property="FontFamily" Value="{StaticResource PixelFontFamily}"/>
-        <Setter Property="FontSize" Value="20"/>
+        <Setter Property="FontSize" Value="{StaticResource PixelTitleSize}"/>
         <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}"/>
     </Style>
-    <Style x:Key="SectionTitleText" TargetType="TextBlock">
+    <Style x:Key="SectionTitleText" TargetType="TextBlock" BasedOn="{StaticResource PixelTextBase}">
         <Setter Property="FontFamily" Value="{StaticResource PixelFontFamily}"/>
-        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="FontSize" Value="{StaticResource PixelBodySize}"/>
         <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}"/>
     </Style>
-    <Style x:Key="BodyText" TargetType="TextBlock">
+    <Style x:Key="BodyText" TargetType="TextBlock" BasedOn="{StaticResource PixelTextBase}">
         <Setter Property="FontFamily" Value="{StaticResource PixelFontFamily}"/>
-        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="FontSize" Value="{StaticResource PixelBodySize}"/>
         <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
     </Style>
-    <Style x:Key="CaptionText" TargetType="TextBlock">
+    <Style x:Key="CaptionText" TargetType="TextBlock" BasedOn="{StaticResource PixelTextBase}">
         <Setter Property="FontFamily" Value="{StaticResource PixelFontFamily}"/>
-        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="FontSize" Value="{StaticResource PixelBodySize}"/>
         <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
     </Style>
     <Style x:Key="LabelText" TargetType="TextBlock" BasedOn="{StaticResource BodyText}">

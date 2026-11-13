@@ -20,10 +20,10 @@ namespace Ming_AutoClicker.Services
         private bool _disposed;
 
 
-        public ScreenCaptureService()
+        public ScreenCaptureService(string? screenshotDirectory = null)
         {
             // 截图存储目录
-            _screenshotDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", "screenshots");
+            _screenshotDirectory = screenshotDirectory ?? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", "screenshots");
             
             // 确保目录存在
             if (!Directory.Exists(_screenshotDirectory))
@@ -284,19 +284,23 @@ namespace Ming_AutoClicker.Services
             {
                 foreach (var action in profile.Actions)
                 {
-                    if (action is not FindImageAction findImage || string.IsNullOrWhiteSpace(findImage.ImagePath))
+                    if (action is not FindImageAction findImage)
                         continue;
 
-                    var candidate = Path.IsPathRooted(findImage.ImagePath)
-                        ? findImage.ImagePath
-                        : Path.Combine(_screenshotDirectory, findImage.ImagePath);
-                    try
+                    foreach (var template in findImage.GetTemplates())
                     {
-                        referenced.Add(EnsurePathInsideScreenshotDirectory(candidate, findImage.ImagePath));
-                    }
-                    catch (UnauthorizedAccessException)
-                    {
-                        // 非法路径不会因为清理流程而访问或删除目录外文件。
+                        if (string.IsNullOrWhiteSpace(template.ImagePath)) continue;
+                        var candidate = Path.IsPathRooted(template.ImagePath)
+                            ? template.ImagePath
+                            : Path.Combine(_screenshotDirectory, template.ImagePath);
+                        try
+                        {
+                            referenced.Add(EnsurePathInsideScreenshotDirectory(candidate, template.ImagePath));
+                        }
+                        catch (UnauthorizedAccessException)
+                        {
+                            // Invalid paths never cause cleanup outside the screenshot directory.
+                        }
                     }
                 }
             }

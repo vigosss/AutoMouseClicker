@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Media;
 using MahApps.Metro.IconPacks;
 
 namespace Ming_AutoClicker.Helpers
@@ -20,5 +21,15 @@ namespace Ming_AutoClicker.Helpers
 
         public static PackIconPixelartIconsKind GetKind(DependencyObject element) =>
             (PackIconPixelartIconsKind)element.GetValue(KindProperty);
+
+        /// <summary>A custom silhouette takes precedence over the icon pack, when supplied.</summary>
+        public static readonly DependencyProperty GeometryProperty = DependencyProperty.RegisterAttached(
+            "Geometry", typeof(Geometry), typeof(PixelIcon), new FrameworkPropertyMetadata(null));
+
+        public static void SetGeometry(DependencyObject element, Geometry? value) =>
+            element.SetValue(GeometryProperty, value);
+
+        public static Geometry? GetGeometry(DependencyObject element) =>
+            (Geometry?)element.GetValue(GeometryProperty);
     }
 }

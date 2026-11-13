@@ -87,6 +87,12 @@ namespace Ming_AutoClicker.Models
                     case MouseClickAction mouseClickAction:
                         clone.Actions.Add(mouseClickAction.Clone());
                         break;
+                    case MouseScrollAction mouseScrollAction:
+                        clone.Actions.Add(mouseScrollAction.Clone());
+                        break;
+                    case KeyPressAction keyPressAction:
+                        clone.Actions.Add(keyPressAction.Clone());
+                        break;
                 }
             }
 

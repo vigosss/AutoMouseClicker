@@ -14,8 +14,8 @@
 
     <sys:String x:Key="MainAutoClickTab">Auto Clicker</sys:String>
     <sys:String x:Key="MainMacroTab">Mouse Macros</sys:String>
-    <sys:String x:Key="MainClickCountPrefix">Clicked </sys:String>
-    <sys:String x:Key="MainClickCountSuffix"> times</sys:String>
+    <sys:String x:Key="MainClickCountPrefix">Clicked&#160;</sys:String>
+    <sys:String x:Key="MainClickCountSuffix">&#160;times</sys:String>
     <sys:String x:Key="MainSettingsTooltip">Open settings</sys:String>
     <sys:String x:Key="MainSettingsButton">Settings</sys:String>
     <sys:String x:Key="EditorWindowTitle">Edit Macro - {0}</sys:String>
@@ -289,11 +289,45 @@
     <sys:String x:Key="MainRecordingTab">Record &amp; Playback</sys:String>
     <sys:String x:Key="RecordingSearch">Search recordings</sys:String><sys:String x:Key="RecordingImport">Import</sys:String><sys:String x:Key="RecordingExport">Export</sys:String><sys:String x:Key="RecordingHelp">Help</sys:String>
     <sys:String x:Key="RecordingCancelSelection">Clear selection</sys:String><sys:String x:Key="RecordingCreatedAt">Recorded: </sys:String><sys:String x:Key="RecordingDuration">  Duration: </sys:String><sys:String x:Key="RecordingSelected">Selected</sys:String>
-    <sys:String x:Key="RecordingOptimize">Optimize</sys:String><sys:String x:Key="RecordingRename">Rename</sys:String><sys:String x:Key="RecordingDelete">Delete</sys:String><sys:String x:Key="RecordingSetHotkey">Set hotkey</sys:String><sys:String x:Key="RecordingStepCount">{0} steps</sys:String>
+    <sys:String x:Key="RecordingOptimize">Optimize</sys:String><sys:String x:Key="RecordingRename">Rename</sys:String><sys:String x:Key="RecordingDelete">Delete</sys:String><sys:String x:Key="RecordingSetHotkey">Set hotkey</sys:String><sys:String x:Key="RecordingStepCount">{0} actions</sys:String>
+    <sys:String x:Key="RecordingPause">Pause</sys:String>
+    <sys:String x:Key="RecordingResume">Resume</sys:String>
+    <sys:String x:Key="RecordingStopShort">Stop</sys:String>
+    <sys:String x:Key="RecordingPauseTooltip">Pause recording: suspend input capture and the timer. Resume appends to this recording.</sys:String>
+    <sys:String x:Key="RecordingResumeTooltip">Resume recording: continue capturing input and timing in this recording.</sys:String>
+    <sys:String x:Key="RecordingStopTooltip">Stop recording: end this recording and save the captured actions.</sys:String>
+    <sys:String x:Key="PlaybackPauseTooltip">Pause playback: keep the current position and pause the timer. Resume continues from here.</sys:String>
+    <sys:String x:Key="PlaybackResumeTooltip">Resume playback: continue from the paused position and resume the timer.</sys:String>
+    <sys:String x:Key="PlaybackStopTooltip">Stop playback: end this run. Starting playback again begins with the first action.</sys:String>
+    <sys:String x:Key="RecordingMore">More</sys:String>
+    <sys:String x:Key="PlaybackSpeedHint">Playback speed: 0.5–5× in 0.1 steps. Drag, click the track or use arrow keys. Unavailable during a run.</sys:String>
+    <sys:String x:Key="RecordingReadyStatus">Ready to record</sys:String>
+    <sys:String x:Key="PlaybackReadyStatus">Ready to play · {0} actions</sys:String>
+    <sys:String x:Key="RecordingSessionStatus">{0} · {1} actions recorded · Elapsed {2}</sys:String>
+    <sys:String x:Key="PlaybackSessionStatus">{0} · Actions {1}/{2} · Loop {3}/{4} · Elapsed {5}</sys:String>
+    <sys:String x:Key="RecordingCompactStatus">{0} · Actions {1}</sys:String>
+    <sys:String x:Key="PlaybackCompactStatus">{0} · Actions {1}/{2}</sys:String>
+    <sys:String x:Key="RecordingElapsedStatus">Elapsed {0}</sys:String>
+    <sys:String x:Key="PlaybackIntervalCompact">Gap(ms)</sys:String>
+    <sys:String x:Key="RecordingStatusPaused">Recording paused</sys:String>
+    <sys:String x:Key="PlaybackStatusPaused">Playback paused</sys:String>
+    <sys:String x:Key="RecordingStatusStopping">Stopping…</sys:String>
+    <sys:String x:Key="RecordingStatusStopped">Recording stopped</sys:String>
+    <sys:String x:Key="PlaybackStatusCompleted">Completed</sys:String>
+    <sys:String x:Key="PlaybackStatusStopped">Stopped</sys:String>
+    <sys:String x:Key="PlaybackStatusFailed">Playback failed</sys:String>
+    <sys:String x:Key="RecordingStatusFailed">Recording failed</sys:String>
+    <sys:String x:Key="RecordingEmptyPlayback">No enabled actions. Record or enable actions before playback.</sys:String>
+    <sys:String x:Key="PlaybackInvalidSpeed">Enter a speed from 0.5 to 5.</sys:String>
+    <sys:String x:Key="PlaybackInvalidLoopCount">Enter a whole number greater than zero.</sys:String>
+    <sys:String x:Key="PlaybackInvalidInterval">Enter a whole number of milliseconds, zero or greater.</sys:String>
+    <sys:String x:Key="RecordingError">Recording failed: {0}</sys:String>
+    <sys:String x:Key="RecordingElapsedHelp">Elapsed is hours:minutes:seconds.tenths. Pauses are excluded; loop intervals are included. Actions include pointer movement, presses and releases, rather than clicks alone.</sys:String>
+    <sys:String x:Key="PlaybackInfiniteCount">∞</sys:String>
     <sys:String x:Key="RecordingStart">Start recording</sys:String><sys:String x:Key="RecordingPauseResume">Pause / Resume</sys:String><sys:String x:Key="RecordingStop">Stop recording</sys:String><sys:String x:Key="RecordingActions">Actions </sys:String>
     <sys:String x:Key="PlaybackSpeed">Speed</sys:String><sys:String x:Key="PlaybackLoop">Loops</sys:String><sys:String x:Key="PlaybackInfinite">Infinite</sys:String><sys:String x:Key="PlaybackInterval">Interval (ms)</sys:String><sys:String x:Key="PlaybackStart">Start playback</sys:String><sys:String x:Key="PlaybackStop">Stop playback</sys:String><sys:String x:Key="PlaybackStep">Step </sys:String>
     <sys:String x:Key="RecordingStatusRecording">Recording</sys:String><sys:String x:Key="RecordingStatusPlaying">Playing</sys:String><sys:String x:Key="RecordingDefaultName">Mouse recording-{0}</sys:String><sys:String x:Key="RecordingDeletePrompt">Delete “{0}”?</sys:String>
-    <sys:String x:Key="RecordingHelpTitle">Recording &amp; Playback Help</sys:String><sys:String x:Key="RecordingHelpText">With no selection, the global hotkey starts recording. With a selection, it starts playback. Standard privileges cannot control elevated windows.</sys:String>
+    <sys:String x:Key="RecordingHelpTitle">Recording &amp; Playback Help</sys:String><sys:String x:Key="RecordingHelpText">With no selection, the global hotkey starts recording. With a selection, it starts playback. Press it again while running to stop.&#10;&#10;The first row contains controls. Recording has Start, Pause/Resume and Stop: pausing suspends capture and timing, resuming appends to this recording, and stopping ends and saves the captured actions. During playback, Start playback becomes Stop playback. Starting again after a stop begins with the first action.&#10;&#10;The second row shows status, action progress and elapsed time on the left. Hover for the complete loop count and error details. Actions include pointer movement, presses and releases; one click may contain several actions.&#10;&#10;Elapsed is hours:minutes:seconds.tenths. Pauses are excluded; loop intervals are included. The result remains after stopping or completing and resets when another recording is selected.&#10;&#10;On the right, adjust the speed slider (0.5–5× in 0.1 steps), loop count, infinite looping and loop interval. These options are unavailable during a run. More on each card contains hotkey, optimize, rename and delete actions. Standard privileges cannot control elevated windows.</sys:String>
     <sys:String x:Key="RecordingLargeTitle">Large recording</sys:String><sys:String x:Key="RecordingLargeMessage">This recording contains more than 10,000 actions. Optimization is recommended.</sys:String><sys:String x:Key="RecordingDisplayChangedTitle">Display layout changed</sys:String><sys:String x:Key="RecordingDisplayChangedMessage">The current display layout differs from the recorded layout. Map coordinates proportionally and continue?</sys:String>
     <sys:String x:Key="PlaybackErrorTitle">Playback error</sys:String><sys:String x:Key="PlaybackError">Playback failed: {0}</sys:String><sys:String x:Key="RecordingImportErrorTitle">Import failed</sys:String><sys:String x:Key="AutomationSwitchFailed">The current task could not stop safely. Switching was cancelled.</sys:String>
     <sys:String x:Key="ItemHotkeyTitle">Set item hotkey</sys:String><sys:String x:Key="ItemHotkeyHint">Click the field, then press a shortcut</sys:String><sys:String x:Key="ItemHotkeyClear">Clear</sys:String><sys:String x:Key="ItemHotkeyUnavailableTitle">Hotkey unavailable</sys:String><sys:String x:Key="MacroItemHotkey">Hotkey</sys:String>
@@ -303,4 +337,117 @@
     <sys:String x:Key="TrayShow">Show main window</sys:String>
     <sys:String x:Key="TrayExit">Exit</sys:String>
     <sys:String x:Key="TrayMinimized">The app is still running. Right-click the tray icon to exit.</sys:String>
+    <sys:String x:Key="EditorAddScroll">Scroll</sys:String>
+    <sys:String x:Key="EditorAddKeyboard">Keyboard</sys:String>
+    <sys:String x:Key="EditorAddedScroll">Scroll action added</sys:String>
+    <sys:String x:Key="EditorAddedKeyboard">Keyboard action added</sys:String>
+    <sys:String x:Key="EditorScrollSettings">Scroll settings</sys:String>
+    <sys:String x:Key="EditorScrollDirection">Direction</sys:String>
+    <sys:String x:Key="EditorScrollUp">Up</sys:String>
+    <sys:String x:Key="EditorScrollDown">Down</sys:String>
+    <sys:String x:Key="EditorScrollLeft">Left</sys:String>
+    <sys:String x:Key="EditorScrollRight">Right</sys:String>
+    <sys:String x:Key="EditorScrollNotches">Wheel notches</sys:String>
+    <sys:String x:Key="EditorScrollNotchesHint">Enter a positive whole number. Each notch is one wheel step; the distance depends on the target app and system settings.</sys:String>
+    <sys:String x:Key="EditorScrollPosition">Scroll position</sys:String>
+    <sys:String x:Key="EditorScrollCurrentPosition">Current cursor position</sys:String>
+    <sys:String x:Key="EditorScrollCoordinates">Specified screen coordinates</sys:String>
+    <sys:String x:Key="EditorScrollHorizontalHint">Left and right scrolling require horizontal wheel support in the target app.</sys:String>
+    <sys:String x:Key="EditorScrollInvalidNotches">Wheel notches must be a whole number from 1 to 17895697.</sys:String>
+    <sys:String x:Key="EditorScrollInvalidCoordinates">X and Y must be valid integers. Negative coordinates are supported.</sys:String>
+    <sys:String x:Key="EditorKeyboardSettings">Keyboard settings</sys:String>
+    <sys:String x:Key="EditorKeyboardKey">Key to press</sys:String>
+    <sys:String x:Key="EditorKeyboardModifiers">Hold these too (optional)</sys:String>
+    <sys:String x:Key="EditorKeyboardPreview">This step will press: {0}</sys:String>
+    <sys:String x:Key="EditorKeyboardHint">Presses once, then releases automatically. Keys go to the window you are currently using. To use an input field, add a Click step first.</sys:String>
+    <sys:String x:Key="EditorInvalidAction">Cannot save step {0}: {1}</sys:String>
+    <sys:String x:Key="ActionScrollCurrent">Scroll: {0}, {1} notch(es) at cursor</sys:String>
+    <sys:String x:Key="ActionScrollCoordinates">Scroll: {0}, {1} notch(es) at ({2}, {3})</sys:String>
+    <sys:String x:Key="ActionKeyPress">Key press: {0}</sys:String>
+    <sys:String x:Key="MacroInvalidScrollDirection">Select a valid scroll direction.</sys:String>
+    <sys:String x:Key="MacroInvalidScrollPosition">Select a valid scroll position mode.</sys:String>
+    <sys:String x:Key="MacroInvalidScrollNotches">Scroll notches must be an integer from 1 to 17895697.</sys:String>
+    <sys:String x:Key="MacroInvalidKey">Select a supported main key.</sys:String>
+    <sys:String x:Key="MacroInvalidModifiers">Invalid keyboard modifiers.</sys:String>
+    <sys:String x:Key="ExecutorInvalidAction">Step {0} is invalid: {1}</sys:String>
+    <sys:String x:Key="MacroInputMoveFailed">Could not move the cursor to ({0}, {1}).</sys:String>
+    <sys:String x:Key="MacroInputSendFailed">Input failed: sent only {0} of {1} events.</sys:String>
+    <sys:String x:Key="MacroInputReleaseFailed">Input failed and some keys could not be released. Press and release the affected keys manually.</sys:String>
+    <sys:String x:Key="MacroHotkeyConflict">Step {0} sends “{1}”, which conflicts with {2}. Change the step or the control hotkey before running.</sys:String>
+    <sys:String x:Key="MacroHotkeyTargetGlobal">the global start/stop hotkey</sys:String>
+    <sys:String x:Key="MacroHotkeyTargetMacro">the hotkey for macro “{0}”</sys:String>
+    <sys:String x:Key="MacroHotkeyTargetRecording">the hotkey for recording “{0}”</sys:String>
+    <sys:String x:Key="HotkeyUnregisterTargetFailed">Could not unregister the existing hotkey. Please try again.</sys:String>
+    <sys:String x:Key="EditorAddAction">Add action ▾</sys:String>
+    <sys:String x:Key="ImageAutomaticHint">Automatically adapts to target scaling. Testing does not move or click the mouse.</sys:String>
+    <sys:String x:Key="ImageClickPointHint">Click the preview to choose where to click. The crosshair follows target scaling.</sys:String>
+    <sys:String x:Key="ImageEditTemplate">Click point and ignored areas</sys:String>
+    <sys:String x:Key="ImageResetCenter">Reset to center</sys:String>
+    <sys:String x:Key="ImageStopTest">Stop test</sys:String>
+    <sys:String x:Key="ImageTimeoutLabel">Wait up to (seconds)</sys:String>
+    <sys:String x:Key="ImageTimeoutHint">0 = one search. A timeout or ambiguous target stops the macro.</sys:String>
+    <sys:String x:Key="ImageAdvanced">Advanced settings</sys:String>
+    <sys:String x:Key="ImageThresholdHint">Default: 80%. Similarity is not accuracy. Narrow the scope or improve the template when the target is unclear.</sys:String>
+    <sys:String x:Key="ImageLegacyOffset">This older task uses fixed pixel offsets. Select a new click point to make it follow target scaling.</sys:String>
+    <sys:String x:Key="ImageSearchScope">Search scope</sys:String>
+    <sys:String x:Key="ImageScopeDesktop">Entire visible desktop</sys:String>
+    <sys:String x:Key="ImageScopeRegion">Fixed screen region</sys:String>
+    <sys:String x:Key="ImageScopeWindow">Selected window</sys:String>
+    <sys:String x:Key="ImageScopeDesktopHint">Search visible content on all monitors.</sys:String>
+    <sys:String x:Key="ImageScopeNotSelected">No scope selected. Choose a region or window first.</sys:String>
+    <sys:String x:Key="ImagePickRegion">Select screen region</sys:String>
+    <sys:String x:Key="ImageChooseWindow">Choose window</sys:String>
+    <sys:String x:Key="ImagePickWindowRegion">Select area within window</sys:String>
+    <sys:String x:Key="ImageClearWindowRegion">Use whole window</sys:String>
+    <sys:String x:Key="ImageWindowRegionSet">Restricted to an area within the window</sys:String>
+    <sys:String x:Key="ImageRegionMustBeInWindow">The selected region must be entirely inside the selected window client area.</sys:String>
+    <sys:String x:Key="ImageChooseWindowHint">Choose a window to follow. Searching stops if the window is unavailable, obscured, or cannot be identified uniquely.</sys:String>
+    <sys:String x:Key="ImageRefreshWindows">Refresh list</sys:String>
+    <sys:String x:Key="ImageUseWindow">Use selected window</sys:String>
+    <sys:String x:Key="ImageMultipleTargets">Multiple similar targets</sys:String>
+    <sys:String x:Key="ImageSelectionUnique">Require one clear target</sys:String>
+    <sys:String x:Key="ImageSelectionOrdered">Select by position and index</sys:String>
+    <sys:String x:Key="ImageMatchIndexLabel">Target index (starts at 1)</sys:String>
+    <sys:String x:Key="ImageMatchIndexHint">Candidates are ordered by screen Y, then X. No click if there are too few matches.</sys:String>
+    <sys:String x:Key="ImageAlternates">Alternate appearances</sys:String>
+    <sys:String x:Key="ImageAlternatesHint">Add other appearances of the same target. Each image has its own click point and ignored areas.</sys:String>
+    <sys:String x:Key="ImageEditAlternate">Edit</sys:String>
+    <sys:String x:Key="ImageRemoveAlternate">Remove</sys:String>
+    <sys:String x:Key="ImageInvalidTimeout">Wait time must be a valid nonnegative number of seconds, no greater than 2147483.</sys:String>
+    <sys:String x:Key="ImageInvalidMatchIndex">The target index must be an integer starting at 1.</sys:String>
+    <sys:String x:Key="ImageTemplateEditorTitle">Edit template</sys:String>
+    <sys:String x:Key="ImageTemplateEditorHint">Choose a click point, or switch to ignored areas and drag a rectangle. Orange areas are excluded from matching.</sys:String>
+    <sys:String x:Key="ImageEditClickPoint">Choose click point</sys:String>
+    <sys:String x:Key="ImageEditIgnoredRegion">Draw ignored area</sys:String>
+    <sys:String x:Key="ImageClearIgnored">Clear ignored areas</sys:String>
+    <sys:String x:Key="ImageCancel">Cancel</sys:String>
+    <sys:String x:Key="MatchAmbiguous">Multiple plausible targets. Narrow the scope or specify an index.</sys:String>
+    <sys:String x:Key="MatchScopeUnavailable">Search scope unavailable. Check the window, obstructions, or region.</sys:String>
+    <sys:String x:Key="MatchTemplateUninformative">Too little useful detail. Capture a larger template or reduce ignored areas.</sys:String>
+    <sys:String x:Key="MatchTargetChanged">The target changed. No click was sent.</sys:String>
+    <sys:String x:Key="MacroInvalidFindImage">Invalid image search settings. Check the template, scope, click point, and wait time.</sys:String>
+    <sys:String x:Key="MacroInputClickFailed">Unable to click the target position.</sys:String>
+    <sys:String x:Key="MatchMethodAutomatic">Automatic multiscale matching</sys:String>
+    <sys:String x:Key="MatchMultipleCandidates">Multiple candidate targets detected.</sys:String>
+    <sys:String x:Key="MatchSearchIncomplete">The search did not finish. No click was sent.</sys:String>
+    <sys:String x:Key="ImageScopeUnavailable">The search scope is unavailable.</sys:String>
+    <sys:String x:Key="ImageScopeMoved">The target window changed during capture. Keep it stable and try again.</sys:String>
+    <sys:String x:Key="ImageScopeOutsideScreen">The search scope is outside the visible screens or crosses a gap between monitors.</sys:String>
+    <sys:String x:Key="ImageScopeSelectWindow">Select the window to search.</sys:String>
+    <sys:String x:Key="ImageScopeWindowMissing">The bound window was not found. Check that it is open, not minimized, and has the same title.</sys:String>
+    <sys:String x:Key="ImageScopeMultipleWindows">Multiple windows match the binding. Choose a uniquely identifiable window.</sys:String>
+    <sys:String x:Key="ImageScopeInvalidRegion">The region inside the window is invalid. Select it again.</sys:String>
+    <sys:String x:Key="ImageScopeObscured">Other windows cover the search region. Reveal the target window and try again.</sys:String>
+    <sys:String x:Key="MatchPreviewNoClick">This is the frame used for recognition. Testing never clicks the mouse.</sys:String>
+    <sys:String x:Key="MatchDetails">Match details</sys:String>
+    <sys:String x:Key="MatchClickPosition">Click position</sys:String>
+    <sys:String x:Key="MatchScore">Match score</sys:String>
+    <sys:String x:Key="MatchTemplateLabel">Matched template</sys:String>
+    <sys:String x:Key="MatchPreviewFound">Target found. The click position is ({0}, {1}).</sys:String>
+    <sys:String x:Key="MatchPreviewAmbiguous">Found {0} candidates. Narrow the search scope or specify a target index.</sys:String>
+    <sys:String x:Key="MatchPreviewNoSnapshot">No screenshot preview was generated for this search.</sys:String>
+    <sys:String x:Key="MatchHelpScope">Adjust search scope</sys:String>
+    <sys:String x:Key="MatchHelpAlternate">Add alternate screenshot</sys:String>
+    <sys:String x:Key="MatchHelpRecapture">Capture a new template</sys:String>
+    <sys:String x:Key="ExitCleanupFailed">Playback input cleanup has not finished. The application will stay open. Wait a moment, then try exiting again.</sys:String>
 </ResourceDictionary>

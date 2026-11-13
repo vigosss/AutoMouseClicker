@@ -1,0 +1,80 @@
+name: Bug 反馈 / Bug report
+description: 报告程序故障或界面问题 / Report a bug or UI problem.
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请先搜索已有 Issue。安全漏洞请按[安全政策](https://github.com/vigosss/AutoMouseClicker/blob/main/.github/SECURITY.md)通过邮箱私密报告。
+        Search existing issues first. Report vulnerabilities privately by email under the [Security Policy](https://github.com/vigosss/AutoMouseClicker/blob/main/.github/SECURITY.md).
+
+        请隐藏截图、日志和示例中的个人信息、密码、令牌及私人录制内容。
+        Remove personal information, passwords, tokens and private recording content from screenshots, logs and examples.
+  - type: input
+    id: app_version
+    attributes:
+      label: 软件版本 / Application version
+      description: 填写窗口显示的版本；源码构建请附提交号。 / Give the displayed version; include the commit for a source build.
+      placeholder: "例如 / e.g. 1.0.0"
+    validations:
+      required: true
+  - type: input
+    id: windows_version
+    attributes:
+      label: Windows 版本 / Windows version
+      description: 可通过 winver 查看。 / You can check this with winver.
+      placeholder: "例如 / e.g. Windows 11 24H2, build 26100"
+    validations:
+      required: true
+  - type: dropdown
+    id: module
+    attributes:
+      label: 相关功能 / Affected area
+      options:
+        - 鼠标连点 / Auto clicker
+        - 宏任务 / Macros
+        - 录制回放 / Recording and playback
+        - 找图与截图 / Image matching and capture
+        - 设置或更新 / Settings or updates
+        - 其他或不确定 / Other or unsure
+    validations:
+      required: false
+  - type: textarea
+    id: actual_result
+    attributes:
+      label: 实际发生了什么 / Actual result
+      description: 描述看到的问题及错误信息。 / Describe what happened and any error message.
+    validations:
+      required: true
+  - type: textarea
+    id: expected_result
+    attributes:
+      label: 预期结果 / Expected result
+      description: 描述你希望程序怎样工作。 / Describe what you expected the application to do.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤 / Steps to reproduce
+      description: 按顺序说明如何触发问题，偶发问题也请说明频率。 / List the steps in order and how often the issue occurs.
+      placeholder: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: 显示与运行环境（选填） / Display and runtime details (optional)
+      description: 界面、截图或坐标问题请补充缩放比例、分辨率、多显示器排列，以及程序是否以管理员身份运行。 / For UI, capture or coordinate issues, include display scaling, resolution, monitor arrangement and whether the application runs as administrator.
+    validations:
+      required: false
+  - type: textarea
+    id: attachments
+    attributes:
+      label: 截图、日志或最小示例（选填） / Screenshots, logs or minimal example (optional)
+      description: 可粘贴图片或日志；只提供已脱敏的必要内容，不要上传整个个人数据目录。 / Paste screenshots or logs and share only necessary sanitized content, not your entire personal data directory.
+    validations:
+      required: false

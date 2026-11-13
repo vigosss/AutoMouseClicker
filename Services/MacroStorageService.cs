@@ -15,10 +15,14 @@ namespace Ming_AutoClicker.Services
         private readonly string _dataDirectory;
         private readonly JsonSerializerOptions _jsonOptions;
 
-        public MacroStorageService()
+        // Until a complete load succeeds, the in-memory list cannot prove that a
+        // screenshot is orphaned: an unreadable macro may still reference it.
+        public bool LastLoadCompleted { get; private set; }
+
+        public MacroStorageService(string? dataDirectory = null)
         {
             // 数据存储目录
-            _dataDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data");
+            _dataDirectory = dataDirectory ?? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data");
             
             // 确保目录存在
             if (!Directory.Exists(_dataDirectory))
@@ -158,12 +162,17 @@ namespace Ming_AutoClicker.Services
         /// <returns>宏配置列表</returns>
         public List<MacroProfile> LoadAll()
         {
+            LastLoadCompleted = false;
             var profiles = new List<MacroProfile>();
             
             if (!Directory.Exists(_dataDirectory))
+            {
+                LastLoadCompleted = true;
                 return profiles;
+            }
 
             var files = GetMacroFiles();
+            var complete = true;
             
             foreach (var file in files)
             {
@@ -174,6 +183,7 @@ namespace Ming_AutoClicker.Services
                 }
                 catch (Exception ex)
                 {
+                    complete = false;
                     System.Diagnostics.Debug.WriteLine($"加载宏文件失败，已跳过: {file}, 错误: {ex.Message}");
                 }
             }
@@ -188,6 +198,7 @@ namespace Ming_AutoClicker.Services
                 return b.UpdatedAt.CompareTo(a.UpdatedAt);
             });
             
+            LastLoadCompleted = complete;
             return profiles;
         }
 
@@ -298,11 +309,24 @@ namespace Ming_AutoClicker.Services
             
             // 根据类型反序列化（忽略大小写，提高容错性）
             if (string.Equals(typeString, "FindImage", StringComparison.OrdinalIgnoreCase))
-                return JsonSerializer.Deserialize<FindImageAction>(root.GetRawText(), options)!;
+            {
+                var action = JsonSerializer.Deserialize<FindImageAction>(root.GetRawText(), options)!;
+                // Missing fields have legacy defaults, but explicit null containers would break editor cloning.
+                if (action.SearchScope == null || action.IgnoredRegions == null || action.AlternateTemplates == null ||
+                    action.IgnoredRegions.Any(region => region == null) ||
+                    action.AlternateTemplates.Any(template => template == null || template.IgnoredRegions == null ||
+                        template.IgnoredRegions.Any(region => region == null)))
+                    throw new JsonException(LocalizationService.Current.GetString("MacroInvalidFindImage"));
+                return action;
+            }
             if (string.Equals(typeString, "Wait", StringComparison.OrdinalIgnoreCase))
                 return JsonSerializer.Deserialize<WaitAction>(root.GetRawText(), options)!;
             if (string.Equals(typeString, "MouseClick", StringComparison.OrdinalIgnoreCase))
                 return JsonSerializer.Deserialize<MouseClickAction>(root.GetRawText(), options)!;
+            if (string.Equals(typeString, "MouseScroll", StringComparison.OrdinalIgnoreCase))
+                return JsonSerializer.Deserialize<MouseScrollAction>(root.GetRawText(), options)!;
+            if (string.Equals(typeString, "KeyPress", StringComparison.OrdinalIgnoreCase))
+                return JsonSerializer.Deserialize<KeyPressAction>(root.GetRawText(), options)!;
 
             throw new JsonException(LocalizationService.Current.Format("ActionUnknownType", typeString));
         }

@@ -1,0 +1,37 @@
+<Window x:Class="Ming_AutoClicker.Views.ImageMatching.RegionSelectWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+        xmlns:helpers="clr-namespace:Ming_AutoClicker.Helpers"
+        Title="{DynamicResource RegionTitle}" WindowStyle="None" Topmost="True"
+        ResizeMode="NoResize" WindowState="Normal" Background="Black"
+        ShowInTaskbar="False" Focusable="True" Cursor="Cross">
+    <Canvas x:Name="MainCanvas">
+        <Image x:Name="BackgroundImage" Stretch="Fill"/>
+        <Path x:Name="OverlayPath" Fill="#A0080C18"/>
+        <Rectangle x:Name="SelectionRect" Stroke="{StaticResource PrimaryBrush}" StrokeThickness="2" Visibility="Collapsed"/>
+        <Ellipse x:Name="HandleTL" Width="10" Height="10" Fill="{StaticResource BackgroundBrush}" Stroke="{StaticResource PrimaryBrush}" StrokeThickness="2" Visibility="Collapsed"/>
+        <Ellipse x:Name="HandleT" Width="10" Height="10" Fill="{StaticResource BackgroundBrush}" Stroke="{StaticResource PrimaryBrush}" StrokeThickness="2" Visibility="Collapsed"/>
+        <Ellipse x:Name="HandleTR" Width="10" Height="10" Fill="{StaticResource BackgroundBrush}" Stroke="{StaticResource PrimaryBrush}" StrokeThickness="2" Visibility="Collapsed"/>
+        <Ellipse x:Name="HandleL" Width="10" Height="10" Fill="{StaticResource BackgroundBrush}" Stroke="{StaticResource PrimaryBrush}" StrokeThickness="2" Visibility="Collapsed"/>
+        <Ellipse x:Name="HandleR" Width="10" Height="10" Fill="{StaticResource BackgroundBrush}" Stroke="{StaticResource PrimaryBrush}" StrokeThickness="2" Visibility="Collapsed"/>
+        <Ellipse x:Name="HandleBL" Width="10" Height="10" Fill="{StaticResource BackgroundBrush}" Stroke="{StaticResource PrimaryBrush}" StrokeThickness="2" Visibility="Collapsed"/>
+        <Ellipse x:Name="HandleB" Width="10" Height="10" Fill="{StaticResource BackgroundBrush}" Stroke="{StaticResource PrimaryBrush}" StrokeThickness="2" Visibility="Collapsed"/>
+        <Ellipse x:Name="HandleBR" Width="10" Height="10" Fill="{StaticResource BackgroundBrush}" Stroke="{StaticResource PrimaryBrush}" StrokeThickness="2" Visibility="Collapsed"/>
+        <helpers:PixelBorder x:Name="InfoPanel" Background="#F20A1020" BorderBrush="{StaticResource PrimaryBrush}"
+                BorderThickness="2" Padding="12,8" Visibility="Collapsed">
+            <TextBlock x:Name="SizeText" Foreground="{StaticResource PrimaryBrush}" FontSize="12" FontFamily="{StaticResource PixelMonoFontFamily}"/>
+        </helpers:PixelBorder>
+        <TextBlock x:Name="TipText" Text="{DynamicResource RegionInstruction}"
+                   Foreground="{StaticResource TextPrimaryBrush}" Background="#DD0A1020"
+                   Padding="12,8" FontSize="12"/>
+        <helpers:PixelBorder x:Name="Toolbar" Background="#F20A1020" BorderBrush="{StaticResource PrimaryBrush}"
+                BorderThickness="2" Padding="12,8" Visibility="Collapsed">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                <Button x:Name="BtnRedo" Content="{DynamicResource RegionRedo}" Style="{StaticResource BaseButton}" Margin="0,0,12,0" Click="BtnRedo_Click" helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.Reload}"/>
+                <Button x:Name="BtnCancel" Content="{DynamicResource RegionCancel}" Style="{StaticResource DangerButton}" Margin="0,0,12,0" Click="BtnCancel_Click" helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.Close}"/>
+                <Button x:Name="BtnConfirm" Content="{DynamicResource RegionConfirm}" Style="{StaticResource PrimaryButton}" Click="BtnConfirm_Click" helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.Check}"/>
+            </StackPanel>
+        </helpers:PixelBorder>
+    </Canvas>
+</Window>

@@ -6,7 +6,16 @@ using Ming_AutoClicker.Models;
 
 namespace Ming_AutoClicker.Services;
 
-public sealed class GlobalHookService : IDisposable
+public interface IRecordingCaptureService : IDisposable
+{
+    event Action<int>? OnActionRecorded;
+    void StartRecording();
+    void PauseRecording();
+    void ResumeRecording();
+    List<RecordedAction> StopRecording();
+}
+
+public sealed class GlobalHookService : IRecordingCaptureService
 {
     private IntPtr _mouseHook, _keyboardHook;
     private readonly Win32Api.HookProc _mouseProc, _keyboardProc;
@@ -31,8 +40,8 @@ public sealed class GlobalHookService : IDisposable
         _keyboardHook = Win32Api.SetWindowsHookEx(Win32Api.WH_KEYBOARD_LL, _keyboardProc, module, 0);
         if (_mouseHook == IntPtr.Zero || _keyboardHook == IntPtr.Zero) { StopRecording(); throw new InvalidOperationException("Unable to install global input hooks."); }
     }
-    public void PauseRecording() => _paused = true;
-    public void ResumeRecording() { _lastTime = _clock.ElapsedMilliseconds; _paused = false; }
+    public void PauseRecording() { _paused = true; _clock.Stop(); }
+    public void ResumeRecording() { _clock.Start(); _paused = false; }
     public List<RecordedAction> StopRecording()
     {
         if (_mouseHook != IntPtr.Zero) Win32Api.UnhookWindowsHookEx(_mouseHook);
