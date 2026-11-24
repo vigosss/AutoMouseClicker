@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using Ming_AutoClicker.Helpers;
+using Drawing = System.Drawing;
 
 namespace Ming_AutoClicker.Views.Shared
 {
@@ -17,26 +18,37 @@ namespace Ming_AutoClicker.Views.Shared
         private readonly int _screenX;
         private readonly int _screenY;
         private readonly System.Drawing.Bitmap _screenBitmap;
+        private readonly bool _pickColor;
+        private readonly SolidColorBrush _swatchBrush = new();
         private bool _isDragging;
+        public string? SelectedColorHex { get; private set; }
 
         /// <summary>
         /// 坐标拾取完成事件
         /// </summary>
         public event Action<int, int>? CoordinatePicked;
 
-        public CoordinatePickWindow()
+        public CoordinatePickWindow() : this(false) { }
+
+        public CoordinatePickWindow(bool pickColor)
+            : this(pickColor, Win32Api.GetVirtualScreenBounds(), Win32Api.CaptureVirtualScreen) { }
+
+        private CoordinatePickWindow(bool pickColor, (int X, int Y, int Width, int Height) desktop, Func<Drawing.Bitmap> capture)
         {
             InitializeComponent();
+            _pickColor = pickColor;
+            if (pickColor)
+            {
+                SetResourceReference(TitleProperty, "ColorPickScreen");
+                TipText.SetResourceReference(TextBlock.TextProperty, "ColorPickInstruction");
+                RenderOptions.SetBitmapScalingMode(BackgroundImage, BitmapScalingMode.NearestNeighbor);
+                OverlayPath.Visibility = Visibility.Collapsed;
+                ColorSwatch.Background = _swatchBrush;
+                ColorSwatch.Visibility = Visibility.Visible;
+            }
 
-            // 获取虚拟屏幕尺寸（支持多显示器）
-            var (screenX, screenY, screenW, screenH) = Win32Api.GetVirtualScreenBounds();
-            _screenX = screenX;
-            _screenY = screenY;
-            _screenWidth = screenW;
-            _screenHeight = screenH;
-
-            // 捕获当前屏幕作为背景
-            _screenBitmap = Win32Api.CaptureVirtualScreen();
+            (_screenX, _screenY, _screenWidth, _screenHeight) = desktop;
+            _screenBitmap = capture();
 
             Loaded += CoordinatePickWindow_Loaded;
             SourceInitialized += (_, _) => Win32Api.FitWindowToVirtualScreen(this);
@@ -63,6 +75,7 @@ namespace Ming_AutoClicker.Views.Shared
             // 居中提示文字
             Canvas.SetLeft(TipText, (CanvasWidth - TipText.ActualWidth) / 2);
             Canvas.SetTop(TipText, (CanvasHeight - TipText.ActualHeight) / 2);
+            if (_pickColor) UpdateCrosshair(Mouse.GetPosition(MainCanvas));
         }
 
         protected override void OnMouseDown(MouseButtonEventArgs e)
@@ -71,16 +84,16 @@ namespace Ming_AutoClicker.Views.Shared
             {
                 _isDragging = true;
                 TipText.Visibility = Visibility.Collapsed;
-                UpdateCrosshair(e);
+                UpdateCrosshair(e.GetPosition(MainCanvas));
                 e.Handled = true;
             }
         }
 
         protected override void OnMouseMove(MouseEventArgs e)
         {
-            if (_isDragging)
+            if (_isDragging || _pickColor)
             {
-                UpdateCrosshair(e);
+                UpdateCrosshair(e.GetPosition(MainCanvas));
                 e.Handled = true;
             }
         }
@@ -91,12 +104,7 @@ namespace Ming_AutoClicker.Views.Shared
             {
                 _isDragging = false;
 
-                // 获取屏幕坐标
-                var pos = e.GetPosition(MainCanvas);
-                var (screenX, screenY) = ToScreenCoordinates(pos);
-
-                // 触发事件
-                CoordinatePicked?.Invoke(screenX, screenY);
+                ConfirmSelection(e.GetPosition(MainCanvas));
 
                 DialogResult = true;
                 Close();
@@ -104,12 +112,18 @@ namespace Ming_AutoClicker.Views.Shared
             }
         }
 
+        private void ConfirmSelection(Point position)
+        {
+            var (screenX, screenY) = ToScreenCoordinates(position);
+            if (_pickColor) SelectedColorHex = UpdateColorPreview(screenX, screenY);
+            CoordinatePicked?.Invoke(screenX, screenY);
+        }
+
         /// <summary>
         /// 更新十字准星和坐标信息面板
         /// </summary>
-        private void UpdateCrosshair(MouseEventArgs e)
+        private void UpdateCrosshair(Point pos)
         {
-            var pos = e.GetPosition(MainCanvas);
             double x = pos.X;
             double y = pos.Y;
 
@@ -127,42 +141,58 @@ namespace Ming_AutoClicker.Views.Shared
 
             // 更新坐标信息
             var (screenX, screenY) = ToScreenCoordinates(pos);
-            CoordText.Text = $"X: {screenX}  Y: {screenY}";
+            if (_pickColor) UpdateColorPreview(screenX, screenY);
+            else CoordText.Text = $"X: {screenX}  Y: {screenY}";
             InfoPanel.Visibility = Visibility.Visible;
 
-            // 信息面板位置：跟随鼠标，偏移避免遮挡
-            double panelX = x + 16;
-            double panelY = y + 16;
+            var monitor = _pickColor
+                ? System.Windows.Forms.Screen.FromPoint(new Drawing.Point(screenX, screenY)).Bounds
+                : new Drawing.Rectangle(_screenX, _screenY, _screenBitmap.Width, _screenBitmap.Height);
+            PlaceInfoPanel(pos, monitor);
+        }
 
-            // 防止超出屏幕右侧
-            if (panelX + InfoPanel.ActualWidth > CanvasWidth)
+        private void PlaceInfoPanel(Point cursor, Drawing.Rectangle monitor)
+        {
+            var scaleX = CanvasWidth / _screenBitmap.Width;
+            var scaleY = CanvasHeight / _screenBitmap.Height;
+            var bounds = new Rect((monitor.X - _screenX) * scaleX, (monitor.Y - _screenY) * scaleY,
+                monitor.Width * scaleX, monitor.Height * scaleY);
+            InfoPanel.MaxWidth = bounds.Width;
+            InfoPanel.MaxHeight = bounds.Height;
+            InfoPanel.Measure(bounds.Size);
+            static double Fit(double position, double size, double start, double end)
             {
-                panelX = x - InfoPanel.ActualWidth - 16;
+                var offset = position + 16 + size <= end ? position + 16 : position - 16 - size;
+                return Math.Clamp(offset, start, Math.Max(start, end - size));
             }
-            // 防止超出屏幕底部
-            if (panelY + InfoPanel.ActualHeight > CanvasHeight)
-            {
-                panelY = y - InfoPanel.ActualHeight - 16;
-            }
-
-            Canvas.SetLeft(InfoPanel, panelX);
-            Canvas.SetTop(InfoPanel, panelY);
+            Canvas.SetLeft(InfoPanel, Fit(cursor.X, InfoPanel.DesiredSize.Width, bounds.Left, bounds.Right));
+            Canvas.SetTop(InfoPanel, Fit(cursor.Y, InfoPanel.DesiredSize.Height, bounds.Top, bounds.Bottom));
         }
 
         private double CanvasWidth => MainCanvas.ActualWidth > 0 ? MainCanvas.ActualWidth : _screenWidth;
         private double CanvasHeight => MainCanvas.ActualHeight > 0 ? MainCanvas.ActualHeight : _screenHeight;
+
+        private string UpdateColorPreview(int x, int y)
+        {
+            var color = _screenBitmap.GetPixel(x - _screenX, y - _screenY);
+            _swatchBrush.Color = Color.FromRgb(color.R, color.G, color.B);
+            var hex = $"#{color.R:X2}{color.G:X2}{color.B:X2}";
+            CoordText.Text = hex;
+            return hex;
+        }
 
         /// <summary>
         /// 将 WPF 的 DIP 坐标换算成虚拟桌面的物理像素坐标。
         /// </summary>
         private (int X, int Y) ToScreenCoordinates(System.Windows.Point position)
         {
+            int ToPixel(double scaled) => _pickColor ? (int)Math.Floor(scaled) : (int)Math.Round(scaled);
             var pixelX = Math.Clamp(
-                (int)Math.Round(position.X * _screenBitmap.Width / CanvasWidth),
+                ToPixel(position.X * _screenBitmap.Width / CanvasWidth),
                 0,
                 _screenBitmap.Width - 1);
             var pixelY = Math.Clamp(
-                (int)Math.Round(position.Y * _screenBitmap.Height / CanvasHeight),
+                ToPixel(position.Y * _screenBitmap.Height / CanvasHeight),
                 0,
                 _screenBitmap.Height - 1);
             return (_screenX + pixelX, _screenY + pixelY);

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Text.Json.Serialization;
+using Ming_AutoClicker.Services;
 
 namespace Ming_AutoClicker.Models
 {
@@ -49,6 +50,14 @@ namespace Ming_AutoClicker.Models
         /// </summary>
         public int LoopCount { get; set; } = 0;
 
+        [JsonIgnore]
+        public string RunCountText => (LoopEnabled ? LoopCount : 1) switch
+        {
+            0 => LocalizationService.Current.GetString("MacroUnlimitedRuns"),
+            1 => LocalizationService.Current.GetString("MacroSingleRun"),
+            var count => LocalizationService.Current.Format("MacroRunCount", count)
+        };
+
         /// <summary>
         /// 循环间隔（毫秒）
         /// </summary>
@@ -59,7 +68,9 @@ namespace Ming_AutoClicker.Models
         /// <summary>
         /// 深拷贝宏配置（包括所有动作）
         /// </summary>
-        public MacroProfile DeepClone()
+        public MacroProfile DeepClone() => DeepClone(Actions.Count);
+
+        internal MacroProfile DeepClone(int actionCount)
         {
             var clone = new MacroProfile
             {
@@ -74,27 +85,8 @@ namespace Ming_AutoClicker.Models
                 Hotkey = Hotkey?.Clone()
             };
 
-            foreach (var action in Actions)
-            {
-                switch (action)
-                {
-                    case FindImageAction findImageAction:
-                        clone.Actions.Add(findImageAction.Clone());
-                        break;
-                    case WaitAction waitAction:
-                        clone.Actions.Add(waitAction.Clone());
-                        break;
-                    case MouseClickAction mouseClickAction:
-                        clone.Actions.Add(mouseClickAction.Clone());
-                        break;
-                    case MouseScrollAction mouseScrollAction:
-                        clone.Actions.Add(mouseScrollAction.Clone());
-                        break;
-                    case KeyPressAction keyPressAction:
-                        clone.Actions.Add(keyPressAction.Clone());
-                        break;
-                }
-            }
+            for (int i = 0; i < actionCount; i++)
+                clone.Actions.Add(Actions[i].Clone());
 
             return clone;
         }

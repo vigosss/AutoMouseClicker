@@ -23,8 +23,10 @@ internal static partial class Program
         tests.Add(("Low-information and missing templates fail explicitly", ImageInvalidTemplates));
         tests.Add(("Matching cancellation and budgets cannot return partial success", ImageCancellationAndBudget));
         tests.Add(("Fresh-frame verification rejects old frames and late cancellation", ImageFreshVerification));
+        tests.Add(("A changed target ends a timed wait at the failed verification", ImageWaitTargetChanged));
         tests.Add(("Fresh verification preserves the selected same-file variant and click point", ImageVerificationVariantIdentity));
         tests.Add(("Waiting reports ambiguous targets immediately and distinguishes waiting timeout", ImageWaitDiagnostics));
+        tests.Add(("Timed waits reserve time for a complete poll and honor cancellation at the deadline", ImageSlowPollScheduling));
         tests.Add(("Template cache invalidates file and ignored-region edits", ImageCacheInvalidation));
         tests.Add(("Image matching reports physical coordinates and compatible click points", ImageClickCoordinates));
         tests.Add(("Image matching benchmark covers cold/cache/absent 1080p frames", ImageMatchingBenchmark));
@@ -66,6 +68,7 @@ internal static partial class Program
         var result = fixture.Matcher.MatchFrame(frame, action);
         Check(!result.Found, "A normalized grayscale match must not accept a different-colored button.");
         Equal(MatchFailureReason.BelowThreshold, result.FailureReason);
+        Check(result.IsOrdinaryMiss);
         ImagePaste(frame, template, 150, 100);
         result = fixture.Matcher.MatchFrame(frame, action);
         Check(result.Found);
@@ -196,7 +199,7 @@ internal static partial class Program
         Check(!result.Found);
         result = fixture.Matcher.MatchFrame(frame, action, budgetMs: 0);
         Equal(MatchFailureReason.TimedOut, result.FailureReason);
-        Check(!result.Found);
+        Check(!result.Found && !result.IsOrdinaryMiss);
         return Task.CompletedTask;
     }
 
@@ -268,6 +271,24 @@ internal static partial class Program
         return;
     }
 
+    private static async Task ImageWaitTargetChanged()
+    {
+        using var template = ImagePattern(20, 20);
+        using var frame = ImageBackground(100, 80);
+        ImagePaste(frame, template, 10, 10);
+        var source = new ImageTestFrameSource(frame, count =>
+        {
+            if (count == 2) frame.Mat.SetTo(new MCvScalar(0));
+        });
+        using var fixture = new ImageMatchFixture(source);
+        var action = fixture.Action(template);
+        action.TimeoutMs = 5000;
+        var result = await fixture.Matcher.WaitForImageAsync(action);
+        Equal(MatchFailureReason.TargetChanged, result.FailureReason);
+        Check(!result.IsOrdinaryMiss);
+        Equal(2, source.Captures);
+    }
+
     private static async Task ImageWaitDiagnostics()
     {
         using var template = ImagePattern(20, 20);
@@ -281,6 +302,7 @@ internal static partial class Program
             action.TimeoutMs = 5000;
             var result = await fixture.Matcher.WaitForImageAsync(action);
             Equal(MatchFailureReason.Ambiguous, result.FailureReason);
+            Check(!result.IsOrdinaryMiss);
             Equal(1, source.Captures);
         }
         using var absent = ImageBackground(100, 80);
@@ -291,7 +313,65 @@ internal static partial class Program
             action.TimeoutMs = 250;
             var result = await fixture.Matcher.WaitForImageAsync(action, intervalMs: 500);
             Equal(MatchFailureReason.TimedOut, result.FailureReason);
+            Check(result.IsOrdinaryMiss);
             Equal(LocalizationService.Current.GetString("MatchTimedOut"), result.ErrorMessage);
+        }
+        source = new ImageTestFrameSource(absent, _ => Thread.Sleep(180));
+        using (var fixture = new ImageMatchFixture(source))
+        {
+            var action = fixture.Action(template);
+            action.TimeoutMs = 150;
+            var result = await fixture.Matcher.WaitForImageAsync(action);
+            Equal(MatchFailureReason.TimedOut, result.FailureReason);
+            Check(!result.IsOrdinaryMiss);
+            Equal(LocalizationService.Current.GetString("MatchSearchIncomplete"), result.ErrorMessage);
+        }
+    }
+
+    private static async Task ImageSlowPollScheduling()
+    {
+        using var template = ImagePattern(20, 20);
+        using var absent = ImageBackground(100, 80);
+        foreach (var (captureMs, timeoutMs, intervalMs, expectedCaptures) in new[]
+        {
+            (330, 550, 200, 1), (330, 900, 1, 2), (80, 600, 200, 3)
+        })
+        {
+            var source = new ImageTestFrameSource(absent, _ => Thread.Sleep(captureMs));
+            using var fixture = new ImageMatchFixture(source);
+            var action = fixture.Action(template);
+            action.TimeoutMs = timeoutMs;
+            var result = await fixture.Matcher.WaitForImageAsync(action, intervalMs: intervalMs);
+            Equal(MatchFailureReason.TimedOut, result.FailureReason);
+            Check(result.IsOrdinaryMiss);
+            Equal(expectedCaptures, source.Captures);
+            Check(result.ElapsedMilliseconds >= timeoutMs, "The remaining wait must reach the deadline.");
+        }
+
+        // If a later scan really starts and fails to finish, the prior miss cannot authorize a skip.
+        var slowerSecondCapture = new ImageTestFrameSource(absent, count => { if (count == 2) Thread.Sleep(700); });
+        using (var fixture = new ImageMatchFixture(slowerSecondCapture))
+        {
+            var action = fixture.Action(template);
+            action.TimeoutMs = 600;
+            var result = await fixture.Matcher.WaitForImageAsync(action, intervalMs: 1);
+            Equal(2, slowerSecondCapture.Captures);
+            Equal(MatchFailureReason.TimedOut, result.FailureReason);
+            Check(!result.IsOrdinaryMiss);
+        }
+
+        using var cancellation = new CancellationTokenSource();
+        var slowCapture = new ImageTestFrameSource(absent, _ => Thread.Sleep(330));
+        using (var fixture = new ImageMatchFixture(slowCapture))
+        {
+            var action = fixture.Action(template);
+            action.TimeoutMs = 550;
+            var pending = fixture.Matcher.WaitForImageAsync(action, cancellation.Token);
+            cancellation.Cancel();
+            var result = await pending;
+            Equal(1, slowCapture.Captures);
+            Equal(MatchFailureReason.Cancelled, result.FailureReason);
+            Check(!result.IsOrdinaryMiss);
         }
     }
 

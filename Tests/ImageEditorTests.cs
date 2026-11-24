@@ -180,6 +180,10 @@ internal static partial class Program
             vm.ImageAdvancedExpanded = false;
             scroll.ScrollToTop(); Layout(view, 700, 500);
             Equal(Visibility.Visible, ((StackPanel)view.FindName("FindImagePanel")).Visibility);
+            var operations = (ComboBox)view.FindName("ImageOperationCombo");
+            operations.SetCurrentValue(ComboBox.SelectedValueProperty, "MoveTo");
+            Equal(LocalizationService.Current.GetString("EditorMoveTo"), ((ComboBoxItem)operations.SelectedItem).Content as string);
+            Equal("MoveTo", action.Operation);
             Check(!Descendants<CheckBox>(view).Any(c => Equals(c.Content, LocalizationService.Current.GetString("EditorAdaptiveScale"))));
             Render(view, $"editor-image-{locale}-basic-minimum.png", 700, 500);
             scroll.ScrollToTop(); Layout(view, 800, 600);

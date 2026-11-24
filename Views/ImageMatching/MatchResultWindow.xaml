@@ -39,7 +39,7 @@
                 </DockPanel>
                 <TextBlock x:Name="StatusDescription" Foreground="{StaticResource TextPrimaryBrush}" TextWrapping="Wrap"
                            FontSize="12" Margin="0,0,0,12"/>
-                <TextBlock Text="{DynamicResource MatchPreviewNoClick}" Foreground="{StaticResource TextSecondaryBrush}"
+                <TextBlock x:Name="PreviewHint" Text="{DynamicResource MatchPreviewNoClick}" Foreground="{StaticResource TextSecondaryBrush}"
                            FontSize="12" TextWrapping="Wrap" Margin="0,0,0,12"/>
                 <Button x:Name="StopTestButton" Content="{DynamicResource ImageStopTest}"
                         Click="StopTestClick" HorizontalAlignment="Left" Margin="0,0,0,4"/>

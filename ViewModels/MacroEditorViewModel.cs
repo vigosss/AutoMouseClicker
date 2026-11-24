@@ -19,7 +19,7 @@ namespace Ming_AutoClicker.ViewModels
     /// <summary>
     /// 宏编辑器 ViewModel - 管理单个宏的编辑
     /// </summary>
-    public class MacroEditorViewModel : ViewModelBase
+    public partial class MacroEditorViewModel : ViewModelBase
     {
         private readonly MacroStorageService _storageService;
         private readonly ScreenCaptureService _screenCaptureService;
@@ -98,6 +98,7 @@ namespace Ming_AutoClicker.ViewModels
                     OnPropertyChanged(nameof(AdaptiveScale));
                     _selectedAlternateTemplate = null;
                     RefreshImageProperties();
+                    RefreshColorProperties();
                     OnPropertyChanged(nameof(Operation));
                     OnPropertyChanged(nameof(OffsetX));
                     OnPropertyChanged(nameof(OffsetY));
@@ -118,6 +119,11 @@ namespace Ming_AutoClicker.ViewModels
                     OnPropertyChanged(nameof(KeyShift));
                     OnPropertyChanged(nameof(KeyWindows));
                     OnPropertyChanged(nameof(KeyPressPreview));
+                    OnPropertyChanged(nameof(SelectedTargetMacroId));
+                    OnPropertyChanged(nameof(TransferMode));
+                    OnPropertyChanged(nameof(IsMacroCall));
+                    OnPropertyChanged(nameof(IsMacroJump));
+                    OnPropertyChanged(nameof(MacroTargetWarning));
                     UpdateActionCommands();
                 }
             }
@@ -344,6 +350,19 @@ namespace Ming_AutoClicker.ViewModels
             }
         }
 
+        public ImageNotFoundBehavior NotFoundBehavior
+        {
+            get => FindColorAction?.NotFoundBehavior ?? FindImageAction?.NotFoundBehavior ?? ImageNotFoundBehavior.Stop;
+            set
+            {
+                if (NotFoundBehavior == value) return;
+                if (FindColorAction is { } color) color.NotFoundBehavior = value;
+                else if (FindImageAction is { } image) image.NotFoundBehavior = value;
+                else return;
+                RefreshEditedAction(nameof(NotFoundBehavior));
+            }
+        }
+
         public string ImageMatchIndexText
         {
             get => FindImageAction is { } action ? GetImageFields(action).Index : "1";
@@ -358,24 +377,21 @@ namespace Ming_AutoClicker.ViewModels
 
         public ImageSearchScopeKind ImageScopeKind
         {
-            get => FindImageAction?.SearchScope.Kind ?? ImageSearchScopeKind.Desktop;
+            get => SelectedSearchScope?.Kind ?? ImageSearchScopeKind.Desktop;
             set
             {
-                if (FindImageAction is not { } action || action.SearchScope.Kind == value) return;
-                action.SearchScope = new ImageSearchScope { Kind = value };
-                RefreshEditedAction(nameof(ImageScopeKind));
-                RefreshImageProperties();
+                if (SelectedAction is not { } action || SelectedSearchScope?.Kind == value) return;
+                ReplaceSearchScope(action, new ImageSearchScope { Kind = value });
             }
         }
         public bool UsesImageRegion => ImageScopeKind == ImageSearchScopeKind.Region;
         public bool UsesImageWindow => ImageScopeKind == ImageSearchScopeKind.Window;
-        public bool HasWindowRegion => FindImageAction?.SearchScope.WindowRegion != null;
+        public bool HasWindowRegion => SelectedSearchScope?.WindowRegion != null;
         public string ImageScopeDescription
         {
             get
             {
-                if (FindImageAction is not { } action) return string.Empty;
-                var scope = action.SearchScope;
+                if (SelectedSearchScope is not { } scope) return string.Empty;
                 return scope.Kind switch
                 {
                     ImageSearchScopeKind.Region when scope.Width > 0 && scope.Height > 0 =>
@@ -412,8 +428,9 @@ namespace Ming_AutoClicker.ViewModels
         {
             var selectedAlternate = _selectedAlternateTemplate;
             foreach (var name in new[] { nameof(PreviewClickPoint), nameof(ImageIgnoredRegions), nameof(UsesLegacyImageOffset),
-                nameof(ImageTimeoutSecondsText), nameof(ImageMatchIndexText), nameof(ImageScopeKind), nameof(UsesImageRegion),
-                nameof(UsesImageWindow), nameof(HasWindowRegion), nameof(ImageScopeDescription), nameof(ImageSelection),
+                nameof(ImageTimeoutSecondsText), nameof(NotFoundBehavior), nameof(ImageMatchIndexText), nameof(ImageScopeKind), nameof(UsesImageRegion),
+                nameof(UsesImageWindow), nameof(HasWindowRegion), nameof(ImageScopeDescription), nameof(ColorScopeKind),
+                nameof(LegacyColorScopeDescription), nameof(ImageSelection),
                 nameof(UsesImageMatchIndex), nameof(AlternateTemplates) })
                 OnPropertyChanged(name);
             _selectedAlternateTemplate = selectedAlternate != null && FindImageAction?.AlternateTemplates.Contains(selectedAlternate) == true
@@ -510,12 +527,9 @@ namespace Ming_AutoClicker.ViewModels
             get => FindImageAction?.Operation ?? "Click";
             set
             {
-                if (FindImageAction != null)
-                {
-                    FindImageAction.Operation = value;
-                    _macro.UpdatedAt = DateTime.Now;
-                    OnPropertyChanged();
-                }
+                if (FindImageAction is not { } action || string.IsNullOrEmpty(value) || action.Operation == value) return;
+                action.Operation = value;
+                RefreshEditedAction(nameof(Operation));
             }
         }
 
@@ -776,6 +790,67 @@ namespace Ming_AutoClicker.ViewModels
             CollectionViewSource.GetDefaultView(Actions).Refresh();
         }
 
+        public IReadOnlyList<MacroProfile> MacroTargets { get; }
+        public bool HasMacroTargets => MacroTargets.Count > 0;
+
+        public string? SelectedTargetMacroId
+        {
+            get => (SelectedAction as ExecuteMacroAction)?.TargetMacroId;
+            set
+            {
+                if (SelectedAction is not ExecuteMacroAction action || string.IsNullOrEmpty(value) || value == action.TargetMacroId) return;
+                var target = MacroTargets.FirstOrDefault(m => m.Id == value);
+                if (target == null) return;
+                action.TargetMacroId = target.Id;
+                action.TargetMacroName = target.Name;
+                RefreshEditedAction(nameof(SelectedTargetMacroId));
+                OnPropertyChanged(nameof(MacroTargetWarning));
+            }
+        }
+
+        public MacroTransferMode TransferMode
+        {
+            get => (SelectedAction as ExecuteMacroAction)?.Mode ?? MacroTransferMode.Call;
+            set
+            {
+                if (SelectedAction is not ExecuteMacroAction action || action.Mode == value) return;
+                action.Mode = value;
+                RefreshEditedAction(nameof(TransferMode));
+                OnPropertyChanged(nameof(IsMacroCall));
+                OnPropertyChanged(nameof(IsMacroJump));
+            }
+        }
+
+        public bool IsMacroCall
+        {
+            get => TransferMode == MacroTransferMode.Call;
+            set { if (value) TransferMode = MacroTransferMode.Call; }
+        }
+
+        public bool IsMacroJump
+        {
+            get => TransferMode == MacroTransferMode.Jump;
+            set { if (value) TransferMode = MacroTransferMode.Jump; }
+        }
+
+        public string MacroTargetWarning
+        {
+            get
+            {
+                if (SelectedAction is not ExecuteMacroAction action || action.TargetMacroName != null) return string.Empty;
+                var strings = LocalizationService.Current;
+                if (action.TargetMacroId == _macro.Id) return strings.GetString("MacroSelfTransfer");
+                if (!string.IsNullOrWhiteSpace(action.TargetMacroId))
+                    return strings.Format("EditorMacroTargetMissing", action.TargetMacroId);
+                return strings.GetString(MacroTargets.Count == 0 ? "EditorNoMacroTargets" : "MacroSelectTarget");
+            }
+        }
+
+        private void ResolveMacroTarget(ExecuteMacroAction action)
+        {
+            action.TargetMacroName = MacroTargets.FirstOrDefault(m => m.Id == action.TargetMacroId)?.Name;
+        }
+
         private ScrollFields GetScrollFields(MouseScrollAction action)
         {
             if (!_scrollFields.TryGetValue(action, out var fields))
@@ -828,6 +903,7 @@ namespace Ming_AutoClicker.ViewModels
         public ICommand AddMouseClickActionCommand { get; }
         public ICommand AddMouseScrollActionCommand { get; }
         public ICommand AddKeyPressActionCommand { get; }
+        public ICommand AddExecuteMacroActionCommand { get; }
         public ICommand RemoveActionCommand { get; }
         public ICommand MoveUpCommand { get; }
         public ICommand MoveDownCommand { get; }
@@ -853,22 +929,29 @@ namespace Ming_AutoClicker.ViewModels
             MacroStorageService storageService,
             ScreenCaptureService screenCaptureService,
             ImageMatchService imageMatchService,
-            MacroProfile macro)
+            MacroProfile macro,
+            IEnumerable<MacroProfile>? macroLibrary = null)
         {
             _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
             _screenCaptureService = screenCaptureService ?? throw new ArgumentNullException(nameof(screenCaptureService));
             _imageMatchService = imageMatchService ?? throw new ArgumentNullException(nameof(imageMatchService));
             _macro = macro ?? throw new ArgumentNullException(nameof(macro));
+            MacroTargets = macroLibrary?.Where(m => m.Id != macro.Id).ToArray() ?? Array.Empty<MacroProfile>();
+            foreach (var action in Actions.OfType<ExecuteMacroAction>()) ResolveMacroTarget(action);
             _statusMessage = LocalizationService.Current.GetString("StatusReady");
 
             // 初始化命令
             SaveCommand = new RelayCommand(_ => Save());
             CancelCommand = new RelayCommand(_ => Cancel());
             AddFindImageActionCommand = new RelayCommand(_ => AddFindImageAction());
+            AddFindColorActionCommand = new RelayCommand(_ => AddFindColorAction());
+            PickColorCommand = new RelayCommand(_ => _ = PickColorAsync(), _ => FindColorAction != null && !_isCapturingScreenshot);
+            TestColorCommand = new RelayCommand(_ => _ = TestColorAsync(), _ => FindColorAction != null && !_isTestingMatch);
             AddWaitActionCommand = new RelayCommand(_ => AddWaitAction());
             AddMouseClickActionCommand = new RelayCommand(_ => AddMouseClickAction());
             AddMouseScrollActionCommand = new RelayCommand(_ => AddMouseScrollAction());
             AddKeyPressActionCommand = new RelayCommand(_ => AddKeyPressAction());
+            AddExecuteMacroActionCommand = new RelayCommand(_ => AddExecuteMacroAction(), _ => HasMacroTargets);
             RemoveActionCommand = new RelayCommand(_ => RemoveAction(), _ => CanRemoveAction());
             MoveUpCommand = new RelayCommand(_ => MoveUp(), _ => CanMoveUp());
             MoveDownCommand = new RelayCommand(_ => MoveDown(), _ => CanMoveDown());
@@ -884,8 +967,8 @@ namespace Ming_AutoClicker.ViewModels
             PickImageWindowRegionCommand = new RelayCommand(_ => _ = PickImageScopeRegionAsync(true), _ => UsesImageWindow && !_isCapturingScreenshot);
             ClearImageWindowRegionCommand = new RelayCommand(_ =>
             {
-                if (FindImageAction is not { } action) return;
-                action.SearchScope.WindowRegion = null;
+                if (SelectedSearchScope is not { } scope) return;
+                scope.WindowRegion = null;
                 RefreshEditedAction(nameof(ImageScopeDescription)); RefreshImageProperties();
             }, _ => HasWindowRegion);
             AddAlternateTemplateCommand = new RelayCommand(_ => ImportAlternateTemplate(), _ => FindImageAction != null);
@@ -899,7 +982,7 @@ namespace Ming_AutoClicker.ViewModels
             }, _ => SelectedAlternateTemplate != null);
             ClearImageCommand = new RelayCommand(_ => ClearImage(), _ => IsActionSelected);
             PickCoordinateCommand = new RelayCommand(_ => _ = PickCoordinateAsync(),
-                _ => !_isPickingCoordinate && (MouseClickAction != null || UsesScrollCoordinates));
+                _ => !_isPickingCoordinate && (UsesFixedClickPosition || UsesScrollCoordinates));
 
             // 订阅动作集合变更事件
             _collectionChangedHandler = (s, e) =>
@@ -913,6 +996,8 @@ namespace Ming_AutoClicker.ViewModels
                     }
                 }
                 OnPropertyChanged(nameof(HasActions));
+                OnPropertyChanged(nameof(AvailablePositionVariables));
+                OnPropertyChanged(nameof(NeedsClickVariableHint));
             };
             Actions.CollectionChanged += _collectionChangedHandler;
             LocalizationService.Current.LanguageChanged += OnLanguageChanged;
@@ -929,11 +1014,18 @@ namespace Ming_AutoClicker.ViewModels
                     var action = Actions[i];
                     string error;
                     if ((action is MouseScrollAction scroll && !TryValidateScrollFields(scroll, out error)) ||
+                        (action is FindColorAction color && !TryValidateColorFields(color, out error)) ||
                         (action is FindImageAction image && !TryValidateImageFields(image, out error)) ||
                         !MacroActionValidator.TryValidate(action, out error))
                     {
                         SelectedAction = action;
                         StatusMessage = LocalizationService.Current.Format("EditorInvalidAction", i + 1, error);
+                        return;
+                    }
+                    if (action is ExecuteMacroAction transfer && !MacroTargets.Any(m => m.Id == transfer.TargetMacroId))
+                    {
+                        SelectedAction = action;
+                        StatusMessage = LocalizationService.Current.Format("EditorInvalidAction", i + 1, MacroTargetWarning);
                         return;
                     }
                 }
@@ -970,8 +1062,10 @@ namespace Ming_AutoClicker.ViewModels
 
                 Actions.Clear();
                 _scrollFields.Clear();
+                _colorFields.Clear();
                 foreach (var action in original.Actions)
                 {
+                    if (action is ExecuteMacroAction transfer) ResolveMacroTarget(transfer);
                     Actions.Add(action);
                 }
                 _macro.UpdatedAt = original.UpdatedAt;
@@ -1039,6 +1133,14 @@ namespace Ming_AutoClicker.ViewModels
             Actions.Add(action);
             SelectedAction = action;
             StatusMessage = LocalizationService.Current.GetString("EditorAddedKeyboard");
+        }
+
+        private void AddExecuteMacroAction()
+        {
+            var action = new ExecuteMacroAction { Order = Actions.Count };
+            Actions.Add(action);
+            SelectedAction = action;
+            StatusMessage = LocalizationService.Current.GetString("EditorAddedExecuteMacro");
         }
 
         /// <summary>
@@ -1109,6 +1211,7 @@ namespace Ming_AutoClicker.ViewModels
 
             var index = _selectedActionIndex;
             if (SelectedAction is MouseScrollAction scroll) _scrollFields.Remove(scroll);
+            if (SelectedAction is FindColorAction color) _colorFields.Remove(color);
             Actions.Remove(SelectedAction);
             
             // 重新排序
@@ -1332,32 +1435,29 @@ namespace Ming_AutoClicker.ViewModels
 
         private void PickImageWindow()
         {
-            if (FindImageAction is not { } action) return;
+            if (SelectedAction is not { } action || SelectedSearchScope == null) return;
             try
             {
                 var dialog = new ImageWindowSelectWindow { Owner = Application.Current.MainWindow };
                 if (dialog.ShowDialog() != true || dialog.SelectedWindow == null) return;
-                action.SearchScope = dialog.SelectedWindow.ToScope();
-                RefreshEditedAction(nameof(ImageScopeDescription)); RefreshImageProperties();
+                ReplaceSearchScope(action, dialog.SelectedWindow.ToScope());
             }
             catch (Exception ex) { StatusMessage = ex.Message; }
         }
 
         private async Task PickImageScopeRegionAsync(bool windowRelative)
         {
-            if (_isCapturingScreenshot || FindImageAction is not { } action) return;
+            if (_isCapturingScreenshot || SelectedAction is not { } action || SelectedSearchScope is not { } currentScope) return;
             _isCapturingScreenshot = true;
             CommandManager.InvalidateRequerySuggested();
-            var mainWindow = Application.Current.MainWindow;
-            var previousState = mainWindow?.WindowState ?? WindowState.Normal;
             try
             {
-                if (mainWindow != null) mainWindow.WindowState = WindowState.Minimized;
+                using var hidden = CaptureWindowVisibilityScope.HideVisibleWindows();
                 await Task.Delay(200);
                 System.Drawing.Rectangle? clientBounds = null;
                 if (windowRelative)
                 {
-                    var scope = action.SearchScope.Clone();
+                    var scope = currentScope.Clone();
                     scope.WindowRegion = null;
                     clientBounds = ImageSearchScopeService.Resolve(scope).Bounds;
                 }
@@ -1372,22 +1472,21 @@ namespace Ming_AutoClicker.ViewModels
                             StatusMessage = LocalizationService.Current.GetString("ImageRegionMustBeInWindow");
                             return;
                         }
-                        action.SearchScope.WindowRegion = new ImageRelativeRegion
+                        currentScope.WindowRegion = new ImageRelativeRegion
                         {
                             X = (region.X - bounds.X) / (double)bounds.Width, Y = (region.Y - bounds.Y) / (double)bounds.Height,
                             Width = region.Width / (double)bounds.Width, Height = region.Height / (double)bounds.Height
                         };
+                        ReplaceSearchScope(action, currentScope);
                     }
-                    else action.SearchScope = new ImageSearchScope { Kind = ImageSearchScopeKind.Region,
-                        X = region.X, Y = region.Y, Width = region.Width, Height = region.Height };
-                    RefreshEditedAction(nameof(ImageScopeDescription)); RefreshImageProperties();
+                    else ReplaceSearchScope(action, new ImageSearchScope { Kind = ImageSearchScopeKind.Region,
+                        X = region.X, Y = region.Y, Width = region.Width, Height = region.Height });
                 };
                 picker.ShowDialog();
             }
             catch (Exception ex) { StatusMessage = ex.Message; }
             finally
             {
-                if (mainWindow != null) mainWindow.WindowState = previousState;
                 _isCapturingScreenshot = false;
                 CommandManager.InvalidateRequerySuggested();
             }
@@ -1531,6 +1630,9 @@ namespace Ming_AutoClicker.ViewModels
             {
                 StatusMessage = LocalizationService.Current.GetString("StatusReady");
                 OnPropertyChanged(nameof(KeyPressPreview));
+                OnPropertyChanged(nameof(MacroTargetWarning));
+                OnPropertyChanged(nameof(ColorOperationChoices));
+                OnPropertyChanged(nameof(ColorOperationValue));
                 RefreshImageProperties();
                 CollectionViewSource.GetDefaultView(Actions).Refresh();
             });

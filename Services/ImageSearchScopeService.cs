@@ -189,7 +189,7 @@ public static class ImageSearchScopeService
     private static bool IsValidRectangle(Rectangle rect) => rect.Width > 0 && rect.Height > 0 &&
         (long)rect.X + rect.Width <= int.MaxValue && (long)rect.Y + rect.Height <= int.MaxValue;
 
-    private static List<Rectangle> GetMonitorBounds()
+    internal static List<Rectangle> GetMonitorBounds()
     {
         var rectangles = new List<Rectangle>();
         EnumDisplayMonitors(IntPtr.Zero, IntPtr.Zero,

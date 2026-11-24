@@ -14,6 +14,14 @@
     <Style TargetType="helpers:PixelBorder">
         <Setter Property="StepSize" Value="{StaticResource PixelGap}"/>
     </Style>
+    <Style x:Key="PageActionFooter" TargetType="helpers:PixelBorder" BasedOn="{StaticResource {x:Type helpers:PixelBorder}}">
+        <Setter Property="Height" Value="108"/>
+        <Setter Property="Margin" Value="0,12,0,0"/>
+        <Setter Property="Padding" Value="12"/>
+        <Setter Property="Background" Value="{StaticResource CardBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+        <Setter Property="BorderThickness" Value="{StaticResource PixelStroke}"/>
+    </Style>
     <!-- Preserve the original 24-unit coordinates instead of stretching each path's bounds. -->
     <Style TargetType="iconPacks:PackIconPixelartIcons">
         <Setter Property="Width" Value="{StaticResource PixelIconSize}"/>

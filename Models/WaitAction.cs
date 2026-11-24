@@ -40,7 +40,7 @@ namespace Ming_AutoClicker.Models
         /// <summary>
         /// 深拷贝
         /// </summary>
-        public WaitAction Clone()
+        public override WaitAction Clone()
         {
             return new WaitAction
             {

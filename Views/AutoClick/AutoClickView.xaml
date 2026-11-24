@@ -1,6 +1,7 @@
 <UserControl x:Class="Ming_AutoClicker.Views.AutoClick.AutoClickView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
              xmlns:helpers="clr-namespace:Ming_AutoClicker.Helpers">
     <Grid>
         <Grid.RowDefinitions>
@@ -9,7 +10,7 @@
         </Grid.RowDefinitions>
 
         <!-- 设置区域 -->
-        <helpers:PixelBorder Grid.Row="0"
+        <helpers:PixelBorder x:Name="AutoClickSettings" Grid.Row="0"
                 Background="{StaticResource CardBrush}"
                 BorderBrush="{StaticResource BorderBrush}"
                 BorderThickness="2"
@@ -40,7 +41,7 @@
 
                 <!-- 点击间隔 -->
                 <TextBlock Text="{DynamicResource AutoClickInterval}" Style="{StaticResource SectionTitleText}" Margin="0,0,0,8"/>
-                <Grid Margin="0,0,0,12">
+                <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="120"/>
                         <ColumnDefinition Width="Auto"/>
@@ -58,41 +59,18 @@
                                Margin="12,0,0,0"
                                Foreground="{StaticResource TextSecondaryBrush}"/>
                 </Grid>
-
-                <!-- 分隔线 -->
-                <Border Background="{StaticResource BorderLightBrush}" Height="2" Margin="0,0,0,12"/>
-
-                <!-- 快捷键提示 -->
-                <Border Background="{StaticResource StatusBarBrush}"
-                        BorderBrush="{StaticResource BorderBrush}"
-                        BorderThickness="2"
-                        Padding="12,8"
-                        HorizontalAlignment="Left">
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <Border Background="{StaticResource SurfaceBrush}"
-                                BorderBrush="{StaticResource PrimaryDarkBrush}"
-                                BorderThickness="2"
-                                Padding="8,4"
-                                Margin="0,0,8,0">
-                            <TextBlock Text="{Binding DataContext.ActiveHotkeyDescription, RelativeSource={RelativeSource AncestorType=Window}}"
-                                       FontSize="12"
-                                       Foreground="{StaticResource PrimaryBrush}"
-                                       VerticalAlignment="Center"/>
-                        </Border>
-                        <TextBlock VerticalAlignment="Center"
-                                   FontSize="12"
-                                   Foreground="{StaticResource TextSecondaryBrush}">
-                            <Run Text="{Binding HotkeyHintText, Mode=OneWay}"/>
-                        </TextBlock>
-                    </StackPanel>
-                </Border>
             </StackPanel>
         </helpers:PixelBorder>
 
-        <!-- 底部提示 -->
-        <TextBlock Grid.Row="1"
-                   Text="{Binding StatusText}"
-                   Style="{StaticResource StatusText}"
-                   Margin="0,8,0,0"/>
+        <helpers:PixelBorder x:Name="AutoClickFooter" Grid.Row="1" Height="Auto" Style="{StaticResource PageActionFooter}">
+            <Border Height="40" Background="{StaticResource SurfaceBrush}" Padding="12,0">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <iconPacks:PackIconPixelartIcons Kind="Keyboard" Foreground="{StaticResource PrimaryBrush}"
+                                                    Margin="0,0,8,0"/>
+                    <TextBlock x:Name="AutoClickHotkeyHint" Text="{Binding HotkeyHintText}"
+                               Style="{StaticResource BodyText}" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Border>
+        </helpers:PixelBorder>
     </Grid>
 </UserControl>

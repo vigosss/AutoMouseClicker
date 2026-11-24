@@ -319,6 +319,13 @@ namespace Ming_AutoClicker.Services
                     throw new JsonException(LocalizationService.Current.GetString("MacroInvalidFindImage"));
                 return action;
             }
+            if (string.Equals(typeString, "FindColor", StringComparison.OrdinalIgnoreCase))
+            {
+                var action = JsonSerializer.Deserialize<FindColorAction>(root.GetRawText(), options)!;
+                if (action.SearchScope == null)
+                    throw new JsonException(LocalizationService.Current.GetString("MacroInvalidFindColor"));
+                return action;
+            }
             if (string.Equals(typeString, "Wait", StringComparison.OrdinalIgnoreCase))
                 return JsonSerializer.Deserialize<WaitAction>(root.GetRawText(), options)!;
             if (string.Equals(typeString, "MouseClick", StringComparison.OrdinalIgnoreCase))
@@ -327,6 +334,8 @@ namespace Ming_AutoClicker.Services
                 return JsonSerializer.Deserialize<MouseScrollAction>(root.GetRawText(), options)!;
             if (string.Equals(typeString, "KeyPress", StringComparison.OrdinalIgnoreCase))
                 return JsonSerializer.Deserialize<KeyPressAction>(root.GetRawText(), options)!;
+            if (string.Equals(typeString, "ExecuteMacro", StringComparison.OrdinalIgnoreCase))
+                return JsonSerializer.Deserialize<ExecuteMacroAction>(root.GetRawText(), options)!;
 
             throw new JsonException(LocalizationService.Current.Format("ActionUnknownType", typeString));
         }

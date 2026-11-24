@@ -30,13 +30,18 @@ public sealed class MacroInputService
 
     public MacroInputService(IMacroInputSender? sender = null) => _sender = sender ?? new Win32MacroInputSender();
 
-    /// <summary>Moves and clicks without an intervening delay; partial sends always release the button.</summary>
-    public Task ClickAsync(int x, int y, bool rightButton, CancellationToken cancellationToken = default)
+    public void MoveTo(int x, int y, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         if (!_sender.SetCursorPosition(x, y))
             throw new InvalidOperationException(LocalizationService.Current.Format("MacroInputMoveFailed", x, y));
         cancellationToken.ThrowIfCancellationRequested();
+    }
+
+    /// <summary>Moves and clicks without an intervening delay; partial sends always release the button.</summary>
+    public Task ClickAsync(int x, int y, bool rightButton, CancellationToken cancellationToken = default)
+    {
+        MoveTo(x, y, cancellationToken);
 
         var down = new Win32Api.INPUT
         {
@@ -90,8 +95,7 @@ public sealed class MacroInputService
 
         if (action.PositionMode == ScrollPositionMode.Coordinates)
         {
-            if (!_sender.SetCursorPosition(action.X, action.Y))
-                throw new InvalidOperationException(LocalizationService.Current.Format("MacroInputMoveFailed", action.X, action.Y));
+            MoveTo(action.X, action.Y, cancellationToken);
             // Give the target window time to observe the cursor position before routing the wheel event.
             await Task.Delay(50, cancellationToken).ConfigureAwait(false);
         }

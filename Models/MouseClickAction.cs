@@ -1,7 +1,11 @@
 using Ming_AutoClicker.Services;
+using System.Text.Json.Serialization;
 
 namespace Ming_AutoClicker.Models
 {
+    [JsonConverter(typeof(JsonStringEnumConverter<ClickPositionSource>))]
+    public enum ClickPositionSource { Fixed, Variable }
+
     /// <summary>
     /// 鼠标点击位置动作 - 在指定坐标执行点击操作
     /// </summary>
@@ -22,6 +26,9 @@ namespace Ming_AutoClicker.Models
         /// </summary>
         public int Y { get; set; } = 0;
 
+        public ClickPositionSource PositionSource { get; set; } = ClickPositionSource.Fixed;
+        public string VariableName { get; set; } = string.Empty;
+
         /// <summary>
         /// 操作类型（Click / RightClick / MiddleClick）
         /// </summary>
@@ -39,7 +46,9 @@ namespace Ming_AutoClicker.Models
                 "MiddleClick" => LocalizationService.Current.GetString("EditorMiddleClick"),
                 _ => Operation
             };
-            return LocalizationService.Current.Format("ActionClickPosition", X, Y, operation);
+            return PositionSource == ClickPositionSource.Variable
+                ? LocalizationService.Current.Format("ActionClickVariable", VariableName, operation)
+                : LocalizationService.Current.Format("ActionClickPosition", X, Y, operation);
         }
 
         public override string ToString() => GetDescription();
@@ -47,7 +56,7 @@ namespace Ming_AutoClicker.Models
         /// <summary>
         /// 深拷贝
         /// </summary>
-        public MouseClickAction Clone()
+        public override MouseClickAction Clone()
         {
             return new MouseClickAction
             {
@@ -55,6 +64,8 @@ namespace Ming_AutoClicker.Models
                 Note = Note,
                 X = X,
                 Y = Y,
+                PositionSource = PositionSource,
+                VariableName = VariableName,
                 Operation = Operation
             };
         }

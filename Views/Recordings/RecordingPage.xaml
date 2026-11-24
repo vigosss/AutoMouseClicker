@@ -112,54 +112,42 @@
                 </DataTemplate>
             </ListBox.ItemTemplate>
         </ListBox>
-        <helpers:PixelBorder x:Name="RecordingFooter" Grid.Row="2" Height="108" Margin="0,12,0,0" Padding="12" Background="{StaticResource CardBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="2">
+        <helpers:PixelBorder x:Name="RecordingFooter" Grid.Row="2" Style="{StaticResource PageActionFooter}">
             <Grid>
                 <Grid.RowDefinitions><RowDefinition Height="40"/><RowDefinition Height="8"/><RowDefinition Height="32"/></Grid.RowDefinitions>
-                <Grid>
-                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                    <Button x:Name="StartButton" Content="{Binding StartButtonText}" Command="{Binding PrimaryActionCommand}">
-                        <Button.Style>
-                            <Style TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
-                                <Setter Property="helpers:PixelIcon.Geometry" Value="{StaticResource RecordGlyph}"/>
+                <Button x:Name="StartButton" Content="{Binding StartButtonText}" Command="{Binding PrimaryActionCommand}">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
+                            <Setter Property="helpers:PixelIcon.Geometry" Value="{StaticResource RecordGlyph}"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding HasSelection}" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource SuccessBrush}"/>
+                                    <Setter Property="BorderBrush" Value="#A8C9B2"/>
+                                    <Setter Property="helpers:PixelIcon.Geometry" Value="{x:Null}"/>
+                                    <Setter Property="helpers:PixelIcon.Kind" Value="{x:Static iconPacks:PackIconPixelartIconsKind.Play}"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsSessionActive}" Value="True">
+                                    <Setter Property="Background" Value="#311429"/>
+                                    <Setter Property="Foreground" Value="{StaticResource DangerBrush}"/>
+                                    <Setter Property="BorderBrush" Value="{StaticResource DangerBrush}"/>
+                                    <Setter Property="helpers:PixelIcon.Geometry" Value="{StaticResource StopGlyph}"/>
+                                    <Setter Property="helpers:PixelIcon.Kind" Value="{x:Static iconPacks:PackIconPixelartIconsKind.None}"/>
+                                    <Setter Property="ToolTip" Value="{Binding StopButtonTooltip}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+                <Grid Grid.Row="2">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" MinWidth="168"/><ColumnDefinition Width="4*" MaxWidth="576"/></Grid.ColumnDefinitions>
+                    <Grid x:Name="StatusPanel" Margin="0,0,8,0" VerticalAlignment="Center">
+                        <Grid.Style>
+                            <Style TargetType="Grid">
                                 <Style.Triggers>
-                                    <DataTrigger Binding="{Binding HasSelection}" Value="True">
-                                        <Setter Property="Background" Value="{StaticResource SuccessBrush}"/>
-                                        <Setter Property="BorderBrush" Value="#A8C9B2"/>
-                                        <Setter Property="helpers:PixelIcon.Geometry" Value="{x:Null}"/>
-                                        <Setter Property="helpers:PixelIcon.Kind" Value="{x:Static iconPacks:PackIconPixelartIconsKind.Play}"/>
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding IsPlaying}" Value="True">
-                                        <Setter Property="Background" Value="#311429"/>
-                                        <Setter Property="Foreground" Value="{StaticResource DangerBrush}"/>
-                                        <Setter Property="BorderBrush" Value="{StaticResource DangerBrush}"/>
-                                        <Setter Property="helpers:PixelIcon.Geometry" Value="{StaticResource StopGlyph}"/>
-                                        <Setter Property="helpers:PixelIcon.Kind" Value="{x:Static iconPacks:PackIconPixelartIconsKind.None}"/>
-                                        <Setter Property="ToolTip" Value="{Binding StopButtonTooltip}"/>
-                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding HasSelection}" Value="False"><Setter Property="Grid.ColumnSpan" Value="2"/></DataTrigger>
                                 </Style.Triggers>
                             </Style>
-                        </Button.Style>
-                    </Button>
-                    <StackPanel x:Name="RecordingControlsPanel" Grid.Column="1" Orientation="Horizontal" Margin="8,0,0,0">
-                        <StackPanel.Style>
-                            <Style TargetType="StackPanel"><Style.Triggers><DataTrigger Binding="{Binding HasSelection}" Value="True"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers></Style>
-                        </StackPanel.Style>
-                        <Button x:Name="PauseButton" Content="{Binding PauseButtonText}" Command="{Binding PauseCommand}" MinWidth="76" Margin="0,0,8,0"
-                                ToolTip="{Binding PauseButtonTooltip}" ToolTipService.ShowOnDisabled="True">
-                            <Button.Style>
-                                <Style TargetType="Button" BasedOn="{StaticResource SmallButton}">
-                                    <Setter Property="helpers:PixelIcon.Kind" Value="{x:Static iconPacks:PackIconPixelartIconsKind.Pause}"/>
-                                    <Style.Triggers><DataTrigger Binding="{Binding IsPaused}" Value="True"><Setter Property="helpers:PixelIcon.Kind" Value="{x:Static iconPacks:PackIconPixelartIconsKind.Play}"/></DataTrigger></Style.Triggers>
-                                </Style>
-                            </Button.Style>
-                        </Button>
-                        <Button x:Name="StopButton" Content="{DynamicResource RecordingStopShort}" Command="{Binding StopCommand}" Padding="8,2" MinHeight="36" FontSize="12" Style="{StaticResource DangerButton}" helpers:PixelIcon.Geometry="{StaticResource StopGlyph}"
-                                ToolTip="{Binding StopButtonTooltip}" ToolTipService.ShowOnDisabled="True"/>
-                    </StackPanel>
-                </Grid>
-                <Grid Grid.Row="2">
-                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" MinWidth="148"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                    <Grid x:Name="StatusPanel" Margin="0,0,8,0" VerticalAlignment="Center">
+                        </Grid.Style>
                         <Grid.ToolTip>
                             <StackPanel MaxWidth="380">
                                 <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap"/>
@@ -192,36 +180,46 @@
                             <TextBlock x:Name="ElapsedStatusTextBlock" Text="{Binding ElapsedStatusText}" Height="16" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" TextTrimming="CharacterEllipsis"/>
                         </StackPanel>
                     </Grid>
-                    <StackPanel x:Name="PlaybackOptionsPanel" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                        <StackPanel.Style>
-                            <Style TargetType="StackPanel"><Setter Property="Visibility" Value="Hidden"/><Style.Triggers><DataTrigger Binding="{Binding HasSelection}" Value="True"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style>
-                        </StackPanel.Style>
+                    <Grid x:Name="PlaybackOptionsPanel" Grid.Column="1" VerticalAlignment="Center">
+                        <Grid.Style>
+                            <Style TargetType="Grid"><Setter Property="Visibility" Value="Hidden"/><Style.Triggers><DataTrigger Binding="{Binding HasSelection}" Value="True"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style>
+                        </Grid.Style>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
                         <TextBlock x:Name="SpeedLabel" Text="{DynamicResource PlaybackSpeed}" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                        <Slider x:Name="SpeedSlider" Width="64" Minimum="0.5" Maximum="5" TickFrequency="0.1" IsSnapToTickEnabled="True"
+                        <Slider x:Name="SpeedSlider" Grid.Column="1" Minimum="0.5" Maximum="5" TickFrequency="0.1" IsSnapToTickEnabled="True"
                                 SmallChange="0.1" LargeChange="0.5" IsMoveToPointEnabled="True" VerticalAlignment="Center"
                                 Value="{Binding SpeedFactor, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding CanEditPlaybackOptions}"
                                 ToolTip="{DynamicResource PlaybackSpeedHint}" AutomationProperties.Name="{DynamicResource PlaybackSpeed}">
+                            <Slider.Resources>
+                                <Style TargetType="Thumb"><Setter Property="Padding" Value="3,4"/></Style>
+                            </Slider.Resources>
                             <Slider.Style>
                                 <Style TargetType="Slider" BasedOn="{StaticResource ModernSlider}">
                                     <Style.Triggers><Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.45"/></Trigger></Style.Triggers>
                                 </Style>
                             </Slider.Style>
                         </Slider>
-                        <TextBlock x:Name="SpeedValueText" Text="{Binding SpeedDisplayText}" Width="32" FontSize="12" VerticalAlignment="Center" Margin="4,0,8,0"/>
-                        <TextBlock x:Name="LoopLabel" Text="{DynamicResource PlaybackLoop}" FontSize="12" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                        <Grid Width="48" Height="28" VerticalAlignment="Center">
-                            <TextBox x:Name="LoopCountInput" Text="{Binding LoopCountText, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True}" IsEnabled="{Binding CanEditLoopCount}" Style="{StaticResource RecordingNumberInput}" FontSize="12" AutomationProperties.Name="{DynamicResource PlaybackLoop}"/>
-                            <Border Background="{StaticResource StatusBarBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="2" IsHitTestVisible="False">
-                                <Border.Style><Style TargetType="Border"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers><DataTrigger Binding="{Binding IsInfiniteLoop}" Value="True"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style></Border.Style>
-                                <TextBlock Text="∞" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{StaticResource TextSecondaryBrush}"/>
-                            </Border>
-                        </Grid>
-                        <CheckBox x:Name="InfiniteLoopCheckBox" Content="{DynamicResource PlaybackInfinite}" IsChecked="{Binding IsInfiniteLoop}"
-                                  IsEnabled="{Binding CanEditPlaybackOptions}" Style="{StaticResource ModernCheckBox}" FontSize="12" VerticalAlignment="Center" Margin="8,0,0,0"/>
-                        <TextBlock x:Name="IntervalLabel" Text="{DynamicResource PlaybackIntervalCompact}" FontSize="12" VerticalAlignment="Center" Margin="8,0,4,0" ToolTip="{DynamicResource PlaybackInterval}"/>
-                        <TextBox x:Name="LoopIntervalInput" Width="60" Text="{Binding LoopIntervalText, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True}"
-                                 IsEnabled="{Binding CanEditPlaybackOptions}" Style="{StaticResource RecordingNumberInput}" FontSize="12" AutomationProperties.Name="{DynamicResource PlaybackInterval}"/>
-                    </StackPanel>
+                        <StackPanel Grid.Column="2" Orientation="Horizontal">
+                            <TextBlock x:Name="SpeedValueText" Text="{Binding SpeedDisplayText}" MinWidth="24" FontSize="12" VerticalAlignment="Center" Margin="4,0,8,0"/>
+                            <TextBlock x:Name="LoopLabel" Text="{DynamicResource PlaybackLoop}" FontSize="12" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <Grid Width="48" Height="28" VerticalAlignment="Center">
+                                <TextBox x:Name="LoopCountInput" Text="{Binding LoopCountText, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True}" IsEnabled="{Binding CanEditLoopCount}" Style="{StaticResource RecordingNumberInput}" FontSize="12" AutomationProperties.Name="{DynamicResource PlaybackLoop}"/>
+                                <Border Background="{StaticResource StatusBarBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="2" IsHitTestVisible="False">
+                                    <Border.Style><Style TargetType="Border"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers><DataTrigger Binding="{Binding IsInfiniteLoop}" Value="True"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style></Border.Style>
+                                    <TextBlock Text="∞" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{StaticResource TextSecondaryBrush}"/>
+                                </Border>
+                            </Grid>
+                            <CheckBox x:Name="InfiniteLoopCheckBox" Content="{DynamicResource PlaybackInfinite}" IsChecked="{Binding IsInfiniteLoop}"
+                                      IsEnabled="{Binding CanEditPlaybackOptions}" Style="{StaticResource ModernCheckBox}" FontSize="12" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                            <TextBlock x:Name="IntervalLabel" Text="{DynamicResource PlaybackIntervalCompact}" FontSize="12" VerticalAlignment="Center" Margin="8,0,4,0" ToolTip="{DynamicResource PlaybackInterval}"/>
+                            <TextBox x:Name="LoopIntervalInput" Width="60" Text="{Binding LoopIntervalText, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True}"
+                                     IsEnabled="{Binding CanEditPlaybackOptions}" Style="{StaticResource RecordingNumberInput}" FontSize="12" AutomationProperties.Name="{DynamicResource PlaybackInterval}"/>
+                        </StackPanel>
+                    </Grid>
                 </Grid>
             </Grid>
         </helpers:PixelBorder>

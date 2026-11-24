@@ -19,6 +19,7 @@ internal static partial class Program
         tests.Add(("Image test retains its captured frame after budget exhaustion", ImageTestTimedOutSnapshot));
         tests.Add(("Failed image capture never publishes a preview frame", ImageTestCaptureFailure));
         tests.Add(("Pending image preview becomes a result without requesting cancellation", ImagePreviewCompletesWithoutCancellation));
+        tests.Add(("Color preview displays the scanned frame and pixel position", ColorPreviewShowsPixel));
         tests.Add(("Closing or stopping a pending image preview requests cancellation once", ImagePreviewCancelsOnce));
         tests.Add(("Queued late image frames and results cannot reopen a closed preview", ImagePreviewIgnoresLateUpdates));
     }
@@ -197,6 +198,28 @@ internal static partial class Program
         var snapshot = BitmapSource.Create(width, height, 96, 96, PixelFormats.Bgr24, null, pixels, width * 3);
         snapshot.Freeze();
         return snapshot;
+    }
+
+    private static Task ColorPreviewShowsPixel()
+    {
+        var snapshot = ImagePreviewSnapshot(32);
+        var result = new MatchResult
+        {
+            Found = true, Width = 1, Height = 1, X = -19, ClickX = -19, Y = 23, ClickY = 23,
+            Snapshot = snapshot, CaptureBounds = new DrawingRectangle(-20, 20, snapshot.PixelWidth, snapshot.PixelHeight)
+        };
+        var window = new MatchResultWindow(result, colorSearch: true);
+        try
+        {
+            Check(ReferenceEquals(snapshot, ((Image)window.FindName("BackgroundImage")).Source));
+            Equal(LocalizationService.Current.Format("ColorTestFound", -19, 23),
+                ((TextBlock)window.FindName("StatusDescription")).Text);
+            Equal(Visibility.Collapsed, ((FrameworkElement)window.FindName("ResultDetails")).Visibility);
+            window.ShowResult(MatchResult.NotFound);
+            Equal(LocalizationService.Current.GetString("ColorTestMiss"), ((TextBlock)window.FindName("StatusTitle")).Text);
+        }
+        finally { window.Close(); }
+        return Task.CompletedTask;
     }
 
     private sealed class PreviewFailingFrameSource : IImageFrameSource

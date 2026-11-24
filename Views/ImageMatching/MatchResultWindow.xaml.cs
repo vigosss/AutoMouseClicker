@@ -22,6 +22,7 @@ public partial class MatchResultWindow : Window
     private bool _positioningInfoPanel;
     private bool _isPending = true;
     private bool _cancellationRaised;
+    private readonly bool _colorSearch;
     public MatchResultHelpAction? RequestedHelpAction { get; private set; }
     public bool IsClosed { get; private set; }
     public bool IsMatching => _isPending && !IsClosed;
@@ -41,8 +42,14 @@ public partial class MatchResultWindow : Window
         UpdateView();
     }
 
-    public MatchResultWindow(MatchResult matchResult, string? additionalInfo = null) : this()
+    public MatchResultWindow(MatchResult matchResult, string? additionalInfo = null, bool colorSearch = false) : this()
     {
+        _colorSearch = colorSearch;
+        if (colorSearch)
+        {
+            SetResourceReference(TitleProperty, "EditorAddFindColor");
+            PreviewHint.SetResourceReference(TextBlock.TextProperty, "ColorPreviewHint");
+        }
         ShowResult(matchResult, additionalInfo);
     }
 
@@ -102,6 +109,18 @@ public partial class MatchResultWindow : Window
             StatusTitle.Text = loc.GetString("EditorTestingMatch");
             StatusDescription.Text = string.Empty;
             HelpActions.Visibility = Visibility.Collapsed;
+            return;
+        }
+        if (_colorSearch)
+        {
+            HelpActions.Visibility = Visibility.Collapsed;
+            ResultDetails.Visibility = Visibility.Collapsed;
+            StatusTitle.Text = loc.GetString(_matchResult.Found ? "ColorFoundTitle" :
+                _matchResult.IsOrdinaryMiss ? "ColorTestMiss" : "EditorTestResult");
+            StatusDescription.Text = _matchResult.Found ? loc.Format("ColorTestFound", _matchResult.ClickX, _matchResult.ClickY)
+                : string.IsNullOrWhiteSpace(_matchResult.ErrorMessage) ? loc.GetMatchFailureText(_matchResult.FailureReason)
+                : _matchResult.ErrorMessage;
+            StatusDescription.Visibility = _matchResult.IsOrdinaryMiss ? Visibility.Collapsed : Visibility.Visible;
             return;
         }
         StatusTitle.Text = _matchResult.Found ? loc.GetString("MatchSuccess") :

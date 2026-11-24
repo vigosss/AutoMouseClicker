@@ -12,7 +12,9 @@ namespace Ming_AutoClicker.Models
         Wait,
         MouseClick,
         MouseScroll,
-        KeyPress
+        KeyPress,
+        ExecuteMacro,
+        FindColor
     }
 
     /// <summary>
@@ -39,6 +41,8 @@ namespace Ming_AutoClicker.Models
         /// 获取动作描述
         /// </summary>
         public abstract string GetDescription();
+
+        public abstract MacroAction Clone();
 
         [JsonIgnore]
         public string Description => GetDescription();

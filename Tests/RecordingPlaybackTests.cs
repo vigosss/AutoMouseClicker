@@ -1,7 +1,12 @@
 using System.Diagnostics;
+using System.Reflection;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
 using Ming_AutoClicker.Helpers;
 using Ming_AutoClicker.Models;
 using Ming_AutoClicker.Services;
+using Ming_AutoClicker.Views.Recordings;
 
 namespace Ming_AutoClicker.Tests;
 
@@ -19,10 +24,59 @@ internal static partial class Program
         tests.Add(("Recording send exceptions still clean up and allow a later run", RecordingPlaybackSendFailure));
         tests.Add(("Recording playback rejects overlapping runs and disposal cancels paused runs", RecordingPlaybackLifecycle));
         tests.Add(("Recording cancellation before start sends no input", RecordingPlaybackPreCancelled));
+        tests.Add(("Finishing with the record button preserves earlier clicks and excludes its own click", RecordingFinishClick));
+        tests.Add(("Finishing with a shortcut preserves earlier modifier combinations", RecordingFinishShortcut));
+    }
+
+    private static Task RecordingFinishClick()
+    {
+        using var fixture = new RecordingPageFixture();
+        var vm = fixture.ViewModel;
+        var view = new RecordingPage { DataContext = vm };
+        var button = (Button)view.FindName("StartButton");
+        vm.PrimaryActionCommand.Execute(null);
+        var timestamp = typeof(RecordedAction).GetProperty("CaptureTimestamp", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        foreach (var (type, time) in new[] { (RecordedActionType.MouseDown, 10), (RecordedActionType.MouseUp, 12),
+                                              (RecordedActionType.MouseDown, 20), (RecordedActionType.MouseUp, 21) })
+        {
+            var action = new RecordedAction { Type = type, Button = RecordedMouseButton.Left };
+            timestamp.SetValue(action, time);
+            fixture.Capture.Actions.Add(action);
+        }
+        button.RaiseEvent(new MouseButtonEventArgs(Mouse.PrimaryDevice, 20, MouseButton.Left)
+            { RoutedEvent = UIElement.PreviewMouseLeftButtonDownEvent });
+        Check(button.CommandParameter == null, "A press alone must not commit a finish");
+        button.RaiseEvent(new MouseButtonEventArgs(Mouse.PrimaryDevice, 21, MouseButton.Left)
+            { RoutedEvent = UIElement.PreviewMouseLeftButtonUpEvent });
+        vm.PrimaryActionCommand.Execute(button.CommandParameter);
+        var saved = vm.SelectedRecording!.Model.Actions;
+        Equal(2, saved.Count);
+        Equal(RecordedActionType.MouseDown, saved[0].Type);
+        Equal(RecordedActionType.MouseUp, saved[1].Type);
+        return Task.CompletedTask;
     }
 
     private static RecordedAction PlaybackKey(RecordedActionType type, uint key = 0x41, long delay = 0) =>
         new() { Type = type, VirtualKey = key, DelayBeforeMs = delay };
+
+    private static Task RecordingFinishShortcut()
+    {
+        using var fixture = new RecordingPageFixture();
+        var vm = fixture.ViewModel;
+        vm.Toggle();
+        const uint leftCtrl = 0xA2, rightShift = 0xA1, keyC = 0x43;
+        fixture.Capture.Actions.AddRange([
+            PlaybackKey(RecordedActionType.KeyDown, leftCtrl), PlaybackKey(RecordedActionType.KeyDown, keyC),
+            PlaybackKey(RecordedActionType.KeyUp, keyC), PlaybackKey(RecordedActionType.KeyUp, leftCtrl),
+            PlaybackKey(RecordedActionType.KeyDown, rightShift), PlaybackKey(RecordedActionType.KeyDown, leftCtrl)
+        ]);
+        vm.Toggle(HotkeyModifierKeys.Control | HotkeyModifierKeys.Shift);
+        var saved = vm.SelectedRecording!.Model.Actions;
+        Equal(4, saved.Count);
+        Check(saved.Select(action => (action.Type, action.VirtualKey)).SequenceEqual(
+            fixture.Capture.Actions.Take(4).Select(action => (action.Type, action.VirtualKey))));
+        return Task.CompletedTask;
+    }
 
     private static PlaybackService CreateTestPlayback(FakeInputSender sender) =>
         new(sender, () => new DesktopBounds { X = -1920, Y = 0, Width = 3840, Height = 1080 });

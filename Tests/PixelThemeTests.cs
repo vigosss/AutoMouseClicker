@@ -1,8 +1,11 @@
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Documents;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -11,6 +14,7 @@ using MahApps.Metro.IconPacks;
 using Ming_AutoClicker.Models;
 using Ming_AutoClicker.Services;
 using Ming_AutoClicker.Views.AutoClick;
+using Ming_AutoClicker.Views.Macros;
 using Ming_AutoClicker.Views.Settings;
 using Ming_AutoClicker.Views.Shared;
 using Ming_AutoClicker.Views.Updates;
@@ -23,6 +27,7 @@ internal static partial class Program
     {
         tests.Add(("Pixel font resources resolve to the bundled Fusion font rather than a system fallback", PixelFontResolution));
         tests.Add(("Pixel main window fits both languages, window sizes and display scales off screen", PixelMainRendering));
+        tests.Add(("Macro list shows the configured number of runs in each language", PixelMacroRunCounts));
         tests.Add(("Pixel icons retain their original 24-unit coordinates when rasterized", PixelIconRendering));
         tests.Add(("Pixel settings window renders readable controls without overlapping actions", PixelSettingsRendering));
         tests.Add(("Pixel update and confirmation windows keep localized titles and actions visible", PixelDialogRendering));
@@ -72,11 +77,12 @@ internal static partial class Program
                 try
                 {
                     var autoClick = (AutoClickView)window.FindName("AutoClickView");
-                    autoClick.DataContext = new PixelAutoClickData
+                    var autoClickData = new PixelAutoClickData
                     {
-                        HotkeyHintText = LocalizationService.Current.GetString("AutoClickStartHint"),
-                        StatusText = LocalizationService.Current.GetString("StatusReady")
+                        HotkeyHintText = LocalizationService.Current.Format("AutoClickStartHint", "Ctrl + Alt + Shift + Num 9",
+                            LocalizationService.Current.GetString("MouseButtonLeft"))
                     };
+                    autoClick.DataContext = autoClickData;
                     var root = PixelWindowRoot(window);
                     PixelLayout(root, (int)size.Width, (int)size.Height, dpi);
                     var tabs = (TabControl)window.FindName("MainTabControl");
@@ -98,13 +104,23 @@ internal static partial class Program
                     Check(tabItems.Max(tab => PixelBounds(tab, root).Bottom) <= PixelBounds(autoClick, root).Top + .5,
                         scenario + ": the navigation overlaps the selected page.");
 
-                    var autoGrid = (Grid)autoClick.Content;
-                    var panel = autoGrid.Children.OfType<Border>().Single();
-                    var pageStatus = autoGrid.Children.OfType<TextBlock>().Single();
-                    PixelCheckInside(panel, autoClick, scenario + " auto-click panel");
-                    PixelCheckPanelContent(panel, scenario + " auto-click content");
-                    Check(PixelBounds(panel, root).Bottom <= PixelBounds(pageStatus, root).Top + .5,
-                        scenario + ": the settings panel overlaps its status text.");
+                    var settings = (Border)autoClick.FindName("AutoClickSettings");
+                    var autoFooter = (Border)autoClick.FindName("AutoClickFooter");
+                    var instruction = Descendants<TextBlock>(autoFooter).Single();
+                    var keyboard = Descendants<PackIconPixelartIcons>(autoFooter).Single(icon => icon.Kind == PackIconPixelartIconsKind.Keyboard);
+                    PixelCheckInside(settings, autoClick, scenario + " auto-click settings");
+                    PixelCheckInside(autoFooter, autoClick, scenario + " auto-click footer");
+                    PixelCheckPanelContent(settings, scenario + " auto-click settings");
+                    PixelCheckPanelContent(autoFooter, scenario + " auto-click footer");
+                    Equal(autoClickData.HotkeyHintText, instruction.Text);
+                    PixelCheckInside(instruction, autoFooter, scenario + " auto-click instruction");
+                    Check(PixelBounds(settings, root).Bottom < PixelBounds(autoFooter, root).Top,
+                        scenario + ": the settings panel must leave space above the footer.");
+                    var hintBounds = Rect.Union(PixelBounds(keyboard, autoFooter), PixelBounds(instruction, autoFooter));
+                    Check(Math.Abs((hintBounds.Left + hintBounds.Right - autoFooter.ActualWidth) / 2) <= 96d / dpi,
+                        scenario + ": the keyboard icon and hotkey instruction must be centered together.");
+                    Check(Descendants<TextBlock>(footer).Any(text => text.Text == LocalizationService.Current.GetString("StatusReady")),
+                        scenario + ": the main status bar must show the execution status.");
                     PixelCheckRow(Descendants<RadioButton>(autoClick), root, scenario + " mouse choices");
                     foreach (var text in Descendants<TextBlock>(autoClick)) PixelCheckText(text, scenario);
                     var interval = Descendants<TextBox>(autoClick).Single();
@@ -118,6 +134,7 @@ internal static partial class Program
                     foreach (var child in footerGrid.Children.OfType<FrameworkElement>())
                         PixelCheckInside(child, footerGrid, scenario + " status item");
                     PixelSave(root, $"pixel-main-{locale}-{size.Width}-{dpi}dpi.png", dpi);
+                    PixelCheckPageFooters(window, tabs, root, PixelBounds(autoFooter, root), dpi, scenario);
                     PixelCheckNeverShown(window);
                 }
                 finally
@@ -126,6 +143,75 @@ internal static partial class Program
                     typeof(MainWindow).GetField("_allowExit", BindingFlags.Instance | BindingFlags.NonPublic)!
                         .SetValue(window, true);
                     window.Close();
+                }
+            }
+        }
+        finally { LocalizationService.Current.ApplyLanguage(originalLanguage); }
+        return Task.CompletedTask;
+    }
+
+    private static void PixelCheckPageFooters(MainWindow window, TabControl tabs, FrameworkElement root, Rect autoFooterBounds, int dpi, string scenario)
+    {
+        tabs.SelectedIndex = 1;
+        PixelLayout(root, (int)window.Width, (int)window.Height, dpi);
+        var macros = (UserControl)window.FindName("MacroListView");
+        var panel = ((Grid)macros.Content).Children.OfType<Border>().Single();
+        PixelCheckPanelContent(panel, scenario + " macro controls");
+        var list = (ListBox)macros.FindName("MacroListBox");
+        Check(PixelBounds(list, root).Bottom < PixelBounds(panel, root).Top,
+            scenario + ": the macro list must leave space above the controls.");
+        var buttons = Descendants<Button>(panel).ToArray();
+        Equal(3, buttons.Length);
+        Button Action(string key) => buttons.Single(button => Equals(button.Content, LocalizationService.Current.GetString(key)));
+        var hint = Descendants<TextBlock>(panel).Single(text => text.Text == LocalizationService.Current.GetString("HotkeyMacroHintDisabled"));
+        var actions = new FrameworkElement[] { hint, Action("MacroStart"), Action("MacroStop") };
+        PixelCheckRow(actions, root, scenario + " macro execution controls");
+        foreach (var action in actions)
+            PixelCheckInside(action, (FrameworkElement)panel.Child, scenario + " macro execution control");
+        var macroBounds = PixelBounds(panel, root);
+        Check(autoFooterBounds.Height < macroBounds.Height
+            && Math.Abs(autoFooterBounds.Left - macroBounds.Left) < .5
+            && Math.Abs(autoFooterBounds.Right - macroBounds.Right) < .5
+            && Math.Abs(autoFooterBounds.Bottom - macroBounds.Bottom) < .5,
+            scenario + ": the compact auto-click footer must align with the sides and bottom of the macro footer.");
+        var createBounds = PixelBounds(Action("MacroCreate"), root);
+
+        tabs.SelectedIndex = 2;
+        PixelLayout(root, (int)window.Width, (int)window.Height, dpi);
+        var recording = (UserControl)window.FindName("RecordingPage");
+        Equal(PixelBounds((Border)recording.FindName("RecordingFooter"), root), macroBounds);
+        Equal(PixelBounds((Button)recording.FindName("StartButton"), root), createBounds);
+    }
+
+    private static Task PixelMacroRunCounts()
+    {
+        var originalLanguage = LocalizationService.Current.SelectedLanguage;
+        try
+        {
+            var macros = new ObservableCollection<MacroProfile>
+            {
+                new(), new() { LoopCount = 7 }, new() { LoopEnabled = true, LoopCount = 3 }, new() { LoopEnabled = true }
+            };
+            var view = new MacroListView { DataContext = new DocumentationMainData(macros, 1) };
+            var list = (ListBox)view.FindName("MacroListBox");
+            foreach (var language in new[] { AppLanguage.English, AppLanguage.SimplifiedChinese })
+            {
+                LocalizationService.Current.ApplyLanguage(language);
+                CollectionViewSource.GetDefaultView(macros).Refresh();
+                list.SelectedItem = macros[^1];
+                PixelLayout(view, 644, 500, 96);
+                var expected = language == AppLanguage.English
+                    ? new[] { "1 run", "1 run", "3 runs", "Unlimited runs" }
+                    : new[] { "运行 1 次", "运行 1 次", "运行 3 次", "无限次" };
+                for (var i = 0; i < macros.Count; i++)
+                {
+                    var item = (ListBoxItem)list.ItemContainerGenerator.ContainerFromIndex(i);
+                    var metadata = Descendants<TextBlock>(item).Single(text => text.Name == "MacroMetadata");
+                    var count = metadata.Inlines.OfType<Run>().Single(run => run.Name == "MacroRunCount");
+                    Equal(expected[i], count.Text);
+                    var end = count.ContentEnd.GetCharacterRect(LogicalDirection.Backward);
+                    Check(!end.IsEmpty && end.Right <= metadata.ActualWidth + .5,
+                        $"{language}: '{count.Text}' must fit before the timestamp at minimum window width.");
                 }
             }
         }
@@ -403,6 +489,7 @@ internal static partial class Program
         public bool IsNavigationEnabled => true;
         public bool CanConfigureSettings => true;
         public string ActiveHotkeyDescription => "F8";
+        public string MacroHotkeyHintText => LocalizationService.Current.GetString("HotkeyMacroHintDisabled");
         public string ExecutionStatus { get; init; } = "";
         public string StatusMessage { get; init; } = "";
         public int AutoClickCount { get; set; }
@@ -416,6 +503,5 @@ internal static partial class Program
         public bool IsRightButton { get; set; }
         public string IntervalText { get; set; } = "100";
         public string HotkeyHintText { get; init; } = "";
-        public string StatusText { get; init; } = "";
     }
 }

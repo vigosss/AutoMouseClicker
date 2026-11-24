@@ -57,14 +57,14 @@ public sealed class GlobalHookService : IRecordingCaptureService
             if (msg is Win32Api.WM_MOUSEMOVE or Win32Api.WM_MOUSEWHEEL or Win32Api.WM_LBUTTONDOWN or Win32Api.WM_LBUTTONUP or Win32Api.WM_RBUTTONDOWN or Win32Api.WM_RBUTTONUP or Win32Api.WM_MBUTTONDOWN or Win32Api.WM_MBUTTONUP) {
                 if (type != RecordedActionType.MouseMove || RecordMouseMove && (!_hasMouse || Math.Abs(d.pt.X-_lastX) >= MoveThreshold || Math.Abs(d.pt.Y-_lastY) >= MoveThreshold)) {
                     _lastX=d.pt.X; _lastY=d.pt.Y; _hasMouse=true;
-                    Add(new RecordedAction { Type=type, X=d.pt.X, Y=d.pt.Y, WheelDelta=type==RecordedActionType.MouseWheel?(short)(d.mouseData>>16):0, Button=msg is Win32Api.WM_LBUTTONDOWN or Win32Api.WM_LBUTTONUP?RecordedMouseButton.Left:msg is Win32Api.WM_RBUTTONDOWN or Win32Api.WM_RBUTTONUP?RecordedMouseButton.Right:msg is Win32Api.WM_MBUTTONDOWN or Win32Api.WM_MBUTTONUP?RecordedMouseButton.Middle:RecordedMouseButton.None });
+                    Add(new RecordedAction { CaptureTimestamp=unchecked((int)d.time), Type=type, X=d.pt.X, Y=d.pt.Y, WheelDelta=type==RecordedActionType.MouseWheel?(short)(d.mouseData>>16):0, Button=msg is Win32Api.WM_LBUTTONDOWN or Win32Api.WM_LBUTTONUP?RecordedMouseButton.Left:msg is Win32Api.WM_RBUTTONDOWN or Win32Api.WM_RBUTTONUP?RecordedMouseButton.Right:msg is Win32Api.WM_MBUTTONDOWN or Win32Api.WM_MBUTTONUP?RecordedMouseButton.Middle:RecordedMouseButton.None });
                 }
             }
         }} return Win32Api.CallNextHookEx(_mouseHook, code, wp, lp);
     }
     private IntPtr KeyboardCallback(int code, IntPtr wp, IntPtr lp)
     {
-        if (code >= 0 && !_paused && RecordKeyboard) { var d=Marshal.PtrToStructure<Win32Api.KBDLLHOOKSTRUCT>(lp); if (d.dwExtraInfo != Win32Api.InputMarker && (d.flags&0x10)==0 && IsControlKey?.Invoke(d.vkCode)!=true) { var m=wp.ToInt32(); if (m is Win32Api.WM_KEYDOWN or Win32Api.WM_SYSKEYDOWN or Win32Api.WM_KEYUP or Win32Api.WM_SYSKEYUP) Add(new RecordedAction { Type=m is Win32Api.WM_KEYDOWN or Win32Api.WM_SYSKEYDOWN?RecordedActionType.KeyDown:RecordedActionType.KeyUp, VirtualKey=d.vkCode, ScanCode=d.scanCode, IsExtendedKey=(d.flags&1)!=0, KeyName=KeyInterop.KeyFromVirtualKey((int)d.vkCode).ToString() }); }}
+        if (code >= 0 && !_paused && RecordKeyboard) { var d=Marshal.PtrToStructure<Win32Api.KBDLLHOOKSTRUCT>(lp); if (d.dwExtraInfo != Win32Api.InputMarker && (d.flags&0x10)==0 && IsControlKey?.Invoke(d.vkCode)!=true) { var m=wp.ToInt32(); if (m is Win32Api.WM_KEYDOWN or Win32Api.WM_SYSKEYDOWN or Win32Api.WM_KEYUP or Win32Api.WM_SYSKEYUP) Add(new RecordedAction { CaptureTimestamp=unchecked((int)d.time), Type=m is Win32Api.WM_KEYDOWN or Win32Api.WM_SYSKEYDOWN?RecordedActionType.KeyDown:RecordedActionType.KeyUp, VirtualKey=d.vkCode, ScanCode=d.scanCode, IsExtendedKey=(d.flags&1)!=0, KeyName=KeyInterop.KeyFromVirtualKey((int)d.vkCode).ToString() }); }}
         return Win32Api.CallNextHookEx(_keyboardHook, code, wp, lp);
     }
     public void Dispose() => StopRecording();

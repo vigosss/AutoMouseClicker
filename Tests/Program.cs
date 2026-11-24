@@ -66,6 +66,7 @@ internal static partial class Program
             ("Immediate stop still completes execution", ExecutorImmediateStop),
             ("Invalid later action rejects macro before any input", ExecutorValidation)
         };
+        AddMacroTransferTests(tests);
         AddEditorTests(tests);
         AddInputLayoutTests(tests);
         AddRecordingPlaybackTests(tests);
@@ -77,6 +78,9 @@ internal static partial class Program
         AddImageIntegrationTests(tests);
         AddImageRenderedTests(tests);
         AddImageTestPreviewTests(tests);
+        AddColorMacroTests(tests);
+        AddColorSearchTests(tests);
+        AddColorPickerTests(tests);
         AddPixelThemeTests(tests);
         if (windowVisibilityOnly)
         {
@@ -377,8 +381,11 @@ internal static partial class Program
             Notches = 4, PositionMode = ScrollPositionMode.Coordinates, X = -1920, Y = -100 });
         profile.Actions.Add(new KeyPressAction { Order = 4, Note = "copy", VirtualKey = 0x43,
             Modifiers = KeyModifiers.Control | KeyModifiers.Shift });
+        profile.Actions.Add(new ExecuteMacroAction { Order = 5, Note = "handoff", TargetMacroId = "worker",
+            Mode = MacroTransferMode.Jump, TargetMacroName = "Transient display name" });
         var options = JsonOptions();
         var json = JsonSerializer.Serialize(profile, options);
+        Check(!json.Contains("Transient display name", StringComparison.Ordinal));
         var loaded = JsonSerializer.Deserialize<MacroProfile>(json, options)!;
         Equal(json, JsonSerializer.Serialize(loaded, options));
         var clone = loaded.DeepClone();
@@ -387,6 +394,10 @@ internal static partial class Program
         ((KeyPressAction)clone.Actions[4]).Modifiers = KeyModifiers.None;
         Equal(-1920, ((MouseScrollAction)loaded.Actions[3]).X);
         Equal(KeyModifiers.Control | KeyModifiers.Shift, ((KeyPressAction)loaded.Actions[4]).Modifiers);
+        var transfer = (ExecuteMacroAction)clone.Actions[5];
+        Equal(MacroTransferMode.Jump, transfer.Mode);
+        transfer.TargetMacroId = "new";
+        Equal("worker", ((ExecuteMacroAction)loaded.Actions[5]).TargetMacroId);
         return Task.CompletedTask;
     }
 

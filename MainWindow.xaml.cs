@@ -360,7 +360,8 @@ namespace Ming_AutoClicker
                 App.StorageService!,
                 App.ScreenCaptureService!,
                 App.ImageMatchService!,
-                macroClone);
+                macroClone,
+                _viewModel.Macros);
 
             // 创建编辑器弹窗
             var editorWindow = new Window
@@ -399,24 +400,7 @@ namespace Ming_AutoClicker
                     original.Actions.Clear();
                     foreach (var action in editedMacro.Actions)
                     {
-                        switch (action)
-                        {
-                            case FindImageAction fia:
-                                original.Actions.Add(fia.Clone());
-                                break;
-                            case WaitAction wa:
-                                original.Actions.Add(wa.Clone());
-                                break;
-                            case MouseClickAction mca:
-                                original.Actions.Add(mca.Clone());
-                                break;
-                            case MouseScrollAction scroll:
-                                original.Actions.Add(scroll.Clone());
-                                break;
-                            case KeyPressAction keyPress:
-                                original.Actions.Add(keyPress.Clone());
-                                break;
-                        }
+                        original.Actions.Add(action.Clone());
                     }
                 }
 

@@ -40,15 +40,22 @@ public static class MacroHotkeyValidator
             if (profile.Actions[index] is not KeyPressAction keyPress)
                 continue;
 
-            foreach (var hotkey in registeredHotkeys)
-            {
-                var gesture = hotkey.Gesture;
-                if (keyPress.VirtualKey == gesture.VirtualKey &&
-                    (uint)keyPress.Modifiers == (uint)gesture.Modifiers)
-                    return new MacroHotkeyConflict(index, hotkey);
-            }
+            if (FindConflict(keyPress, registeredHotkeys) is { } hotkey)
+                return new MacroHotkeyConflict(index, hotkey);
         }
 
+        return null;
+    }
+
+    public static RegisteredHotkey? FindConflict(KeyPressAction keyPress, IReadOnlyList<RegisteredHotkey> registeredHotkeys)
+    {
+        foreach (var hotkey in registeredHotkeys)
+        {
+            var gesture = hotkey.Gesture;
+            if (keyPress.VirtualKey == gesture.VirtualKey &&
+                (uint)keyPress.Modifiers == (uint)gesture.Modifiers)
+                return hotkey;
+        }
         return null;
     }
 }

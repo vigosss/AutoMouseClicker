@@ -1,8 +1,17 @@
 using System.IO;
+using System.Text.Json.Serialization;
 using Ming_AutoClicker.Services;
 
 namespace Ming_AutoClicker.Models
 {
+    [JsonConverter(typeof(JsonStringEnumConverter<ImageNotFoundBehavior>))]
+    public enum ImageNotFoundBehavior
+    {
+        Stop,
+        SkipStep,
+        EndRound
+    }
+
     /// <summary>
     /// 找图动作 - 在屏幕上查找图像并执行操作
     /// </summary>
@@ -45,6 +54,7 @@ namespace Ming_AutoClicker.Models
 
         /// <summary>Null preserves legacy WaitUntilFound semantics; zero means one bounded search.</summary>
         public int? TimeoutMs { get; set; }
+        public ImageNotFoundBehavior NotFoundBehavior { get; set; } = ImageNotFoundBehavior.Stop;
         public ImageClickPoint? ClickPoint { get; set; }
         public List<ImageRelativeRegion> IgnoredRegions { get; set; } = new();
         public double? CaptureDpi { get; set; }
@@ -73,12 +83,12 @@ namespace Ming_AutoClicker.Models
         public string Operation { get; set; } = "Click";
 
         /// <summary>
-        /// 点击偏移X（相对于匹配图像中心）
+        /// 目标位置的 X 偏移（相对于匹配图像中心）
         /// </summary>
         public int OffsetX { get; set; } = 0;
 
         /// <summary>
-        /// 点击偏移Y（相对于匹配图像中心）
+        /// 目标位置的 Y 偏移（相对于匹配图像中心）
         /// </summary>
         public int OffsetY { get; set; } = 0;
 
@@ -95,6 +105,7 @@ namespace Ming_AutoClicker.Models
             {
                 "Click" => LocalizationService.Current.GetString("EditorLeftClick"),
                 "RightClick" => LocalizationService.Current.GetString("EditorRightClick"),
+                "MoveTo" => LocalizationService.Current.GetString("EditorMoveTo"),
                 _ => Operation
             };
             return LocalizationService.Current.Format("ActionFindImage", fileName, waitText, operation);
@@ -105,7 +116,7 @@ namespace Ming_AutoClicker.Models
         /// <summary>
         /// 深拷贝
         /// </summary>
-        public FindImageAction Clone()
+        public override FindImageAction Clone()
         {
             return new FindImageAction
             {
@@ -116,6 +127,7 @@ namespace Ming_AutoClicker.Models
                 WaitUntilFound = WaitUntilFound,
                 AdaptiveScale = AdaptiveScale,
                 TimeoutMs = TimeoutMs,
+                NotFoundBehavior = NotFoundBehavior,
                 ClickPoint = ClickPoint?.Clone(),
                 IgnoredRegions = IgnoredRegions.Select(r => r.Clone()).ToList(),
                 CaptureDpi = CaptureDpi,

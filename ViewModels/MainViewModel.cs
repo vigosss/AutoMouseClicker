@@ -78,7 +78,7 @@ namespace Ming_AutoClicker.ViewModels
             get => _selectedMacro;
             set
             {
-                // 执行期间锁定启动时的宏，避免模拟点击改变列表选择。
+                // Keep the selection on the main macro of the active execution.
                 if ((_isStartingMacro || IsExecuting) && _runningMacro != null &&
                     value?.Id != _runningMacro.Id)
                 {
@@ -254,6 +254,7 @@ namespace Ming_AutoClicker.ViewModels
                 _ => CanConfigureSettings);
 
             // 订阅执行器事件
+            _macroExecutor.ActionStarted += OnActionStarted;
             _macroExecutor.ActionExecuted += OnActionExecuted;
             _macroExecutor.ExecutionCompleted += OnExecutionCompleted;
             _macroExecutor.StateChanged += OnExecutionStateChanged;
@@ -348,26 +349,11 @@ namespace Ming_AutoClicker.ViewModels
         {
             if (!CanStartMacro() || SelectedMacro == null) return;
 
-            // Validate and execute the same snapshot even if an open editor saves changes later.
             var sourceMacro = SelectedMacro;
-            var macroToRun = sourceMacro.DeepClone();
-            for (var index = 0; index < macroToRun.Actions.Count; index++)
+            if (!MacroExecutionPlan.TryCreate(sourceMacro, Macros, _hotkeyService.GetRegisteredHotkeys(),
+                    GetHotkeyTargetDescription, out var plan, out var error))
             {
-                if (!MacroActionValidator.TryValidate(macroToRun.Actions[index], out var error))
-                {
-                    ReportMacroStartError(LocalizationService.Current.Format("ExecutorInvalidAction", index + 1, error));
-                    return;
-                }
-            }
-
-            var conflict = MacroHotkeyValidator.FindConflict(macroToRun, _hotkeyService.GetRegisteredHotkeys());
-            if (conflict != null)
-            {
-                ReportMacroStartError(LocalizationService.Current.Format(
-                    "MacroHotkeyConflict",
-                    conflict.ActionIndex + 1,
-                    HotkeyGestureHelper.Format(conflict.Hotkey.Gesture),
-                    GetHotkeyTargetDescription(conflict.Hotkey.Target)));
+                ReportMacroStartError(error);
                 return;
             }
 
@@ -380,16 +366,16 @@ namespace Ming_AutoClicker.ViewModels
             try
             {
                 MinimizeMainWindowForMacro();
-                StatusMessage = LocalizationService.Current.Format("StatusPreparingMacro", macroToRun.Name);
+                StatusMessage = LocalizationService.Current.Format("StatusPreparingMacro", sourceMacro.Name);
 
                 // 等待主窗口完全隐藏，避免截图或坐标点击命中程序自身。
                 await Task.Delay(200, cancellation.Token);
 
                 IsExecuting = true;
                 ExecutionStatus = LocalizationService.Current.GetString("StatusStarting");
-                StatusMessage = LocalizationService.Current.Format("StatusStartingMacro", macroToRun.Name);
+                StatusMessage = LocalizationService.Current.Format("StatusStartingMacro", sourceMacro.Name);
 
-                if (!_macroExecutor.Start(macroToRun))
+                if (!_macroExecutor.Start(plan))
                 {
                     IsExecuting = false;
                     ExecutionStatus = LocalizationService.Current.GetString("StatusStartFailed");
@@ -460,11 +446,13 @@ namespace Ming_AutoClicker.ViewModels
             StatusMessage = LocalizationService.Current.GetString("StatusSafeStopping");
         }
 
-        public void ToggleExecution()
+        public void ToggleExecution() => ToggleExecution(HotkeyModifierKeys.None);
+
+        private void ToggleExecution(HotkeyModifierKeys modifiers)
         {
             if (AutoClickViewModel.IsRunning) { AutoClickViewModel.Toggle(); return; }
             if (IsExecuting || _isStartingMacro) { StopMacro(); return; }
-            if (!RecordingPageViewModel.IsIdle) { RecordingPageViewModel.Toggle(); return; }
+            if (!RecordingPageViewModel.IsIdle) { RecordingPageViewModel.Toggle(modifiers); return; }
             if (_currentTabIndex == 0)
             {
                 // 鼠标连点 Tab：转发给 AutoClickViewModel
@@ -569,14 +557,27 @@ namespace Ming_AutoClicker.ViewModels
 
         #region 事件处理
 
+        private void OnActionStarted(object? sender, MacroExecutionEventArgs e)
+        {
+            OnUIThread(() => StatusMessage = LocalizationService.Current.Format("StatusMacroStepStarted",
+                e.MacroPath, e.ActionIndex + 1, e.Action?.GetDescription()));
+        }
+
         private void OnActionExecuted(object? sender, MacroExecutionEventArgs e)
         {
             OnUIThread(() =>
             {
+                if (e.RootMacroId != _runningMacro?.Id &&
+                    Macros.FirstOrDefault(m => m.Id == e.RootMacroId) is { } newRoot)
+                {
+                    _runningMacro = newRoot;
+                    SelectedMacro = newRoot;
+                }
                 var actionDesc = e.Action?.GetDescription() ?? LocalizationService.Current.GetString("ActionUnknown");
-                var status = LocalizationService.Current.GetString(e.Success ? "StatusSuccess" : "StatusFailed");
-                StatusMessage = LocalizationService.Current.Format(
-                    "StatusActionResult", e.ActionIndex + 1, actionDesc, status);
+                var status = e.Outcome == MacroStepOutcome.Completed
+                    ? LocalizationService.Current.GetString("StatusSuccess") : e.Message;
+                var step = LocalizationService.Current.Format("StatusActionResult", e.ActionIndex + 1, actionDesc, status);
+                StatusMessage = LocalizationService.Current.Format("MacroExecutionContext", e.MacroPath, step);
             });
         }
 
@@ -654,12 +655,12 @@ namespace Ming_AutoClicker.ViewModels
         {
             OnUIThread(() =>
             {
-                if (string.IsNullOrEmpty(e.Target)) ToggleExecution();
-                else _ = SwitchToTargetAsync(e.Target);
+                if (string.IsNullOrEmpty(e.Target)) ToggleExecution(e.Modifiers);
+                else _ = SwitchToTargetAsync(e.Target, e.Modifiers);
             });
         }
 
-        private async Task SwitchToTargetAsync(string target)
+        private async Task SwitchToTargetAsync(string target, HotkeyModifierKeys modifiers)
         {
             await _targetSwitchGate.WaitAsync();
             try
@@ -672,7 +673,7 @@ namespace Ming_AutoClicker.ViewModels
 
                 if (AutoClickViewModel.IsRunning) AutoClickViewModel.Toggle();
                 if (IsExecuting || _isStartingMacro) StopMacro();
-                if (!RecordingPageViewModel.IsIdle) RecordingPageViewModel.Toggle();
+                if (!RecordingPageViewModel.IsIdle) RecordingPageViewModel.Toggle(modifiers);
 
                 var until = DateTime.UtcNow.AddSeconds(5);
                 while (IsAnyAutomationActive && DateTime.UtcNow < until)
@@ -709,7 +710,10 @@ namespace Ming_AutoClicker.ViewModels
         private bool IsTargetRunning(string target)
         {
             if (target.StartsWith("macro:", StringComparison.Ordinal))
-                return (IsExecuting || _isStartingMacro) && _runningMacro?.Id == target[6..];
+            {
+                var rootId = IsExecuting && _macroExecutor.IsRunning ? _macroExecutor.RootMacroId : _runningMacro?.Id;
+                return (IsExecuting || _isStartingMacro) && rootId == target[6..];
+            }
 
             return target.StartsWith("recording:", StringComparison.Ordinal) &&
                 RecordingPageViewModel.IsPlaying &&
@@ -726,20 +730,19 @@ namespace Ming_AutoClicker.ViewModels
                     {
                         ExecutionStatus = LocalizationService.Current.GetString(
                             AutoClickViewModel.IsRunning ? "StatusAutoClicking" : "StatusNotRunning");
-                        if (AutoClickViewModel.IsRunning)
-                        {
-                            StatusMessage = AutoClickViewModel.StatusText;
-                        }
-                        else if (AutoClickViewModel.ClickCount > 0)
-                        {
-                            StatusMessage = LocalizationService.Current.Format(
-                                "StatusStoppedClicks", AutoClickViewModel.ClickCount);
-                        }
                     }
 
                     OnPropertyChanged(nameof(CanConfigureSettings));
                     OnPropertyChanged(nameof(IsNavigationEnabled));
                     CommandManager.InvalidateRequerySuggested();
+                });
+            }
+            else if (e.PropertyName == nameof(AutoClickViewModel.StatusText))
+            {
+                OnUIThread(() =>
+                {
+                    if (_currentTabIndex == 0)
+                        StatusMessage = AutoClickViewModel.StatusText;
                 });
             }
             else if (e.PropertyName == nameof(AutoClickViewModel.ClickCount))
@@ -796,7 +799,7 @@ namespace Ming_AutoClicker.ViewModels
                 }
             }
 
-            ActiveHotkeyDescription = LocalizationService.Current.GetString("HotkeyDisabled");
+            UpdateActiveHotkeyDescription();
             StatusMessage = LocalizationService.Current.Format("HotkeyUnavailable", result.Message);
             return false;
         }
@@ -964,7 +967,10 @@ namespace Ming_AutoClicker.ViewModels
                 ? HotkeyRegistrationResult.Succeeded()
                 : _hotkeyService.TryRegister(_mainWindowHandle, gesture);
             if (!registration.Success)
+            {
+                UpdateActiveHotkeyDescription();
                 return registration;
+            }
 
             try
             {
@@ -996,9 +1002,11 @@ namespace Ming_AutoClicker.ViewModels
 
         private void UpdateActiveHotkeyDescription()
         {
-            ActiveHotkeyDescription = _hotkeyService.IsRegistered
+            var activeHotkey = _hotkeyService.IsRegistered
                 ? _hotkeyService.GetCurrentHotkeyDescription()
-                : LocalizationService.Current.GetString("HotkeyDisabled");
+                : null;
+            AutoClickViewModel.ActiveHotkey = activeHotkey;
+            ActiveHotkeyDescription = activeHotkey ?? LocalizationService.Current.GetString("HotkeyDisabled");
         }
 
         private void OnLanguageChanged(object? sender, EventArgs e)
@@ -1019,6 +1027,7 @@ namespace Ming_AutoClicker.ViewModels
         public void UnregisterHotkey()
         {
             _hotkeyService.Unregister();
+            UpdateActiveHotkeyDescription();
         }
 
         /// <summary>
@@ -1044,6 +1053,7 @@ namespace Ming_AutoClicker.ViewModels
                 RecordingPageViewModel.Dispose();
                 RecordingPageViewModel.PropertyChanged -= OnRecordingViewModelPropertyChanged;
                 RecordingPageViewModel.RecordingDeleted -= OnRecordingDeleted;
+                _macroExecutor.ActionStarted -= OnActionStarted;
                 _macroExecutor.ActionExecuted -= OnActionExecuted;
                 _macroExecutor.ExecutionCompleted -= OnExecutionCompleted;
                 _macroExecutor.StateChanged -= OnExecutionStateChanged;

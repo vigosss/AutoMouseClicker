@@ -48,6 +48,9 @@ public class MatchResult : MatchCandidate
     public BitmapSource? Snapshot { get; set; }
     public Rectangle CaptureBounds { get; set; }
     public bool HasCandidate => Width > 0 && Height > 0;
+    internal bool WaitExpiredAfterMiss { get; set; }
+    public bool IsOrdinaryMiss => !Found && (FailureReason == MatchFailureReason.BelowThreshold ||
+        (FailureReason == MatchFailureReason.TimedOut && WaitExpiredAfterMiss));
     public static MatchResult NotFound => new() { FailureReason = MatchFailureReason.BelowThreshold };
 }
 
@@ -459,51 +462,57 @@ public sealed class ImageMatchService : IDisposable
         MatchResult? last = null;
         try
         {
-            do
+            while (true)
             {
                 budget.Check();
                 var iteration = Stopwatch.StartNew();
-                var result = FindImage(action, cancellationToken, budgetMs: budget.RemainingMilliseconds);
-                if (result.Found && verifyBeforeReturn)
+                last = FindImage(action, cancellationToken, budgetMs: budget.RemainingMilliseconds);
+                if (last.Found && verifyBeforeReturn)
                 {
                     budget.Check();
-                    var fresh = VerifyFreshFrame(action, result, cancellationToken, Math.Min(300, budget.RemainingMilliseconds));
-                    if (fresh.Found && IsSameTarget(result, fresh)) result = fresh;
-                    else
+                    var fresh = VerifyFreshFrame(action, last, cancellationToken, Math.Min(300, budget.RemainingMilliseconds));
+                    if ((fresh.Found && !IsSameTarget(last, fresh)) || fresh.IsOrdinaryMiss)
                     {
-                        result = fresh;
-                        if (result.Found || result.FailureReason == MatchFailureReason.BelowThreshold)
-                        {
-                            result.Found = false;
-                            result.FailureReason = MatchFailureReason.TargetChanged;
-                            result.ErrorMessage = Text("MatchTargetChanged");
-                        }
+                        fresh.Found = false;
+                        fresh.FailureReason = MatchFailureReason.TargetChanged;
+                        fresh.ErrorMessage = Text("MatchTargetChanged");
                     }
+                    last = fresh;
                 }
-                last = result;
+                cancellationToken.ThrowIfCancellationRequested();
+                if (!last.Found && (oneShot || !last.IsOrdinaryMiss)) break;
                 budget.Check();
-                if (result.Found || oneShot || result.FailureReason is MatchFailureReason.InvalidTemplate or
-                    MatchFailureReason.CaptureFailed or MatchFailureReason.MatchingError or
-                    MatchFailureReason.UninformativeTemplate or MatchFailureReason.ScopeUnavailable or
-                    MatchFailureReason.Ambiguous or MatchFailureReason.Cancelled)
+                if (last.Found) break;
+                var scanMs = Math.Max(1L, (long)Math.Ceiling(iteration.Elapsed.TotalMilliseconds));
+                var untilNextPoll = (int)Math.Max(1L, intervalMs - scanMs);
+                if (budget.RemainingMilliseconds - untilNextPoll > scanMs)
                 {
-                    result.ElapsedMilliseconds = budget.ElapsedMilliseconds;
-                    return result;
+                    await Task.Delay(untilNextPoll, cancellationToken).ConfigureAwait(false);
+                    // Scheduling delays can consume the time reserved for a complete scan.
+                    if (budget.RemainingMilliseconds > scanMs) continue;
                 }
-                var delay = Math.Min(budget.RemainingMilliseconds, Math.Max(1, intervalMs - (int)iteration.ElapsedMilliseconds));
-                await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
-            } while (!oneShot);
+
+                // The last scan completed without a match. Wait out the deadline without
+                // starting a scan that no longer fits. Recheck if the timer wakes early.
+                int remaining;
+                while ((remaining = budget.RemainingMilliseconds) > 0)
+                    await Task.Delay(remaining, cancellationToken).ConfigureAwait(false);
+            }
         }
         catch (OperationCanceledException) { last = Failure(MatchFailureReason.Cancelled); }
         catch (SearchBudgetExceededException)
         {
-            var incompleteSearch = last?.FailureReason == MatchFailureReason.TimedOut;
-            last ??= Failure(MatchFailureReason.TimedOut);
-            last.Found = false;
-            last.FailureReason = MatchFailureReason.TimedOut;
-            last.ErrorMessage = Text(incompleteSearch ? "MatchSearchIncomplete" : "MatchTimedOut");
+            if (last?.FailureReason == MatchFailureReason.BelowThreshold)
+            {
+                last.WaitExpiredAfterMiss = true;
+                last.FailureReason = MatchFailureReason.TimedOut;
+                last.ErrorMessage = Text("MatchTimedOut");
+            }
+            else
+            {
+                last = Failure(MatchFailureReason.TimedOut, Text("MatchSearchIncomplete"));
+            }
         }
-        last ??= Failure(MatchFailureReason.TimedOut);
         last.ElapsedMilliseconds = budget.ElapsedMilliseconds;
         return last;
     }

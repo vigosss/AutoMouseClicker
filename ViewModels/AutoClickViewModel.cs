@@ -14,6 +14,7 @@ namespace Ming_AutoClicker.ViewModels
         private readonly AutoClickService _autoClickService;
 
         private string _selectedButton = "left";
+        private string? _activeHotkey;
         private int _intervalMs = 100;
         private bool _isRunning;
         private string _statusText = string.Empty;
@@ -30,7 +31,11 @@ namespace Ming_AutoClicker.ViewModels
         public string SelectedButton
         {
             get => _selectedButton;
-            set => SetProperty(ref _selectedButton, value);
+            set
+            {
+                if (SetProperty(ref _selectedButton, value))
+                    OnPropertyChanged(nameof(HotkeyHintText));
+            }
         }
 
         /// <summary>
@@ -112,11 +117,23 @@ namespace Ming_AutoClicker.ViewModels
         /// </summary>
         public bool IsNotRunning => !_isRunning;
 
+        internal string? ActiveHotkey
+        {
+            get => _activeHotkey;
+            set
+            {
+                if (SetProperty(ref _activeHotkey, value))
+                    OnPropertyChanged(nameof(HotkeyHintText));
+            }
+        }
+
         /// <summary>
         /// 快捷键提示文本
         /// </summary>
-        public string HotkeyHintText => LocalizationService.Current.GetString(
-            _isRunning ? "AutoClickStopHint" : "AutoClickStartHint");
+        public string HotkeyHintText => ActiveHotkey is { } hotkey
+            ? LocalizationService.Current.Format(IsRunning ? "AutoClickStopHint" : "AutoClickStartHint",
+                hotkey, GetButtonName(SelectedButton))
+            : LocalizationService.Current.GetString("AutoClickHotkeyUnavailable");
 
         /// <summary>
         /// 状态文本

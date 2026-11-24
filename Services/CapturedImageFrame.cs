@@ -13,8 +13,11 @@ public sealed class CapturedImageFrame : IDisposable
     public Image<Bgr, byte> Image { get; }
     public Rectangle Bounds { get; }
     public double Dpi { get; }
+    /// <summary>Physical display areas represented in the bitmap, excluding gaps between monitors.</summary>
+    public IReadOnlyList<Rectangle> VisibleRegions { get; }
 
-    public CapturedImageFrame(Image<Bgr, byte> image, Rectangle bounds, double dpi = 96)
+    public CapturedImageFrame(Image<Bgr, byte> image, Rectangle bounds, double dpi = 96,
+        IReadOnlyList<Rectangle>? visibleRegions = null)
     {
         ArgumentNullException.ThrowIfNull(image);
         if (image.Width != bounds.Width || image.Height != bounds.Height)
@@ -22,6 +25,7 @@ public sealed class CapturedImageFrame : IDisposable
         Image = image;
         Bounds = bounds;
         Dpi = double.IsFinite(dpi) && dpi > 0 ? dpi : 96;
+        VisibleRegions = visibleRegions ?? [bounds];
     }
 
     public BitmapSource CreateSnapshot()
@@ -65,7 +69,10 @@ public sealed class DesktopImageFrameSource : IImageFrameSource
                     throw new ImageSearchScopeException("ImageScopeMoved");
                 ImageSearchScopeService.EnsureWindowUnobscured(resolved.WindowHandle, resolved.Bounds);
             }
-            return new CapturedImageFrame(image, resolved.Bounds, resolved.Dpi);
+            var visibleRegions = scope.Kind == ImageSearchScopeKind.Desktop
+                ? ImageSearchScopeService.GetMonitorBounds() : null;
+            if (visibleRegions is { Count: 0 }) throw new ImageSearchScopeException("ImageScopeUnavailable");
+            return new CapturedImageFrame(image, resolved.Bounds, resolved.Dpi, visibleRegions);
         }
         catch
         {

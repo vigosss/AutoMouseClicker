@@ -34,6 +34,9 @@
                 Padding="12,8"
                 Visibility="Collapsed">
             <StackPanel Orientation="Horizontal">
+                <Border x:Name="ColorSwatch" Width="20" Height="20" Margin="0,0,8,0"
+                        BorderBrush="{StaticResource TextSecondaryBrush}" BorderThickness="1"
+                        VerticalAlignment="Center" Visibility="Collapsed"/>
                 <TextBlock x:Name="CoordText" Foreground="{StaticResource PrimaryBrush}" FontSize="12" FontFamily="{StaticResource PixelMonoFontFamily}"
                            VerticalAlignment="Center"/>
                 <TextBlock Text="{DynamicResource CoordinateRelease}" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12"

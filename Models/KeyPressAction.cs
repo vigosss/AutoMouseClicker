@@ -25,7 +25,7 @@ public sealed class KeyPressAction : MacroAction
 
     public override string ToString() => GetDescription();
 
-    public KeyPressAction Clone() => new()
+    public override KeyPressAction Clone() => new()
     {
         Order = Order,
         Note = Note,

@@ -13,6 +13,14 @@ namespace Ming_AutoClicker.ViewModels;
 public enum RecordingState { Idle, Recording, RecordPaused, Playing, PlayPaused, Stopping }
 public enum RecordingSessionResult { None, Completed, Stopped, Failed }
 
+internal sealed record RecordingButtonPress(int Timestamp, uint VirtualKey = 0)
+{
+    public bool Matches(RecordedAction action) => action.CaptureTimestamp == Timestamp &&
+        (VirtualKey == 0
+            ? action.Type == RecordedActionType.MouseDown && action.Button == RecordedMouseButton.Left
+            : action.Type == RecordedActionType.KeyDown && action.VirtualKey == VirtualKey);
+}
+
 public sealed class RecordingItemViewModel : ViewModelBase
 {
     private readonly RecordingPageViewModel _owner;
@@ -98,6 +106,7 @@ public sealed class RecordingPageViewModel : ViewModelBase, IDataErrorInfo
 
     public bool HasSelection => SelectedRecording != null;
     public RecordingState State => _state;
+    public bool IsSessionActive => State != RecordingState.Idle;
     public bool IsIdle => State == RecordingState.Idle && !_starting && !_disposed && !_exitPending;
     public bool IsPaused => State is RecordingState.RecordPaused or RecordingState.PlayPaused;
     public bool IsStopping => State == RecordingState.Stopping;
@@ -163,16 +172,11 @@ public sealed class RecordingPageViewModel : ViewModelBase, IDataErrorInfo
 
     public string StartButtonText => State switch
     {
-        RecordingState.Recording => Text("RecordingStatusRecording"),
-        RecordingState.RecordPaused => Text("RecordingStatusPaused"),
+        RecordingState.Recording or RecordingState.RecordPaused => Text("RecordingStop"),
         RecordingState.Playing or RecordingState.PlayPaused => Text("PlaybackStop"),
         RecordingState.Stopping => Text("RecordingStatusStopping"),
         _ => Text(HasSelection ? "PlaybackStart" : "RecordingStart")
     };
-    public string PauseButtonText => Text(IsPaused ? "RecordingResume" : "RecordingPause");
-    public string PauseButtonTooltip => Text(_recordSession
-        ? IsPaused ? "RecordingResumeTooltip" : "RecordingPauseTooltip"
-        : IsPaused ? "PlaybackResumeTooltip" : "PlaybackPauseTooltip");
     public string StopButtonTooltip => Text(_recordSession ? "RecordingStopTooltip" : "PlaybackStopTooltip");
     public string StatusLabel => State switch
     {
@@ -239,8 +243,8 @@ public sealed class RecordingPageViewModel : ViewModelBase, IDataErrorInfo
         _hook = hook;
         _playback = playback;
         _timeProvider = timeProvider ?? TimeProvider.System;
-        PrimaryActionCommand = new RelayCommand(_ => ExecutePrimaryAction(),
-            _ => !_disposed && !_starting && !IsStopping && (IsPlaying || CanStart));
+        PrimaryActionCommand = new RelayCommand(input => Toggle(input as RecordingButtonPress),
+            _ => !_disposed && !_starting && !IsStopping && (IsSessionActive || CanStart));
         StartCommand = new RelayCommand(_ => Start(), _ => CanStart);
         PauseCommand = new RelayCommand(_ => TogglePause(), _ => !IsStopping && (IsRecording || IsPlaying));
         StopCommand = new RelayCommand(_ => Stop(), _ => !IsStopping && (IsRecording || IsPlaying));
@@ -256,17 +260,14 @@ public sealed class RecordingPageViewModel : ViewModelBase, IDataErrorInfo
         LocalizationService.Current.LanguageChanged += OnLanguageChanged;
     }
 
-    public void Toggle()
+    public void Toggle() => Toggle(null);
+
+    public void Toggle(HotkeyModifierKeys modifiers) => Toggle(null, modifiers);
+
+    private void Toggle(RecordingButtonPress? press, HotkeyModifierKeys modifiers = HotkeyModifierKeys.None)
     {
         if (IsStopping || _starting || _disposed) return;
-        if (IsRecording || IsPlaying) Stop();
-        else Start();
-    }
-
-    private void ExecutePrimaryAction()
-    {
-        if (_disposed || _starting || IsStopping) return;
-        if (IsPlaying) Stop();
+        if (IsSessionActive) Stop(press, modifiers);
         else Start();
     }
 
@@ -305,10 +306,10 @@ public sealed class RecordingPageViewModel : ViewModelBase, IDataErrorInfo
         }
     }
 
-    private void Stop()
+    private void Stop(RecordingButtonPress? press = null, HotkeyModifierKeys modifiers = HotkeyModifierKeys.None)
     {
         if (IsStopping || _disposed) return;
-        if (IsRecording) StopRecording();
+        if (IsRecording) StopRecording(press, modifiers);
         else if (IsPlaying)
         {
             StopClock();
@@ -317,7 +318,7 @@ public sealed class RecordingPageViewModel : ViewModelBase, IDataErrorInfo
         }
     }
 
-    private void StopRecording()
+    private void StopRecording(RecordingButtonPress? press, HotkeyModifierKeys modifiers)
     {
         StopClock();
         SetState(RecordingState.Stopping);
@@ -325,6 +326,26 @@ public sealed class RecordingPageViewModel : ViewModelBase, IDataErrorInfo
         try
         {
             var actions = _hook.StopRecording();
+            if (press != null)
+            {
+                var first = actions.FindLastIndex(press.Matches);
+                if (first >= 0) actions.RemoveRange(first, actions.Count - first);
+            }
+            // The hook already omits registered shortcut keys. Only trailing presses of
+            // the confirmed shortcut's modifiers belong to the finishing chord.
+            while (modifiers != HotkeyModifierKeys.None && actions.Count > 0 &&
+                   actions[^1] is { Type: RecordedActionType.KeyDown } key)
+            {
+                var modifier = key.VirtualKey switch
+                {
+                    0x10 or 0xA0 or 0xA1 => HotkeyModifierKeys.Shift,
+                    0x11 or 0xA2 or 0xA3 => HotkeyModifierKeys.Control,
+                    0x12 or 0xA4 or 0xA5 => HotkeyModifierKeys.Alt,
+                    _ => HotkeyModifierKeys.None
+                };
+                if ((modifiers & modifier) == 0) break;
+                actions.RemoveAt(actions.Count - 1);
+            }
             _recordedCount = actions.Count;
             _lastResult = RecordingSessionResult.Stopped;
             if (actions.Count > 0)
@@ -513,9 +534,9 @@ public sealed class RecordingPageViewModel : ViewModelBase, IDataErrorInfo
     private void SetState(RecordingState state) { _state = state; NotifyState(); }
     private void NotifyState()
     {
-        foreach (var name in new[] { nameof(State), nameof(IsIdle), nameof(IsPaused), nameof(IsStopping), nameof(IsRecording), nameof(IsPlaying),
-            nameof(CanEditPlaybackOptions), nameof(CanEditLoopCount), nameof(StartButtonText), nameof(PauseButtonText),
-            nameof(PauseButtonTooltip), nameof(StopButtonTooltip), nameof(StatusLabel), nameof(StatusText), nameof(CompactStatusText),
+        foreach (var name in new[] { nameof(State), nameof(IsSessionActive), nameof(IsIdle), nameof(IsPaused), nameof(IsStopping), nameof(IsRecording), nameof(IsPlaying),
+            nameof(CanEditPlaybackOptions), nameof(CanEditLoopCount), nameof(StartButtonText),
+            nameof(StopButtonTooltip), nameof(StatusLabel), nameof(StatusText), nameof(CompactStatusText),
             nameof(ElapsedStatusText), nameof(LastResult) })
             OnPropertyChanged(name);
         CommandManager.InvalidateRequerySuggested();

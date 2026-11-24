@@ -13,7 +13,7 @@
 
 Ming AutoClicker is a WPF and OpenCV desktop automation tool with continuous clicking, mouse and keyboard recording/playback, editable macros, image recognition, coordinate clicks, and per-item global hotkeys.
 
-Current version: **v1.1.0** · [Download the latest release](https://github.com/vigosss/AutoMouseClicker/releases/latest)
+Current version: **v1.2.0** · [Download the latest release](https://github.com/vigosss/AutoMouseClicker/releases/latest)
 
 </div>
 
@@ -31,11 +31,11 @@ Current version: **v1.1.0** · [Download the latest release](https://github.com/
 ### Mouse &amp; Keyboard Recorder
 
 - Records mouse movement, clicks, wheel input, and keyboard actions
-- Pause recording to resume appending, or stop to save captured actions; stopping playback makes the next run start from the beginning
+- Click “Start recording” and the same button becomes “Finish recording”. You can also finish and save with the global hotkey while the pointer stays on your target
 - Card menus provide hotkey assignment, optimization, renaming, and deletion; JSON import/export is supported
 - Fixed two-row footer: controls above; status and elapsed time on the left below, with speed slider and loop settings on the right
-- Playback uses one Start/Stop button; recording retains Start, Pause/Resume and Stop to save
-- Per-loop completed/total action counts, loop number, and elapsed time; pauses are excluded and selecting another recording resets progress
+- Select a recording to start and stop playback with the same button. The next run starts at the first action
+- Shows completed and total actions for the current loop, loop number and elapsed time. Selecting another recording resets progress
 - Per-recording global hotkeys
 - Virtual-desktop coordinate mapping when the display layout changes
 
@@ -43,7 +43,7 @@ Current version: **v1.1.0** · [Download the latest release](https://github.com/
 
 - Create, edit, duplicate, and delete macros
 - Arrange steps with the Move Up and Move Down buttons
-- Supports Find Image, Wait, Click, four-direction Scroll, and single-key / keyboard shortcut actions
+- Supports Find Image, Find Color, Wait, Click, four-direction Scroll, keyboard actions, and calls or jumps to other macros
 - Optional notes for each step
 - Fixed-count or infinite loops with a configurable interval
 - JSON storage with atomic writes to reduce the risk of interrupted writes corrupting data
@@ -98,7 +98,7 @@ Create and manage automation macros, with an optional hotkey for each macro.
 
 ![Macro editor view](docs/images/en/macro-editor.png)
 
-Combine Find Image, Wait, Click, Scroll, and Keyboard actions, and configure each step in its properties panel.
+Combine Find Image, Find Color, Wait, Click, Scroll, and Keyboard actions, and configure each step in its properties panel.
 
 ### Recording and Playback
 
@@ -158,10 +158,17 @@ Place new views in their feature folder and reusable cross-feature windows in `S
 
 1. Open the **Mouse Macros** tab.
 2. Select **Create Macro**, then choose **Edit**.
-3. Click **Add action** above the action list, then choose Find, Wait, Click, Scroll, or Keyboard.
+3. Click **Add action** above the action list, then choose Find, Find color, Wait, Click, Scroll, Keyboard, or Run another macro.
 4. Configure each action and reorder steps with Move Up and Move Down.
 5. Save the macro.
 6. Select it and click **Start**, or press the configured global hotkey.
+
+### Run Another Macro
+
+Select a target under **Add action → Run another macro**. The target can run without a hotkey and its reference survives renames and hotkey changes.
+
+- **Call and return** runs the target’s steps once, then continues with the next step in the caller. A macro can call multiple levels deep or call the same target twice. Startup identifies circular calls such as A calling B and B calling A.
+- **Jump to target** discards the rest of the current macro and any waiting callers. The target starts at its first step with its own loop count and interval. Two macros can jump to each other. The global stop hotkey stops the entire session.
 
 ### Scroll and Keyboard Actions
 
@@ -169,22 +176,37 @@ Place new views in their feature folder and reusable cross-feature windows in `S
 - Scroll at the current pointer position, or select screen coordinates with the coordinate picker. Negative coordinates on multiple monitors are supported. The pointer remains at the specified position after scrolling.
 - **Keyboard**: choose a main key and optional Ctrl, Alt, Shift, or Win modifiers. Each step presses and releases the combination once. Letters, digits, F1–F24, arrow / navigation / editing keys, and the numeric keypad are supported; holding keys and inserting text blocks are outside this feature.
 - Keys go to the foreground window. Add a preceding Click action to focus the intended control and Wait actions where a delay is needed. Release physically held modifiers and the target key before the keyboard step runs; the macro remains stoppable while waiting for release.
-- If a step matches an active global, macro, or recording control hotkey in this app, startup reports the conflicting step. Change the action or control hotkey before running. The macro can still be saved, and physical control hotkeys remain available to stop execution.
-- Existing macros remain compatible with this version. Older versions may not load macros containing Scroll or Keyboard actions.
+- If a key step matches an active control hotkey, startup identifies the macro and step. To run the assigned macro, change the step to **Run another macro**. To send the keystroke to the foreground app, change the control hotkey.
+- This version opens existing macros. Macros containing **Run another macro** require a version that supports the action.
+
+### Find Color
+
+Choose **Add action → Find color → Pick screen color**. Move the crosshair to preview the pixel in the swatch beside its hex value, then click to select it. You can also enter a `#RRGGBB` value. The default tolerance of 5 allows each RGB channel to differ by up to 5. Use 0 for an exact match.
+
+On a Windows extended desktop, **Entire desktop** searches the primary display and all external displays. With **Select region**, you can draw a box on any display or across displays as long as the whole rectangle falls on visible screen space. **Test** marks the first matching pixel, scanning each row from left to right, starting at the top.
+
+New Find color steps default to **Left click**. You can also choose **Right click** or **Move mouse to**. The step acts once when it finds the color. The default wait is 30 seconds. Use 0 to search once. A missing color can stop the macro, skip the step, or end the round.
+
+Existing **Remember position** steps keep their saved names. Later Click steps in the same macro and round can still use those coordinates. You can change an existing step to a click or a move. Steps with a saved window scope keep searching that window until you select a new scope.
+
+To keep clicking a green button until it disappears, loop a macro containing one Find color step. Choose **Left click**, set the wait to 0, select **Stop execution** when missing, and set the macro’s loop interval to the delay between clicks.
 
 ### Find Image Action
 
 | Option | Description |
 |---|---|
 | Capture / Upload | Capture a screen region or import a local template image |
-| Click position | Select on the preview; defaults to the center and follows the matched size |
-| Operation | Left-click or right-click after a match |
+| Target position | Pick a point in the preview. It defaults to the center and scales with the match |
+| Operation | Choose Left click, Right click, or Move mouse to. Use Move mouse to for a hover action at the target position |
 | Wait time | New actions default to 30 seconds; 0 requests one bounded search |
+| When image is missing | Stop execution (default), skip this step, or end the main macro’s round and wait its loop interval before the next round |
 | Advanced: threshold | Grayscale correlation threshold; color and structure must also pass verification |
 | Advanced: scope | Visible desktop, fixed screen region, or selected window and relative client region |
 | Advanced: multiple targets | Reject ambiguity by default, or explicitly select the Nth result sorted by Y then X |
-| Edit template | Select click position, mark ignored areas, reset to center, or clear ignored areas |
+| Edit template | Select the target position, mark ignored areas, reset to center, or clear ignored areas |
 | Alternate appearances | Additional templates for the same step, each with its own anchor and ignored areas |
+
+To dismiss an optional popup, set the wait to 0 and choose **Skip this step**. **End this round** counts the round toward the main macro’s loop limit. The last or only round ends immediately. Invalid templates, incomplete searches, ambiguous matches, and targets that change before the click stop execution and report the cause.
 
 Legacy macros retain their waiting behavior and fixed-pixel X/Y offsets until a new click anchor is selected. Both legacy `AdaptiveScale` values now use automatic matching. An unavailable explicit scope never falls back to other windows. Window matching requires visible, non-minimized, unobscured content. Uniform scaling is supported; arbitrary rotation, nonuniform stretching, and layout changes are not guaranteed to match.
 
@@ -211,6 +233,13 @@ Supported hotkeys are `F1`–`F12`, or `Ctrl` / `Alt` / `Shift` combined with a 
 ---
 
 ## Changelog
+
+### v1.2.0
+
+- Added Find color. Pick a color across multiple displays, search with an RGB tolerance, and click the matching pixel or move the pointer to it.
+- Macros can call another macro and return, or jump directly to it. Startup checks flag missing targets and circular calls that cannot return.
+- Find image now supports moving the pointer to a match. Both image and color searches can stop the macro, skip the step, or end the current round when the target is missing.
+- Start and finish a recording with the same button. The saved recording omits the button input or hotkey used to finish, so playback skips that input.
 
 ### v1.1.0
 

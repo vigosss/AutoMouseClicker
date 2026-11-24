@@ -13,6 +13,14 @@ public static class MacroActionValidator
         string? errorKey = action switch
         {
             FindImageAction find when !IsValidFindImage(find) => "MacroInvalidFindImage",
+            FindColorAction { Operation: ColorOperation.SavePosition } color
+                when string.IsNullOrWhiteSpace(color.VariableName) => "MacroMissingPositionName",
+            FindColorAction color when !IsValidFindColor(color) => "MacroInvalidFindColor",
+            MouseClickAction click when !Enum.IsDefined(click.PositionSource) ||
+                (click.PositionSource == ClickPositionSource.Variable && string.IsNullOrWhiteSpace(click.VariableName))
+                => "MacroInvalidClickVariable",
+            ExecuteMacroAction transfer when string.IsNullOrWhiteSpace(transfer.TargetMacroId) => "MacroSelectTarget",
+            ExecuteMacroAction transfer when !Enum.IsDefined(transfer.Mode) => "MacroInvalidTransferMode",
             MouseScrollAction scroll when !Enum.IsDefined(scroll.Direction) => "MacroInvalidScrollDirection",
             MouseScrollAction scroll when !Enum.IsDefined(scroll.PositionMode) => "MacroInvalidScrollPosition",
             MouseScrollAction scroll when scroll.Notches < 1 || scroll.Notches > MaximumScrollNotches => "MacroInvalidScrollNotches",
@@ -27,11 +35,12 @@ public static class MacroActionValidator
     private static bool IsValidFindImage(FindImageAction action)
     {
         if (string.IsNullOrWhiteSpace(action.ImagePath) || action.TimeoutMs < 0 ||
-            !Enum.IsDefined(action.SelectionMode) || action.MatchIndex < 1 ||
-            action.SearchScope == null || !Enum.IsDefined(action.SearchScope.Kind) ||
+            !Enum.IsDefined(action.NotFoundBehavior) || !Enum.IsDefined(action.SelectionMode) || action.MatchIndex < 1 ||
+            !IsValidSearchScope(action.SearchScope) ||
             action.AlternateTemplates == null || action.IgnoredRegions == null ||
             !(string.Equals(action.Operation, "Click", StringComparison.OrdinalIgnoreCase) ||
-              string.Equals(action.Operation, "RightClick", StringComparison.OrdinalIgnoreCase))) return false;
+              string.Equals(action.Operation, "RightClick", StringComparison.OrdinalIgnoreCase) ||
+              string.Equals(action.Operation, "MoveTo", StringComparison.OrdinalIgnoreCase))) return false;
 
         foreach (var template in action.GetTemplates())
         {
@@ -43,7 +52,17 @@ public static class MacroActionValidator
                 (!IsUnitValue(point.X) || !IsUnitValue(point.Y))) return false;
         }
 
-        var scope = action.SearchScope;
+        return true;
+    }
+
+    private static bool IsValidFindColor(FindColorAction action) =>
+        FindColorAction.TryParseColor(action.TargetColor, out _) && action.Tolerance is >= 0 and <= 255 &&
+        action.TimeoutMs >= 0 && IsValidSearchScope(action.SearchScope) &&
+        Enum.IsDefined(action.NotFoundBehavior) && Enum.IsDefined(action.Operation);
+
+    private static bool IsValidSearchScope(ImageSearchScope? scope)
+    {
+        if (scope == null || !Enum.IsDefined(scope.Kind)) return false;
         if (scope.Kind == ImageSearchScopeKind.Region &&
             (scope.Width <= 0 || scope.Height <= 0 ||
              (long)scope.X + scope.Width > int.MaxValue ||

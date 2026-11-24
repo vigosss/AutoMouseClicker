@@ -38,7 +38,7 @@ public sealed class MouseScrollAction : MacroAction
 
     public override string ToString() => GetDescription();
 
-    public MouseScrollAction Clone() => new()
+    public override MouseScrollAction Clone() => new()
     {
         Order = Order,
         Note = Note,

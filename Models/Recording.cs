@@ -18,6 +18,9 @@ public sealed class DesktopBounds
 
 public sealed class RecordedAction
 {
+    // The hook and WPF input events share the native message timestamp.
+    // It is only used to identify the input that finished this capture.
+    internal int? CaptureTimestamp { get; set; }
     public RecordedActionType Type { get; set; }
     public long DelayBeforeMs { get; set; }
     public int X { get; set; }

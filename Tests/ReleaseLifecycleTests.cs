@@ -14,6 +14,7 @@ internal static partial class Program
         tests.Add(("Exit preparation waits for real playback key and mouse releases", ExitWaitsForInputCleanup));
         tests.Add(("Exit cleanup timeout allows recovery and a later exit attempt", ExitCleanupTimeoutRecovery));
         tests.Add(("Incomplete macro loads preserve screenshots during save and disposal", IncompleteMacroLoadPreservesScreenshots));
+        tests.Add(("Main window command selects a jump target and stops the paused chain once", StopJumpFromMainViewModel));
     }
 
     private static async Task ExitWaitsForInputCleanup()
@@ -106,6 +107,80 @@ internal static partial class Program
         Check(!vm.StartCommand.CanExecute(null));
         vm.CancelExitPreparation();
         Check(vm.StartCommand.CanExecute(null));
+    }
+
+    private static async Task StopJumpFromMainViewModel()
+    {
+        var directory = Directory.CreateTempSubdirectory("MingAutoClicker-JumpTests-");
+        try
+        {
+            var storage = new MacroStorageService(directory.FullName);
+            using var screenshots = new ScreenCaptureService(Path.Combine(directory.FullName, "screenshots"));
+            using var matching = new ImageMatchService(screenshots);
+            var sender = new FakeInputSender();
+            using var executor = new MacroExecutor(matching, screenshots, new MacroInputService(sender));
+            using var hotkeys = new HotkeyService();
+            var target = new MacroProfile { Name = "B", Actions = { new WaitAction { WaitSeconds = 0 }, new KeyPressAction() } };
+            var source = new MacroProfile { Name = "A" };
+            source.Actions.Add(new ExecuteMacroAction { TargetMacroId = target.Id, Mode = MacroTransferMode.Jump });
+            source.Actions.Add(new KeyPressAction());
+            storage.Save(source);
+            storage.Save(target);
+            using var vm = new MainViewModel(storage, screenshots, matching, executor, hotkeys,
+                new AppSettingsService(), new AppSettings(), new AutoClickService(),
+                new RecordingStorageService(Path.Combine(directory.FullName, "recordings.json")), new GlobalHookService(), CreateTestPlayback(sender));
+            vm.CurrentTabIndex = 1;
+            vm.SelectedMacro = vm.Macros.Single(m => m.Id == source.Id);
+            var paused = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var completed = new TaskCompletionSource<MacroExecutionEventArgs>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var completions = 0;
+            executor.ActionExecuted += (_, step) =>
+            {
+                if (step.RootMacroId == target.Id && step.Action is WaitAction)
+                {
+                    // Pause at the step boundary, before the worker can advance to B's key press.
+                    executor.Pause();
+                    paused.TrySetResult();
+                }
+            };
+            executor.ExecutionCompleted += (_, result) =>
+            {
+                Interlocked.Increment(ref completions);
+                completed.TrySetResult(result);
+            };
+
+            Check(vm.StartMacroCommand.CanExecute(null));
+            vm.StartMacroCommand.Execute(null);
+            try
+            {
+                await paused.Task.WaitAsync(TimeSpan.FromSeconds(5));
+                Equal(target.Id, vm.SelectedMacro?.Id);
+                Equal(MacroExecutionState.Paused, executor.State);
+                Check(vm.IsExecuting && !vm.StartMacroCommand.CanExecute(null));
+                Equal(0, Volatile.Read(ref completions));
+                vm.ToggleExecution();
+                var result = await completed.Task.WaitAsync(TimeSpan.FromSeconds(5));
+                Check(!result.Success && !vm.IsExecuting);
+                Equal(target.Id, result.RootMacroId);
+                Equal(target.Id, vm.SelectedMacro?.Id);
+                Equal(MacroExecutionState.Stopped, executor.State);
+                Equal(1, Volatile.Read(ref completions));
+                Equal(0, sender.Batches.Count);
+                Check(vm.StartMacroCommand.CanExecute(null));
+            }
+            finally
+            {
+                if (executor.IsRunning)
+                {
+                    executor.Stop();
+                    await completed.Task.WaitAsync(TimeSpan.FromSeconds(5));
+                }
+            }
+        }
+        finally
+        {
+            directory.Delete(recursive: true);
+        }
     }
 
     private static Task IncompleteMacroLoadPreservesScreenshots()

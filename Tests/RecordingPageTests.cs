@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
@@ -25,7 +26,7 @@ internal static partial class Program
         tests.Add(("Recording playback failure is visible and allows a later run", RecordingFailureRecovery));
         tests.Add(("Recording view model retains real playback progress through loops and disabled actions", RecordingRealPlaybackProgress));
         tests.Add(("Background recording progress survives completion, stop and failure dispatch ordering", RecordingBackgroundProgress));
-        tests.Add(("Recording primary action starts and stops finite and infinite playback safely", RecordingPrimaryAction));
+        tests.Add(("Recording primary action finishes capture and stops finite and infinite playback safely", RecordingPrimaryAction));
         tests.Add(("Recording speed slider quantizes values and locks during playback", RecordingSpeedSlider));
         tests.Add(("Recording footer and menus render without layout jumps in both languages", RecordingPageRendering));
     }
@@ -355,14 +356,29 @@ internal static partial class Program
     {
         using var fixture = new RecordingPageFixture();
         var vm = fixture.ViewModel;
+        var initialCount = vm.Recordings.Count;
+        Equal(LocalizationService.Current.GetString("RecordingStart"), vm.StartButtonText);
         Check(vm.PrimaryActionCommand.CanExecute(null));
         vm.PrimaryActionCommand.Execute(null);
         Equal(RecordingState.Recording, vm.State);
-        Check(!vm.PrimaryActionCommand.CanExecute(null), "Recording retains its separate stop control");
+        Equal(LocalizationService.Current.GetString("RecordingStop"), vm.StartButtonText);
+        Check(vm.PrimaryActionCommand.CanExecute(null));
+        vm.PrimaryActionCommand.Execute(null);
+        Check(vm.IsIdle && !vm.HasSelection);
+        Equal(initialCount, vm.Recordings.Count);
+        Equal(LocalizationService.Current.GetString("RecordingStart"), vm.StartButtonText);
+
+        vm.PrimaryActionCommand.Execute(null);
+        fixture.Capture.Actions = CreateRecordingActions(3);
         vm.PauseCommand.Execute(null);
-        Check(!vm.PrimaryActionCommand.CanExecute(null));
-        vm.StopCommand.Execute(null);
+        Equal(RecordingState.RecordPaused, vm.State);
+        Equal(LocalizationService.Current.GetString("RecordingStop"), vm.StartButtonText);
+        Check(vm.PrimaryActionCommand.CanExecute(null));
+        vm.PrimaryActionCommand.Execute(null);
         Check(vm.IsIdle);
+        Equal(initialCount + 1, vm.Recordings.Count);
+        Check(ReferenceEquals(vm.Recordings.Last(), vm.SelectedRecording));
+        Equal(3, vm.SelectedRecording!.Model.ActionCount);
 
         vm.SelectedRecording = vm.Recordings[0];
         vm.LoopCountText = "2";
@@ -542,7 +558,7 @@ internal static partial class Program
                     RenderRecordingDpi(view, $"recording-empty-{locale}-{width}{suffix}.png", width, height, dpi);
 
                     fixture.Capture.Actions.Clear();
-                    vm.StartCommand.Execute(null);
+                    start.Command.Execute(null);
                     Layout(view, width, height);
                     Equal(RecordingState.Recording, vm.State);
                     CheckRecordingFooterLayout(view, baselineFooter, baselineStart);
@@ -552,12 +568,22 @@ internal static partial class Program
                     Equal(RecordingState.RecordPaused, vm.State);
                     CheckRecordingFooterLayout(view, baselineFooter, baselineStart);
                     RenderRecordingDpi(view, $"recording-capture-paused-{locale}-{width}{suffix}.png", width, height, dpi);
-                    vm.StopCommand.Execute(null);
+                    start.Command.Execute(null);
                     Check(vm.IsIdle);
 
                     vm.SelectedRecording = vm.Recordings[0];
                     Layout(view, width, height);
                     CheckRecordingFooterLayout(view, baselineFooter, baselineStart);
+                    var slider = (Slider)view.FindName("SpeedSlider");
+                    var track = (Track)slider.Template.FindName("PART_Track", slider);
+                    var thumb = track.Thumb;
+                    var grip = (Border)thumb.Template.FindName("ThumbFrame", thumb);
+                    var travel = track.ActualWidth - thumb.ActualWidth;
+                    Check(travel >= (width == 644 ? 76 : 160), $"Speed slider travel is only {travel} DIP at {width} DIP, {locale}, {dpi} DPI");
+                    Check(grip.ActualWidth <= 15 && grip.ActualHeight <= 17, "The visible speed handle should be compact");
+                    Check(thumb.ActualWidth >= 20 && thumb.ActualHeight >= 24, "The speed handle must stay easy to grab");
+                    Check(thumb.IsHitTestVisible && VisualTreeHelper.HitTest(thumb, new Point(1, 1)) != null,
+                        "The transparent edge of the speed handle must accept pointer input");
                     CheckRecordingItemMenu(view, vm.SelectedRecording, $"recording-menu-{locale}-{width}{suffix}.png", dpi);
                     RenderRecordingDpi(view, $"recording-ready-{locale}-{width}{suffix}.png", width, height, dpi);
                     vm.StartCommand.Execute(null);
@@ -708,48 +734,22 @@ internal static partial class Program
         view.Dispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
         view.UpdateLayout();
         var vm = (RecordingPageViewModel)view.DataContext;
-        var footer = (FrameworkElement)view.FindName("RecordingFooter");
+        var footer = (Border)view.FindName("RecordingFooter");
         var start = (Button)view.FindName("StartButton");
         var startBounds = RecordingElementBounds(start, view);
         Equal(baselineFooter, RecordingElementBounds(footer, view));
         Equal(108d, baselineFooter.Height);
-        Equal(baselineStart.X, startBounds.X);
-        Equal(baselineStart.Y, startBounds.Y);
-        Equal(baselineStart.Height, startBounds.Height);
-        Check(startBounds.Width > 0 && startBounds.Right <= baselineFooter.Right,
-            "The primary action must remain within the footer");
-        if (vm.HasSelection)
-            Check(startBounds.Width >= baselineStart.Width, "Playback should expand the primary button into the recording-control space");
+        Equal(baselineStart, startBounds);
+        var contentBounds = RecordingElementBounds((FrameworkElement)footer.Child, view);
+        Equal(contentBounds.Left, startBounds.Left);
+        Equal(contentBounds.Right, startBounds.Right);
+        Check(Descendants<Button>(footer).Single() == start, "The footer must provide one recording or playback action");
         Check(ReferenceEquals(vm.PrimaryActionCommand, start.Command));
         Equal(vm.PrimaryActionCommand.CanExecute(null), start.IsEnabled);
+        Equal(vm.StartButtonText, start.Content as string);
         Check(view.FindName("SettingsButton") == null && view.FindName("PlaybackSettingsPopup") == null,
             "Playback settings must be directly available in the control row");
         Check(view.FindName("SpeedInput") == null, "The speed setting must use the slider");
-
-        var recordingControls = (FrameworkElement)view.FindName("RecordingControlsPanel");
-        if (vm.HasSelection)
-        {
-            Equal(Visibility.Collapsed, recordingControls.Visibility);
-        }
-        else
-        {
-            Equal(Visibility.Visible, recordingControls.Visibility);
-            var pause = (Button)view.FindName("PauseButton");
-            var stop = (Button)view.FindName("StopButton");
-            var pauseBounds = RecordingElementBounds(pause, view);
-            var stopBounds = RecordingElementBounds(stop, view);
-            Check(startBounds.Right <= pauseBounds.Left + .1 && pauseBounds.Right <= stopBounds.Left + .1,
-                "Recording start, pause and stop must not overlap");
-            foreach (var bound in new[] { pauseBounds, stopBounds })
-            {
-                Check(bound.Right <= baselineFooter.Right + .1);
-                Check(Math.Abs((startBounds.Top + startBounds.Bottom) - (bound.Top + bound.Bottom)) <= 2,
-                    "Recording controls belong beside the primary action in the first row");
-            }
-            Check(pause.ToolTip is string pauseHint && !string.IsNullOrWhiteSpace(pauseHint));
-            Check(stop.ToolTip is string stopHint && !string.IsNullOrWhiteSpace(stopHint));
-            Check(!Equals(pause.ToolTip, stop.ToolTip), "Recording pause and stop require distinct explanations");
-        }
 
         var status = (FrameworkElement)view.FindName("StatusPanel");
         var statusBounds = RecordingElementBounds(status, view);

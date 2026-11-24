@@ -17,6 +17,8 @@ The `--input-layout-only` check renders the editor's loop fields in Chinese and 
 
 The suite checks input ordering, wheel signs and overflow bounds, partial failures and cancellation cleanup, macro execution, legacy JSON, cloning, hotkey conflict matching, and editor validation/save/cancel behavior. It also renders both editor panels in Chinese and English at 700×500 and 800×600 without showing a window. Images are written under `Tests/bin/Release/net10.0-windows/artifacts/`.
 
+Macro tests cover nested calls, jumps that discard waiting callers, target renames and missing targets, and stopping mutual jumps. Image tests cover all three missing-image policies, including cancellation during the loop interval and ending the main macro’s round from a child.
+
 Recording tests use temporary JSON storage, fake capture/input, and a controllable monotonic clock. They cover progress resets between recordings, stale callbacks, enabled-action counts and loops, pause/resume timing, stopping and cleanup failures, empty recordings, and parameter validation. The recording page is rendered in Chinese and English at 644/784 DIP content widths (the minimum/default main window widths) and 96/120/144/192 DPI, with assertions that the two-row footer remains stable and its controls do not overlap. DPI changes invalidate all generated layout before establishing each scenario's baseline.
 
 The `--pixel-theme-only` check renders the actual main window at 680×520 and 820×620, settings, update and confirmation windows in both languages at 96/120/144/192 DPI. It verifies that the embedded Fusion Pixel font resolves without a system-font fallback, icon pixels retain their original 24-unit coordinates, labels fit and controls do not overlap. The windows stay off screen: no native handles, tray icons or desktop hooks are created. Screenshots use the `pixel-` prefix under the test artifacts directory. Run this check with `dotnet Tests/bin/Release/net10.0-windows/Ming-AutoClicker.Tests.dll --pixel-theme-only` after building.
@@ -31,7 +33,7 @@ Benchmark lines compare fixed generated 1080p frames against the original three-
 
 Before release, verify these scenarios interactively on Windows:
 
-- Record a short mouse/keyboard sequence, pause and resume it, then replay it once and in a loop. Check the elapsed time excludes recording pauses, stop playback using the main button and the global/per-recording hotkeys, and switch recordings to confirm progress resets. Verify the card menu, two-row footer, speed slider and recording pause/stop explanations in both languages.
+- Start recording with the main button and finish with the same button. Repeat using the global hotkey while the pointer stays on the target. Check that each sequence is saved once. Replay it once and in a loop, stop playback using the main button and the global/per-recording hotkeys, and switch recordings to confirm progress resets. Verify the card menu, two-row footer, speed slider and recording button labels in both languages.
 - Scroll a target application vertically and horizontally, both at the current pointer position and at picked coordinates on a second monitor with negative coordinates.
 - Use Click → Ctrl+A → Ctrl+C and Tab / Enter / arrow-key actions in an ordinary application; check numeric keypad behavior with the intended Num Lock setting.
 - Start with a Ctrl-based control hotkey and confirm the first Scroll action waits for Ctrl to be released instead of zooming.

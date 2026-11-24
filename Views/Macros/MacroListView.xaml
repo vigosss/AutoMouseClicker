@@ -8,7 +8,6 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <!-- 宏列表 -->
@@ -34,11 +33,14 @@
                             <TextBlock Text="{Binding Name}" FontSize="12"
                                        Foreground="{StaticResource TextPrimaryBrush}"
                                        TextTrimming="CharacterEllipsis"/>
-                            <TextBlock Style="{StaticResource CaptionText}" Margin="0,4,0,0">
+                            <TextBlock x:Name="MacroMetadata" Style="{StaticResource CaptionText}"
+                                       Margin="0,4,0,0" TextWrapping="Wrap">
                                 <Run Text="{Binding Actions.Count, Mode=OneWay}"/>
                                 <Run Text="{DynamicResource MacroActionCountSuffix}"/>
                                 <Run Text=" · "/>
-                                <Run Text="{Binding UpdatedAt, StringFormat='{}{0:MM-dd HH:mm}'}"/>
+                                <Run x:Name="MacroRunCount" Text="{Binding RunCountText, Mode=OneWay}"/>
+                                <Run Text=" · "/>
+                                <Run Text="{Binding UpdatedAt, StringFormat='{}{0:MM-dd&#160;HH:mm}'}"/>
                             </TextBlock>
                         </StackPanel>
 
@@ -72,43 +74,42 @@
             </ListBox.ItemTemplate>
         </ListBox>
 
-        <!-- 创建新宏按钮 -->
-        <Button Grid.Row="1"
-                Content="{DynamicResource MacroCreate}"
-                helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.AddBox}"
-                Style="{StaticResource PrimaryButton}"
-                Foreground="#000000"
-                Height="40"
-                Margin="0,12,0,0"
-                Command="{Binding CreateMacroCommand}"/>
+        <helpers:PixelBorder x:Name="MacroFooter" Grid.Row="1" Style="{StaticResource PageActionFooter}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="40"/>
+                    <RowDefinition Height="8"/>
+                    <RowDefinition Height="32"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
 
-        <!-- 执行控制 -->
-        <Grid Grid.Row="2" Margin="0,16,0,0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
+                <Button Grid.ColumnSpan="3"
+                        Content="{DynamicResource MacroCreate}"
+                        helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.AddBox}"
+                        Style="{StaticResource PrimaryButton}"
+                        Command="{Binding CreateMacroCommand}"/>
 
-            <TextBlock Grid.Column="0"
-                       Text="{Binding MacroHotkeyHintText}"
-                       Style="{StaticResource CaptionText}"
-                       VerticalAlignment="Center"/>
-
-            <Button Grid.Column="1"
-                    Content="{DynamicResource MacroStart}"
-                    helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.Play}"
-                    Style="{StaticResource SuccessButton}"
-                    Foreground="#000000"
-                    MinWidth="96" Height="40" FontSize="12"
-                    Margin="0,0,8,0"
-                    Command="{Binding StartMacroCommand}"/>
-            <Button Grid.Column="2"
-                    Content="{DynamicResource MacroStop}"
-                    helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.DebugStop}"
-                    Style="{StaticResource DangerButton}"
-                    MinWidth="96" Height="40" FontSize="12"
-                    Command="{Binding StopMacroCommand}"/>
-        </Grid>
+                <TextBlock Grid.Row="2"
+                           Text="{Binding MacroHotkeyHintText}"
+                           Style="{StaticResource CaptionText}" TextWrapping="Wrap"
+                           VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <Button Grid.Row="2" Grid.Column="1"
+                        Content="{DynamicResource MacroStart}"
+                        helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.Play}"
+                        Style="{StaticResource SuccessButton}"
+                        MinWidth="96" MinHeight="32" Padding="12,0" Margin="0,0,8,0"
+                        Command="{Binding StartMacroCommand}"/>
+                <Button Grid.Row="2" Grid.Column="2"
+                        Content="{DynamicResource MacroStop}"
+                        helpers:PixelIcon.Kind="{x:Static iconPacks:PackIconPixelartIconsKind.DebugStop}"
+                        Style="{StaticResource DangerButton}"
+                        MinWidth="96" MinHeight="32" Padding="12,0"
+                        Command="{Binding StopMacroCommand}"/>
+            </Grid>
+        </helpers:PixelBorder>
     </Grid>
 </UserControl>

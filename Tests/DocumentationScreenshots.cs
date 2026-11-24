@@ -71,8 +71,8 @@ internal static partial class Program
             ((TextBlock)window.FindName("VersionText")).Text = "v" + version.Split('+', '-')[0];
             ((AutoClickView)window.FindName("AutoClickView")).DataContext = new PixelAutoClickData
             {
-                HotkeyHintText = LocalizationService.Current.GetString("AutoClickStartHint"),
-                StatusText = LocalizationService.Current.GetString("StatusReady")
+                HotkeyHintText = LocalizationService.Current.Format("AutoClickStartHint", data.ActiveHotkeyDescription,
+                    LocalizationService.Current.GetString("MouseButtonLeft"))
             };
             ((RecordingPage)window.FindName("RecordingPage")).DataContext = sample.Recordings;
             var root = PixelWindowRoot(window);
@@ -85,8 +85,8 @@ internal static partial class Program
             if (tab == 0)
             {
                 var auto = (AutoClickView)window.FindName("AutoClickView");
-                var panel = ((Grid)auto.Content).Children.OfType<Border>().Single();
-                PixelCheckPanelContent(panel, "Documentation auto-click settings");
+                PixelCheckPanelContent((Border)auto.FindName("AutoClickSettings"), "Documentation auto-click settings");
+                PixelCheckPanelContent((Border)auto.FindName("AutoClickFooter"), "Documentation auto-click footer");
             }
             else if (tab == 1)
             {
